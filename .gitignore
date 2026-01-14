@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backups locales (no subir a producción)
+_backup_pre_redesign/

@@ -36,6 +36,10 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
   // Derived state
   const selectedGreenCoffee = greenCoffees.find(g => g.id === selectedGreenCoffeeId);
 
+  const availableGreenCoffees = useMemo(() => {
+    return greenCoffees.filter(g => g.quantityKg > 0);
+  }, [greenCoffees]);
+
   // Calculate stats - Use Local Date to avoid Timezone issues
   const getLocalDate = () => {
     const d = new Date();
@@ -450,7 +454,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                           setProfile(order.roastType || '');
                           
                           // Find matching green coffee
-                          const matchingGreen = greenCoffees.find(g => 
+                          const matchingGreen = availableGreenCoffees.find(g => 
                             g.variety.toLowerCase().includes(order.variety.toLowerCase()) || 
                             order.variety.toLowerCase().includes(g.variety.toLowerCase())
                           );
@@ -582,7 +586,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                   onChange={(e) => setSelectedGreenCoffeeId(e.target.value)}
                 >
                   <option value="">-- Seleccionar Origen --</option>
-                  {greenCoffees.map(coffee => (
+                  {availableGreenCoffees.map(coffee => (
                     <option key={coffee.id} value={coffee.id}>
                       {coffee.variety} - {coffee.clientName} ({coffee.quantityKg}kg)
                     </option>

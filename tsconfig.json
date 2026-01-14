@@ -18,5 +18,8 @@
     "jsx": "react-jsx",
     "types": ["vite/client"]
   },
-  "include": ["./**/*.ts", "./**/*.tsx"]
+  "include": ["./**/*.ts", "./**/*.tsx"],
+  "exclude": [
+    "_backup_pre_redesign"
+  ]
 }

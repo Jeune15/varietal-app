@@ -50,6 +50,9 @@ const AppContent: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const [showSettings, setShowSettings] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [accessPassword, setAccessPassword] = useState('');
+  const [accessError, setAccessError] = useState('');
 
   useEffect(() => {
     // Restore connection from local storage
@@ -89,6 +92,14 @@ const AppContent: React.FC = () => {
     };
   }, [user, showSettings]); // Re-check when settings close or user changes
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = sessionStorage.getItem('varietal_access');
+    if (stored === 'true') {
+      setIsUnlocked(true);
+    }
+  }, []);
+
   const handleManualSync = async () => {
     setIsSyncing(true);
     await pullFromCloud();
@@ -109,6 +120,24 @@ const AppContent: React.FC = () => {
       }
   };
 
+  const handleAccess = () => {
+    if (accessPassword === '10666234') {
+      setIsUnlocked(true);
+      setAccessError('');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('varietal_access', 'true');
+      }
+    } else {
+      setAccessError('Contraseña incorrecta');
+    }
+  };
+
+  const handleSelectSection = (id: string) => {
+    setActiveTab(id);
+    setIsSidebarOpen(false);
+    setIsDesktopSidebarOpen(false);
+  };
+
   if (loading) {
       return (
           <div className="flex h-screen items-center justify-center bg-white">
@@ -118,6 +147,51 @@ const AppContent: React.FC = () => {
               </div>
           </div>
       );
+  }
+
+  if (!isUnlocked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="w-full max-w-sm border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 space-y-6">
+          <div>
+            <h1 className="text-2xl font-black uppercase tracking-tight">Varietal</h1>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 mt-1">
+              Acceso restringido
+            </p>
+          </div>
+          <div className="space-y-3">
+            <label className="block text-xs font-bold uppercase tracking-wider mb-1">
+              Contraseña de acceso
+            </label>
+            <input
+              type="password"
+              className="w-full px-4 py-3 border border-stone-300 focus:border-black outline-none text-sm"
+              value={accessPassword}
+              onChange={(e) => setAccessPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleAccess();
+                }
+              }}
+            />
+            {accessError && (
+              <p className="text-[11px] text-red-600 font-medium">
+                {accessError}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleAccess}
+            className="w-full py-3 bg-black text-white font-black uppercase tracking-[0.2em] text-xs border border-black hover:bg-white hover:text-black transition-colors"
+          >
+            Entrar
+          </button>
+          <p className="text-[10px] text-stone-400 leading-relaxed">
+            La contraseña se recordará mientras esta ventana del navegador permanezca abierta.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Comentado para permitir acceso directo sin login
@@ -151,13 +225,13 @@ const AppContent: React.FC = () => {
       {/* Mobile Drawer Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[140] lg:hidden transition-opacity duration-300" 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[140] lg:hidden transition-opacity duration-500 ease-in-out" 
           onClick={() => setIsSidebarOpen(false)} 
         />
       )}
 
       {/* Sidebar - Architectural Navigation */}
-      <aside className={`fixed inset-y-0 left-0 bg-white border-r border-stone-200 z-[150] transform transition-all duration-300 cubic-bezier(0.16, 1, 0.3, 1) lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDesktopSidebarOpen ? 'lg:w-80' : 'lg:w-0 lg:overflow-hidden lg:border-r-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 bg-white border-r border-stone-200 z-[150] transform transition-transform duration-500 ease-in-out w-80 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDesktopSidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}`}>
         <div className="h-20 flex items-center justify-between px-8 border-b border-stone-200 min-w-[20rem]">
           <div className="flex items-center gap-4">
             {/* Logo Placeholder - Removed Icon, Text Only */}
@@ -178,7 +252,7 @@ const AppContent: React.FC = () => {
               {menuItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }}
+                  onClick={() => handleSelectSection(item.id)}
                   className={`w-full flex items-center gap-4 px-4 py-3 border-l-2 transition-all duration-200 group ${
                     activeTab === item.id 
                       ? 'border-black text-black bg-stone-50' 
@@ -194,15 +268,19 @@ const AppContent: React.FC = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-8 border-t border-stone-200 bg-white min-w-[20rem]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
               <div className={`w-2 h-2 rounded-full ${cloudStatus === 'connected' ? 'bg-green-500' : 'bg-black'}`} />
               <span className={`text-[10px] font-bold uppercase tracking-widest ${cloudStatus === 'connected' ? 'text-green-600' : 'text-stone-400'}`}>
                 {cloudStatus === 'connected' ? 'Online' : 'Offline'}
               </span>
-            </div>
-            <button 
-                onClick={() => setShowSettings(true)}
+              </div>
+              <button 
+                onClick={() => { 
+                  setShowSettings(true);
+                  setIsSidebarOpen(false);
+                  setIsDesktopSidebarOpen(false);
+                }}
                 className="p-2 -mr-2 text-stone-400 hover:text-black transition-colors"
                 title="Configuración"
             >

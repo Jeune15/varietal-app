@@ -133,7 +133,7 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
       {/* Modal Optimizado - Architectural Style */}
       {showModal && (
         <div 
-          className="fixed inset-0 bg-white/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-white/80 backdrop-blur-md z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300"
           onClick={() => setShowModal(false)}
         >
           <div 
