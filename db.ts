@@ -127,6 +127,44 @@ export async function syncToCloud(table: string, data: any) {
 
 export async function pullFromCloud() {
   if (!supabase) return false;
+  
+  // 1. Check for global reset signal first
+  try {
+    const { data: resets } = await supabase
+      .from('history')
+      .select('*')
+      .eq('type', 'SYSTEM_RESET')
+      .order('date', { ascending: false })
+      .limit(1);
+
+    if (resets && resets.length > 0) {
+      const lastReset = resets[0];
+      const lastProcessed = localStorage.getItem('varietal_last_reset_processed');
+      
+      // If we haven't processed this reset yet, wipe local data
+      if (!lastProcessed || new Date(lastReset.date) > new Date(lastProcessed)) {
+        console.warn('GLOBAL RESET SIGNAL DETECTED. Wiping local database...');
+        
+        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles], async () => {
+          await db.greenCoffees.clear();
+          await db.roasts.clear();
+          await db.orders.clear();
+          await db.roastedStocks.clear();
+          await db.retailBags.clear();
+          await db.history.clear();
+          await db.expenses.clear();
+          await db.productionInventory.clear();
+          await db.profiles.clear();
+        });
+        
+        localStorage.setItem('varietal_last_reset_processed', lastReset.date);
+        console.log('Local database wiped successfully.');
+      }
+    }
+  } catch (err) {
+    console.error('Error checking for reset signal:', err);
+  }
+
   const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles'];
   let success = true;
 
@@ -309,6 +347,23 @@ export async function resetDatabase(excludeUserId?: string) {
       } catch (e) {
         console.error(`Exception clearing cloud table ${table}:`, e);
       }
+    }
+
+    // Broadcast Global Reset Signal
+    try {
+      const resetId = typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        
+      await supabase.from('history').insert({
+        id: resetId,
+        type: 'SYSTEM_RESET',
+        date: new Date().toISOString(),
+        details: { initiatedBy: excludeUserId || 'unknown' }
+      });
+      console.log('Global reset signal broadcasted.');
+    } catch (err) {
+      console.error('Error broadcasting reset signal:', err);
     }
   }
 }

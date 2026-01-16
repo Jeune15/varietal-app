@@ -87,7 +87,8 @@ export type ProductionActivityType =
   | 'Armado de Pedido' 
   | 'Selección de Café' 
   | 'Armado de Bolsas Retail' 
-  | 'Despacho de Pedido';
+  | 'Despacho de Pedido'
+  | 'SYSTEM_RESET';
 
 export interface ProductionActivity {
   id: string;
