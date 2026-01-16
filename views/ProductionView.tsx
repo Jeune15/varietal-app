@@ -55,7 +55,8 @@ const ProductionView: React.FC<Props> = ({
     packagingType: 'bags' as 'bags' | 'grainpro',
     merma: 0, 
     bagType: '250g' as '250g' | '500g' | '1kg',
-    shippingCost: 0
+    shippingCost: 0,
+    markOrderReady: false
   });
 
   // Inventory Modal State
@@ -79,7 +80,8 @@ const ProductionView: React.FC<Props> = ({
       packagingType: 'bags',
       merma: 0, 
       bagType: '250g',
-      shippingCost: 0
+      shippingCost: 0,
+      markOrderReady: false
     });
   };
 
@@ -174,19 +176,14 @@ const ProductionView: React.FC<Props> = ({
       const selectedStock = stocks.find(s => s.id === selectedStockId);
 
       if (order && selectedStock) {
-        // Validate stock
-        // For Service Orders, quantityKg is Green Coffee, so it will always be > Roasted Stock.
-        // We skip this check for Service Orders, assuming we are packing whatever was roasted.
         const isServiceOrder = order.type === 'Servicio de Tueste';
+        const markReady = additionalInfo.markOrderReady;
         
         if (!isServiceOrder && order.quantityKg > selectedStock.remainingQtyKg) {
           showToast(`Stock insuficiente en el lote seleccionado. Disponible: ${selectedStock.remainingQtyKg.toFixed(2)} Kg`, 'error');
           return;
         }
 
-        // Deduct from stock
-        // For Service Orders, we consume the entire selected stock batch (as it belongs to the client)
-        // For Sales, we consume the order quantity
         const deductionQty = isServiceOrder ? selectedStock.remainingQtyKg : order.quantityKg;
         const newRemaining = selectedStock.remainingQtyKg - deductionQty;
         
@@ -197,23 +194,32 @@ const ProductionView: React.FC<Props> = ({
            }
         } else {
            const updatedStock = { 
-             ...selectedStock, 
-             remainingQtyKg: newRemaining
+            ...selectedStock, 
+            remainingQtyKg: newRemaining
            };
            await db.roastedStocks.update(selectedStock.id, { remainingQtyKg: updatedStock.remainingQtyKg });
            await syncToCloud('roastedStocks', updatedStock);
         }
 
-        // Update Order
         const bagsUsed = additionalInfo.bagsUsed;
 
-        const updates = { 
-          progress: 100, // Assuming full fulfillment
-          status: 'Listo para Despacho' as const, 
-          bagsUsed, 
+        const updates: Partial<Order> = { 
+          bagsUsed: (order.bagsUsed || 0) + bagsUsed, 
           packagingType: additionalInfo.packagingType,
           fulfilledFromStockId: selectedStock.id
         };
+
+        if (!isServiceOrder) {
+          updates.progress = 100;
+          updates.status = 'Listo para Despacho';
+        } else {
+          if (markReady) {
+            updates.status = 'Listo para Despacho';
+            updates.progress = 100;
+          } else if (order.status === 'Pendiente') {
+            updates.status = 'En Producción';
+          }
+        }
         
         await db.orders.update(order.id, updates);
         await syncToCloud('orders', { ...order, ...updates });
@@ -251,17 +257,44 @@ const ProductionView: React.FC<Props> = ({
       }
     }
 
+    const orderForActivity = orders.find(o => o.id === selectedOrderId) || null;
+    const stockForActivity = stocks.find(s => s.id === selectedStockId) || null;
+
     const newActivity: ProductionActivity = {
       id: Math.random().toString(36).substr(2, 9),
       type: activeMode,
       date: new Date().toISOString(),
-      details: { selectedOrderId, selectedStockId, productionValue, ...additionalInfo }
+      details: { 
+        selectedOrderId, 
+        selectedStockId, 
+        productionValue, 
+        ...additionalInfo,
+        orderType: orderForActivity?.type,
+        orderClientName: orderForActivity?.clientName,
+        stockVariety: stockForActivity?.variety,
+        stockClientName: stockForActivity?.clientName
+      }
     };
     
+    await db.history.add(newActivity);
+    await syncToCloud('history', newActivity);
+
     setHistory(prev => [...prev, newActivity]);
     
     showToast('Operación registrada exitosamente', 'success');
-    resetForm();
+    
+    if (activeMode === 'Armado de Pedido') {
+      setSelectedStockId('');
+      setProductionValue(0);
+      setAdditionalInfo(prev => ({
+        ...prev,
+        bagsUsed: 0,
+        merma: 0,
+        shippingCost: 0
+      }));
+    } else {
+      resetForm();
+    }
   };
 
   const handleSaveProdItem = async (e: React.FormEvent) => {
@@ -302,6 +335,9 @@ const ProductionView: React.FC<Props> = ({
     await db.productionInventory.update(id, { quantity: validatedQty });
     await syncToCloud('productionInventory', updated);
   };
+
+  const selectedOrderSummary = orders.find(o => o.id === selectedOrderId) || null;
+  const selectedStockSummary = stocks.find(s => s.id === selectedStockId) || null;
 
   return (
     <div className="space-y-12">
@@ -368,12 +404,68 @@ const ProductionView: React.FC<Props> = ({
                       <option value="">-- Elija un pedido activo --</option>
                       {orders.filter(o => {
                         if (activeMode === 'Despacho de Pedido') return o.status === 'Listo para Despacho';
-                        if (activeMode === 'Armado de Pedido') return o.status === 'En Producción' || o.status === 'Pendiente';
+                        if (activeMode === 'Armado de Pedido') {
+                          if (o.type === 'Servicio de Tueste') {
+                            return o.status === 'En Producción' || o.status === 'Pendiente' || o.status === 'Listo para Despacho';
+                          }
+                          return o.status === 'En Producción' || o.status === 'Pendiente';
+                        }
                         return false;
                       }).map(o => (
-                        <option key={o.id} value={o.id}>{o.clientName} — {o.variety} ({o.quantityKg}Kg) — [{o.status}]</option>
+                        <option key={o.id} value={o.id}>
+                          {o.clientName} — {o.orderLines && o.orderLines.length > 0 ? 'Múltiples cafés' : o.variety} ({o.quantityKg}Kg) — {o.type === 'Servicio de Tueste' ? 'Servicio' : 'Venta'} — [{o.status}]
+                        </option>
                       ))}
                     </select>
+                    {stocks.filter(s => s.remainingQtyKg > 0).filter(s => {
+                      if (activeMode === 'Armado de Pedido' && selectedOrderId) {
+                        const order = orders.find(o => o.id === selectedOrderId);
+                        if (order) {
+                          if (order.type === 'Servicio de Tueste') return true;
+                          return s.clientName === order.clientName || s.clientName === 'Stock';
+                        }
+                      }
+                      return true;
+                    }).length === 0 && (
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-medium">
+                        No hay café tostado disponible para este pedido. Si tiene café verde en silos, asegúrese de tostarlo primero en la sección "Tueste".
+                      </div>
+                    )}
+                  </div>
+                )}
+                {selectedOrderSummary && selectedStockSummary && (
+                  <div className="bg-stone-50 border border-stone-200 p-4 flex flex-col gap-2">
+                    <div className="flex justify-between text-xs">
+                      <div>
+                        <p className="font-bold uppercase tracking-widest text-stone-500">Pedido</p>
+                        <p className="font-bold text-black">
+                          {selectedOrderSummary.clientName}
+                        </p>
+                        <p className="text-[11px] text-stone-500">
+                          {selectedOrderSummary.orderLines && selectedOrderSummary.orderLines.length > 0 ? 'Múltiples cafés' : selectedOrderSummary.variety}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold uppercase tracking-widest text-stone-500">Cantidad Pedido</p>
+                        <p className="font-black text-sm">
+                          {selectedOrderSummary.quantityKg} Kg
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2">
+                      <div>
+                        <p className="font-bold uppercase tracking-widest text-stone-500">Lote Tostado</p>
+                        <p className="font-bold text-black">
+                          {selectedStockSummary.variety} ({selectedStockSummary.clientName})
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold uppercase tracking-widest text-stone-500">Disponible</p>
+                        <p className="font-black text-sm">
+                          {selectedStockSummary.remainingQtyKg.toFixed(2)} Kg
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {['Selección de Café', 'Armado de Bolsas Retail', 'Armado de Pedido'].includes(activeMode) && (
@@ -381,7 +473,15 @@ const ProductionView: React.FC<Props> = ({
                     <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Existencias de Café (Origen)</label>
                     <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none" value={selectedStockId} onChange={e => setSelectedStockId(e.target.value)}>
                       <option value="">-- Elija un lote tostado --</option>
-                      {stocks.filter(s => s.remainingQtyKg > 0).map(s => (
+                      {stocks
+                        .filter(s => s.remainingQtyKg > 0)
+                        .filter(s => {
+                          if (activeMode === 'Armado de Pedido' && selectedOrderId) {
+                            return true;
+                          }
+                          return true;
+                        })
+                        .map(s => (
                         <option key={s.id} value={s.id}>
                           {s.variety} ({s.clientName}) — Disp: {s.remainingQtyKg.toFixed(2)} Kg
                           {s.isSelected ? ' [Seleccionado]' : ''}
@@ -431,6 +531,7 @@ const ProductionView: React.FC<Props> = ({
                         <input 
                           type="number" 
                           min="1" 
+                          step="1"
                           required
                           className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" 
                           value={additionalInfo.bagsUsed || ''} 
@@ -440,9 +541,27 @@ const ProductionView: React.FC<Props> = ({
                       </div>
                     )}
                     
+                    {selectedOrderId && orders.find(o => o.id === selectedOrderId)?.type === 'Servicio de Tueste' && (
+                      <div className="flex items-center gap-3">
+                        <input
+                          id="mark-ready"
+                          type="checkbox"
+                          className="w-4 h-4 border-stone-300"
+                          checked={additionalInfo.markOrderReady}
+                          onChange={e => setAdditionalInfo({ ...additionalInfo, markOrderReady: e.target.checked })}
+                        />
+                        <label htmlFor="mark-ready" className="text-xs font-bold text-stone-700 uppercase tracking-widest">
+                          Marcar pedido listo para despacho
+                        </label>
+                      </div>
+                    )}
+                    
                     <div className="bg-stone-50 p-6 border border-stone-200 flex gap-4 items-center">
                         <CheckCircle className="w-5 h-5 text-black" />
-                        <p className="text-xs text-stone-600 font-medium leading-relaxed">Al guardar, se descontará el peso del pedido del inventario seleccionado y se marcará como Listo para Despacho.</p>
+                        <p className="text-xs text-stone-600 font-medium leading-relaxed">
+                          Al guardar, se descontará café del lote seleccionado y se actualizará el estado del pedido. 
+                          Los pedidos de venta se marcarán como Listo para Despacho automáticamente; los servicios de tueste pueden registrarse en varias tandas antes de despachar.
+                        </p>
                     </div>
                   </div>
                 )}
@@ -454,7 +573,7 @@ const ProductionView: React.FC<Props> = ({
                     <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Formato Bolsa</label><select className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold appearance-none rounded-none" value={additionalInfo.bagType} onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}>
                       <option value="250g">250g</option><option value="500g">500g</option><option value="1kg">1kg</option>
                     </select></div>
-                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Unidades</label><input type="number" min="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value))} /></div>
+                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Unidades</label><input type="number" min="1" step="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value) || 0)} /></div>
                   </div>
                 )}
                 {activeMode === 'Despacho de Pedido' && (
@@ -466,6 +585,7 @@ const ProductionView: React.FC<Props> = ({
                         <input 
                           type="number" 
                           min="0" 
+                          step="0.01"
                           className="w-full pl-8 pr-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" 
                           value={additionalInfo.shippingCost || ''} 
                           onChange={e => setAdditionalInfo({...additionalInfo, shippingCost: parseFloat(e.target.value) || 0})}

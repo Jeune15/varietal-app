@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Database, Users, Shield, CheckCircle, AlertTriangle, RefreshCw, UploadCloud } from 'lucide-react';
-import { initSupabase, db, syncToCloud, getSupabase, pushToCloud, pullFromCloud } from '../db';
+import { X, Save, Database, Users, Shield, CheckCircle, AlertTriangle, RefreshCw, UploadCloud, Trash2, HardDrive } from 'lucide-react';
+import { initSupabase, db, syncToCloud, getSupabase, pushToCloud, pullFromCloud, resetDatabase } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { UserProfile, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,8 +12,8 @@ interface Props {
 }
 
 const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { isAdmin, refreshSession } = useAuth();
-  const [activeTab, setActiveTab] = useState<'connection' | 'users'>('connection');
+  const { isAdmin, refreshSession, user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'connection' | 'users' | 'system'>('connection');
   
   // Connection State
   const [url, setUrl] = useState('');
@@ -83,6 +83,13 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     await syncToCloud('profiles', updated);
   };
 
+  const handleReset = async () => {
+    if (confirm('ATENCIÓN: Esto eliminará TODOS los datos de la base de datos (local y nube si está conectada). ¿Estás seguro?')) {
+      await resetDatabase(user?.id);
+      window.location.reload();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -107,6 +114,12 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${activeTab === 'connection' ? 'bg-stone-100 text-black' : 'text-stone-400 hover:text-black'}`}
           >
             <Database className="w-4 h-4" /> Conexión
+          </button>
+          <button 
+            onClick={() => setActiveTab('system')}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${activeTab === 'system' ? 'bg-stone-100 text-black' : 'text-stone-400 hover:text-black'}`}
+          >
+            <HardDrive className="w-4 h-4" /> Sistema / Datos
           </button>
           {isAdmin && (
             <button 
@@ -187,6 +200,37 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     Use esto si nota discrepancias entre dispositivos. <br/>
                     <span className="text-amber-600 font-bold">Nota:</span> Si falla, es probable que deba actualizar el esquema de la base de datos en Supabase.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'system' && (
+            <div className="space-y-6">
+              <div className="bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-red-600 font-medium leading-relaxed">
+                  Zona de peligro. Las acciones aquí son irreversibles y afectarán a todos los datos de la aplicación.
+                </p>
+              </div>
+
+              <div className="border border-stone-200 p-6 bg-white">
+                <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Database className="w-3 h-3" /> Gestión de Datos
+                </h4>
+                
+                <p className="text-xs text-stone-500 mb-6 leading-relaxed">
+                  Si necesita reiniciar la aplicación por completo, puede eliminar todos los datos. 
+                  Esto borrará inventario, tuestes, pedidos y configuración local.
+                  Si está conectado a la nube, también se borrarán los datos remotos.
+                </p>
+
+                <button 
+                  onClick={handleReset}
+                  className="w-full flex items-center justify-center gap-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 uppercase tracking-widest px-4 py-4 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar todos los datos
+                </button>
               </div>
             </div>
           )}

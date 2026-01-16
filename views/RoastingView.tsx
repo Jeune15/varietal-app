@@ -97,9 +97,10 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
   };
 
   // Filter orders needing roasting (pending or processing)
-  // We exclude orders that are technically complete but haven't updated status yet
+  // Exclude orders marcados como que no requieren tueste o ya completos
   const pendingOrders = orders.filter(o => 
     (o.status === 'Pendiente' || o.status === 'En Producción') && 
+    (o.requiresRoasting ?? true) &&
     !checkOrderCompletion(o)
   );
 
@@ -133,23 +134,32 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
             }
 
             if (isComplete) {
-                console.log('Auto-completing stuck order:', order.clientName);
-                const updates: Partial<Order> = { 
-                    progress: 100,
-                    accumulatedGreenUsedKg: greenUsed,
-                    accumulatedRoastedKg: roastedUsed
-                };
+                const needsAccumulatedUpdate = 
+                  greenUsed !== (order.accumulatedGreenUsedKg || 0) || 
+                  roastedUsed !== (order.accumulatedRoastedKg || 0);
+                const needsProgressUpdate = order.progress !== 100;
 
-                // Only auto-complete to 'Listo para Despacho' if NOT a service order
-                // Service orders must go through "Armado de Pedido"
-                if (!isServiceOrder) {
-                    updates.status = 'Listo para Despacho';
+                let needsStatusUpdate = false;
+                if (!isServiceOrder && order.status !== 'Listo para Despacho') {
+                    needsStatusUpdate = true;
                 }
 
-                await db.orders.update(order.id, updates);
-                syncToCloud('orders', { ...order, ...updates });
-                if (!isServiceOrder) {
-                    showToast(`Pedido ${order.clientName} actualizado automáticamente`, 'success');
+                if (needsAccumulatedUpdate || needsProgressUpdate || needsStatusUpdate) {
+                    const updates: Partial<Order> = { 
+                        progress: 100,
+                        accumulatedGreenUsedKg: greenUsed,
+                        accumulatedRoastedKg: roastedUsed
+                    };
+
+                    if (!isServiceOrder && needsStatusUpdate) {
+                        updates.status = 'Listo para Despacho';
+                    }
+
+                    await db.orders.update(order.id, updates);
+                    syncToCloud('orders', { ...order, ...updates });
+                    if (!isServiceOrder) {
+                        showToast(`Pedido ${order.clientName} actualizado automáticamente`, 'success');
+                    }
                 }
             }
         }
@@ -308,14 +318,26 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
     setSelectedOrderId('');
   };
 
-  // Calculate shrinkage
   const shrinkage = greenQtyKg > 0 ? ((greenQtyKg - roastedQtyKg) / greenQtyKg) * 100 : 0;
+
+  const selectedOrderForRoast = pendingOrders.find(o => o.id === selectedOrderId) || null;
 
   const sortedRoasts = useMemo(() => {
     return [...roasts].sort((a, b) => new Date(b.roastDate).getTime() - new Date(a.roastDate).getTime());
   }, [roasts]);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
-  const displayedRoasts = activeTab === 'queue' ? sortedRoasts.slice(0, 10) : sortedRoasts;
+  const totalPages = useMemo(
+    () =>
+      rowsPerPage > 0 ? Math.max(1, Math.ceil(sortedRoasts.length / rowsPerPage)) : 1,
+    [sortedRoasts, rowsPerPage]
+  );
+
+  const displayedRoasts =
+    activeTab === 'queue'
+      ? sortedRoasts.slice(0, 10)
+      : sortedRoasts.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   return (
     <div className="bg-white min-h-screen text-black font-sans p-8 animate-fade-in">
@@ -413,14 +435,32 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                   
                   <div className="flex items-center gap-2 mb-4 text-stone-600 flex-wrap">
                     <Flame className="w-3 h-3" />
-                    <span className="text-xs font-bold uppercase tracking-wider">{order.variety}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      {order.orderLines && order.orderLines.length > 0 ? 'Múltiples cafés' : order.variety}
+                    </span>
                     {order.roastType && (
-                        <>
+                      <>
                         <span className="text-stone-300">|</span>
                         <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">{order.roastType}</span>
-                        </>
+                      </>
                     )}
                   </div>
+
+                  {order.orderLines && order.orderLines.length > 0 && (
+                    <div className="mb-3 space-y-1 text-[10px] text-stone-600 font-mono">
+                      {order.orderLines.slice(0, 4).map(line => (
+                        <div key={line.id} className="flex justify-between">
+                          <span>{line.variety}</span>
+                          <span>{line.quantityKg.toFixed(2)} Kg</span>
+                        </div>
+                      ))}
+                      {order.orderLines.length > 4 && (
+                        <div className="text-[9px] text-stone-400">
+                          +{order.orderLines.length - 4} más
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3 bg-stone-50 p-3 rounded-lg border border-stone-100 mb-4">
                     <div>
@@ -551,6 +591,47 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
               </tbody>
             </table>
           </div>
+          {activeTab === 'history' && sortedRoasts.length > 0 && (
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-stone-100 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-stone-500 uppercase tracking-widest">Mostrar</span>
+                <select
+                  value={rowsPerPage}
+                  onChange={e => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-stone-200 bg-white px-2 py-1 text-xs font-bold uppercase tracking-widest focus:border-black outline-none"
+                >
+                  <option value={10}>10</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-stone-400 uppercase tracking-widest">registros</span>
+              </div>
+              <div className="flex items-center gap-3 justify-between md:justify-end">
+                <span className="text-stone-500 font-mono">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className="px-2 py-1 border border-stone-200 text-stone-500 hover:border-black hover:text-black disabled:opacity-40 disabled:hover:border-stone-200 disabled:hover:text-stone-500 transition-colors"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className="px-2 py-1 border border-stone-200 text-stone-500 hover:border-black hover:text-black disabled:opacity-40 disabled:hover:border-stone-200 disabled:hover:text-stone-500 transition-colors"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -632,7 +713,6 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                 </span>
               </div>
 
-              {/* Profile & Order */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider mb-2">Perfil / Notas</label>
@@ -658,6 +738,23 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                       </option>
                     ))}
                   </select>
+                  {selectedOrderForRoast && (
+                    <div className="mt-3 text-[11px] text-stone-600 bg-stone-50 border border-stone-200 p-3">
+                      <div className="flex justify-between">
+                        <span className="font-bold">
+                          {selectedOrderForRoast.clientName}
+                        </span>
+                        <span className="font-mono">
+                          {selectedOrderForRoast.quantityKg.toFixed(2)} Kg
+                        </span>
+                      </div>
+                      <div className="mt-1">
+                        <span className="uppercase">
+                          {selectedOrderForRoast.orderLines && selectedOrderForRoast.orderLines.length > 0 ? 'Múltiples cafés' : selectedOrderForRoast.variety}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

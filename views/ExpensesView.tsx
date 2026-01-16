@@ -13,7 +13,8 @@ export const ExpensesView = () => {
     amount: '',
     documentType: 'Factura' as 'Factura' | 'Boleta',
     documentId: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    type: 'envio' as 'envio' | 'compra'
   });
 
   // Only show pending expenses as per "eliminen al pagar" request (interpreted as filter)
@@ -37,8 +38,8 @@ export const ExpensesView = () => {
       id: Math.random().toString(36).substr(2, 9),
       reason: formData.reason,
       amount: parseFloat(formData.amount),
-      documentType: formData.documentType,
-      documentId: formData.documentId,
+      documentType: formData.type === 'compra' ? formData.documentType : undefined,
+      documentId: formData.type === 'compra' ? formData.documentId : '',
       date: formData.date,
       status: 'pending'
     };
@@ -52,7 +53,8 @@ export const ExpensesView = () => {
       amount: '',
       documentType: 'Factura',
       documentId: '',
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
+      type: 'envio'
     });
   };
 
@@ -193,6 +195,7 @@ export const ExpensesView = () => {
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                   <input
                     type="number"
+                    step="0.01"
                     value={formData.amount}
                     onChange={e => setFormData({...formData, amount: e.target.value})}
                     className="w-full pl-9 p-3 bg-stone-50 border border-stone-200 focus:border-black focus:ring-0 transition-all font-bold text-lg"
@@ -200,6 +203,36 @@ export const ExpensesView = () => {
                     min="0"
                     required
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Tipo de Gasto</label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: 'envio' })}
+                      className={`flex-1 px-3 py-2 text-[11px] font-bold uppercase tracking-widest border ${
+                        formData.type === 'envio'
+                          ? 'bg-black text-white border-black'
+                          : 'bg-stone-50 text-stone-500 border-stone-200 hover:border-black hover:text-black'
+                      }`}
+                    >
+                      Envío
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: 'compra' })}
+                      className={`flex-1 px-3 py-2 text-[11px] font-bold uppercase tracking-widest border ${
+                        formData.type === 'compra'
+                          ? 'bg-black text-white border-black'
+                          : 'bg-stone-50 text-stone-500 border-stone-200 hover:border-black hover:text-black'
+                      }`}
+                    >
+                      Compra
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -214,29 +247,33 @@ export const ExpensesView = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Tipo Doc.</label>
-                  <select
-                    value={formData.documentType}
-                    onChange={e => setFormData({...formData, documentType: e.target.value as 'Factura' | 'Boleta'})}
-                    className="w-full p-3 bg-stone-50 border border-stone-200 focus:border-black focus:ring-0 transition-all text-sm font-bold"
-                  >
-                    <option value="Factura">Factura</option>
-                    <option value="Boleta">Boleta</option>
-                  </select>
-                </div>
+                {formData.type === 'compra' && (
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Tipo Doc.</label>
+                    <select
+                      value={formData.documentType}
+                      onChange={e => setFormData({...formData, documentType: e.target.value as 'Factura' | 'Boleta'})}
+                      className="w-full p-3 bg-stone-50 border border-stone-200 focus:border-black focus:ring-0 transition-all text-sm font-bold"
+                    >
+                      <option value="Factura">Factura</option>
+                      <option value="Boleta">Boleta</option>
+                    </select>
+                  </div>
+                )}
               </div>
               
-              <div>
-                <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Nº Documento</label>
-                <input
-                  type="text"
-                  value={formData.documentId}
-                  onChange={e => setFormData({...formData, documentId: e.target.value})}
-                  className="w-full p-3 bg-stone-50 border border-stone-200 focus:border-black focus:ring-0 transition-all font-bold"
-                  placeholder="Opcional"
-                />
-              </div>
+              {formData.type === 'compra' && (
+                <div>
+                  <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Nº Documento</label>
+                  <input
+                    type="text"
+                    value={formData.documentId}
+                    onChange={e => setFormData({...formData, documentId: e.target.value})}
+                    className="w-full p-3 bg-stone-50 border border-stone-200 focus:border-black focus:ring-0 transition-all font-bold"
+                    placeholder="Opcional"
+                  />
+                </div>
+              )}
 
               <div className="pt-4 border-t border-stone-100 flex justify-end gap-3">
                 <button

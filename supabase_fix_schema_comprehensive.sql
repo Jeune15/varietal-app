@@ -122,6 +122,9 @@ alter table "roasts" add column if not exists "orderId" text;
 -- Roasted Stocks
 alter table "roastedStocks" add column if not exists "mermaGrams" numeric default 0;
 
+-- History
+alter table "history" add column if not exists "details" jsonb;
+
 -- Expenses
 alter table "expenses" add column if not exists "relatedOrderId" text;
 

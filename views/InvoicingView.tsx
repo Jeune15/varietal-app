@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../db';
-import { Order, Roast, RoastedStock } from '../types';
+import { Order, Roast, RoastedStock, ProductionActivity } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { FileText, CheckCircle, Search, X, Printer, Download, Coffee, Scale, DollarSign, Receipt, ArrowRight } from 'lucide-react';
 import ExpensesView from './ExpensesView';
@@ -17,6 +18,8 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [showPendingReport, setShowPendingReport] = useState(false);
+
+  const history = useLiveQuery(() => db.history.toArray() as Promise<ProductionActivity[]>) || [];
 
   const shippedOrders = orders.filter(o => o.status === 'Enviado' || o.status === 'Facturado');
   const pendingOrders = orders.filter(o => o.status === 'Enviado');
@@ -51,6 +54,11 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
       if (stockRoast) relatedRoasts = [stockRoast];
     }
     
+    const activitiesForOrder = history.filter(a => {
+      const details: any = a.details || {};
+      return details.selectedOrderId === order.id;
+    });
+
     return {
       roasts: relatedRoasts,
       stock,
@@ -58,7 +66,8 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
       totalRoasted: relatedRoasts.reduce((sum, r) => sum + r.roastedQtyKg, 0),
       avgRoastLoss: relatedRoasts.length > 0 
         ? relatedRoasts.reduce((sum, r) => sum + r.weightLossPercentage, 0) / relatedRoasts.length 
-        : 0
+        : 0,
+      activities: activitiesForOrder
     };
   };
 
@@ -293,6 +302,42 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
                         </table>
                       ) : (
                         <p className="text-stone-400 italic text-sm border border-dashed border-stone-300 p-4 text-center">Sin datos de tueste vinculados</p>
+                      )}
+
+                      {trace.activities && trace.activities.length > 0 && (
+                        <div className="mt-6">
+                          <h5 className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-2">Actividades de Producción</h5>
+                          <table className="w-full text-xs border-collapse border border-stone-200">
+                            <thead>
+                              <tr className="bg-stone-100 print:bg-stone-50">
+                                <th className="p-2 text-left font-bold border border-stone-200 uppercase">Fecha</th>
+                                <th className="p-2 text-left font-bold border border-stone-200 uppercase">Actividad</th>
+                                <th className="p-2 text-left font-bold border border-stone-200 uppercase">Lote</th>
+                                <th className="p-2 text-right font-bold border border-stone-200 uppercase">Detalle</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {trace.activities.map((a: ProductionActivity) => {
+                                const details: any = a.details || {};
+                                const date = a.date.split('T')[0];
+                                const packaging =
+                                  details.packagingType === 'grainpro'
+                                    ? `GrainPro x${details.bagsUsed || 0}`
+                                    : details.packagingType === 'bags'
+                                    ? `Bolsas x${details.bagsUsed || 0}`
+                                    : '';
+                                return (
+                                  <tr key={a.id}>
+                                    <td className="p-2 border border-stone-200 font-medium">{date}</td>
+                                    <td className="p-2 border border-stone-200 font-medium">{a.type}</td>
+                                    <td className="p-2 border border-stone-200 font-medium">{details.stockVariety || '—'}</td>
+                                    <td className="p-2 border border-stone-200 text-right font-medium">{packaging || '—'}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
                   );

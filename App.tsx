@@ -45,6 +45,7 @@ const AppContent: React.FC = () => {
   const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [stockTab, setStockTab] = useState<'green' | 'roasted'>('green');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -66,6 +67,8 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Initial check for cloud status
     let unsubscribe: () => void;
+
+    if (loading) return;
 
     const checkCloud = async () => {
         const supabase = getSupabase();
@@ -90,7 +93,7 @@ const AppContent: React.FC = () => {
     return () => {
         if (unsubscribe) unsubscribe();
     };
-  }, [user, showSettings]); // Re-check when settings close or user changes
+  }, [user, loading]); // Only re-check when user changes and auth is ready
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -209,11 +212,10 @@ const AppContent: React.FC = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
-    { id: 'green', label: 'Inventario Verde', icon: Coffee },
-    { id: 'inventory', label: 'Inventario Tostado', icon: Package },
+    { id: 'stock', label: 'Stock', icon: Package },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList },
     { id: 'roasting', label: 'Tostado', icon: Flame },
-    { id: 'production', label: 'Producción', icon: Settings2 }, // Changed icon to differentiate from App Settings
+    { id: 'production', label: 'Producción', icon: Settings2 },
     { id: 'invoicing', label: 'Facturación', icon: Receipt },
   ];
 
@@ -354,9 +356,51 @@ const AppContent: React.FC = () => {
           <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto">
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               {activeTab === 'dashboard' ? (
-                <DashboardView green={greenCoffees} roasts={roasts} orders={orders} />
-              ) : activeTab === 'green' ? (
-                <GreenCoffeeView coffees={greenCoffees} setCoffees={() => {}} />
+                <DashboardView 
+                  green={greenCoffees} 
+                  roasts={roasts} 
+                  orders={orders} 
+                  onNavigate={(tabId) => setActiveTab(tabId)} 
+                />
+              ) : activeTab === 'stock' ? (
+                <div className="space-y-8">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black pb-6">
+                    <div>
+                      <h2 className="text-3xl font-black text-black uppercase tracking-tighter">Stock</h2>
+                      <p className="text-stone-500 font-mono text-xs uppercase tracking-widest">
+                        Inventario verde y tostado
+                      </p>
+                    </div>
+                    <div className="flex gap-4 mt-2 md:mt-0">
+                      <button
+                        onClick={() => setStockTab('green')}
+                        className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
+                          stockTab === 'green'
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black'
+                        }`}
+                      >
+                        <Coffee className="w-4 h-4" /> Café Verde
+                      </button>
+                      <button
+                        onClick={() => setStockTab('roasted')}
+                        className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
+                          stockTab === 'roasted'
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black'
+                        }`}
+                      >
+                        <Package className="w-4 h-4" /> Café Tostado
+                      </button>
+                    </div>
+                  </div>
+
+                  {stockTab === 'green' ? (
+                    <GreenCoffeeView coffees={greenCoffees} setCoffees={() => {}} />
+                  ) : (
+                    <InventoryView stocks={roastedStocks} retailBags={retailBags} setRetailBags={() => {}} />
+                  )}
+                </div>
               ) : activeTab === 'roasting' ? (
                 <RoastingView 
                   roasts={roasts} 
@@ -365,8 +409,6 @@ const AppContent: React.FC = () => {
                 />
               ) : activeTab === 'orders' ? (
                 <OrdersView orders={orders} />
-              ) : activeTab === 'inventory' ? (
-                <InventoryView stocks={roastedStocks} retailBags={retailBags} setRetailBags={() => {}} />
               ) : activeTab === 'production' ? (
                 <ProductionView 
                   orders={orders} 

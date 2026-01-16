@@ -33,6 +33,71 @@ export { db };
 
 let supabase: any = null;
 
+const tableColumnWhitelist: Record<string, string[]> = {
+  greenCoffees: ['id', 'clientName', 'variety', 'origin', 'entryDate', 'quantityKg'],
+  roasts: [
+    'id',
+    'greenCoffeeId',
+    'orderId',
+    'clientName',
+    'greenQtyKg',
+    'roastedQtyKg',
+    'weightLossPercentage',
+    'profile',
+    'roastDate'
+  ],
+  orders: [
+    'id',
+    'clientName',
+    'variety',
+    'type',
+    'quantityKg',
+    'entryDate',
+    'dueDate',
+    'status',
+    'progress',
+    'relatedRoastIds',
+    'requiresRoasting',
+    'roastType',
+    'accumulatedRoastedKg',
+    'accumulatedGreenUsedKg',
+    'packagingType',
+    'bagsUsed',
+    'sortingLossKg',
+    'fulfilledFromStockId',
+    'shippedDate',
+    'shippingCost',
+    'invoicedDate'
+  ],
+  roastedStocks: [
+    'id',
+    'roastId',
+    'variety',
+    'clientName',
+    'totalQtyKg',
+    'remainingQtyKg',
+    'isSelected',
+    'mermaGrams'
+  ],
+  retailBags: ['id', 'coffeeName', 'type', 'quantity'],
+  history: ['id', 'type', 'date', 'details'],
+  expenses: ['id', 'reason', 'amount', 'documentType', 'documentId', 'date', 'status', 'relatedOrderId'],
+  productionInventory: ['id', 'name', 'type', 'quantity', 'minThreshold', 'format'],
+  profiles: ['id', 'email', 'role', 'isActive']
+};
+
+function sanitizeRecord(table: string, record: any) {
+  const allowed = tableColumnWhitelist[table];
+  if (!allowed) return record;
+  const sanitized: any = {};
+  for (const key of allowed) {
+    if (key in record) {
+      sanitized[key] = record[key];
+    }
+  }
+  return sanitized;
+}
+
 export const initSupabase = (url: string, key: string) => {
   if (!url || !key) return null;
   supabase = createClient(url, key);
@@ -52,7 +117,8 @@ export const getSupabase = () => supabase;
 export async function syncToCloud(table: string, data: any) {
   if (!supabase) return;
   try {
-    const { error } = await supabase.from(table).upsert(data);
+    const payload = sanitizeRecord(table, data);
+    const { error } = await supabase.from(table).upsert(payload);
     if (error) throw error;
   } catch (err) {
     console.error(`Error sync ${table}:`, err);
@@ -100,16 +166,15 @@ export async function pushToCloud(): Promise<{ success: boolean; message?: strin
       // @ts-ignore
       const localData = await db[table].toArray();
       if (localData.length > 0) {
-        // Upsert in batches of 50 to avoid payload limits
         const batchSize = 50;
         for (let i = 0; i < localData.length; i += batchSize) {
-            const batch = localData.slice(i, i + batchSize);
-            const { error } = await supabase.from(table).upsert(batch);
-            if (error) {
-                console.error(`Error pushing batch for ${table}:`, error);
-                success = false;
-                errorMessage = `Error en tabla ${table}: ${error.message}`;
-            }
+          const batch = localData.slice(i, i + batchSize).map((record: any) => sanitizeRecord(table, record));
+          const { error } = await supabase.from(table).upsert(batch);
+          if (error) {
+            console.error(`Error pushing batch for ${table}:`, error);
+            success = false;
+            errorMessage = `Error en tabla ${table}: ${error.message}`;
+          }
         }
       }
     } catch (e: any) {
@@ -204,4 +269,46 @@ export function subscribeToChanges() {
   return () => {
     supabase.removeChannel(channel);
   };
+}
+
+export async function resetDatabase(excludeUserId?: string) {
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles'];
+  
+  // Clear local DB
+  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles], async () => {
+      await db.greenCoffees.clear();
+      await db.roasts.clear();
+      await db.orders.clear();
+      await db.roastedStocks.clear();
+      await db.retailBags.clear();
+      await db.history.clear();
+      await db.expenses.clear();
+      await db.productionInventory.clear();
+      await db.profiles.clear();
+  });
+
+  // Clear Cloud DB if connected
+  if (supabase) {
+    for (const table of tables) {
+      try {
+        let query = supabase.from(table).delete();
+        let error;
+
+        if (table === 'profiles' && excludeUserId) {
+             // Delete everyone except the current user to prevent lockout
+             const result = await query.neq('id', excludeUserId);
+             error = result.error;
+        } else {
+             // Use nil UUID to allow deleting all rows (compatible with UUID and Text columns)
+             // Previously caused error 22P02 with "_______" on UUID columns
+             const result = await query.neq('id', '00000000-0000-0000-0000-000000000000'); 
+             error = result.error;
+        }
+
+        if (error) console.error(`Error clearing cloud table ${table}:`, error);
+      } catch (e) {
+        console.error(`Exception clearing cloud table ${table}:`, e);
+      }
+    }
+  }
 }

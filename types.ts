@@ -2,6 +2,12 @@
 export type CoffeeType = 'Verde' | 'Tostado';
 export type OrderType = 'Venta Café Tostado' | 'Servicio de Tueste';
 
+export interface OrderLine {
+  id: string;
+  variety: string;
+  quantityKg: number;
+}
+
 export interface GreenCoffee {
   id: string;
   clientName: string;
@@ -27,29 +33,22 @@ export interface Order {
   id: string;
   clientName: string;
   variety: string;
-  type: OrderType; // Changed from CoffeeType to specific OrderType
+  type: OrderType;
   quantityKg: number;
   entryDate: string;
   dueDate: string;
   status: 'Pendiente' | 'En Producción' | 'Listo para Despacho' | 'Enviado' | 'Facturado';
   progress: number;
-  
-  // Traceability & Production Data
-  relatedRoastIds?: string[]; // Roasts made for this order
-  requiresRoasting?: boolean; // Flag if it needs new roast
-  roastType?: string; // e.g. "Espresso", "Filtrado", "Omni", "Medio"
-  accumulatedRoastedKg?: number; // Total roasted so far for this order
-  accumulatedGreenUsedKg?: number; // Total green coffee used so far (critical for Service Orders)
-  
-  // Packing
+  orderLines?: OrderLine[];
+  relatedRoastIds?: string[];
+  requiresRoasting?: boolean;
+  roastType?: string;
+  accumulatedRoastedKg?: number;
+  accumulatedGreenUsedKg?: number;
   packagingType?: 'bags' | 'grainpro';
   bagsUsed?: number;
-  
-  // Selection/Merma
-  sortingLossKg?: number; // Merma de selección specific to this order/batch
+  sortingLossKg?: number;
   fulfilledFromStockId?: string;
-
-  // Dates
   shippedDate?: string;
   shippingCost?: number;
   invoicedDate?: string;
