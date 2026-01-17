@@ -6,6 +6,12 @@ export interface OrderLine {
   id: string;
   variety: string;
   quantityKg: number;
+  grindType?: 'grano' | 'molido';
+  grindNumber?: number;
+  grindReference?: string;
+  bagsCount?: number;
+  bagSizeGrams?: number;
+  roastProfile?: string;
 }
 
 export interface GreenCoffee {
@@ -35,14 +41,17 @@ export interface Order {
   variety: string;
   type: OrderType;
   quantityKg: number;
+  serviceRoastedQtyKg?: number;
   entryDate: string;
   dueDate: string;
   status: 'Pendiente' | 'En Producción' | 'Listo para Despacho' | 'Enviado' | 'Facturado';
   progress: number;
+  fulfilledKg?: number;
   orderLines?: OrderLine[];
   relatedRoastIds?: string[];
   requiresRoasting?: boolean;
   roastType?: string;
+  defaultGrindType?: 'grano' | 'molido';
   accumulatedRoastedKg?: number;
   accumulatedGreenUsedKg?: number;
   packagingType?: 'bags' | 'grainpro';
@@ -52,6 +61,11 @@ export interface Order {
   shippedDate?: string;
   shippingCost?: number;
   invoicedDate?: string;
+  deliveryAddress?: string;
+  deliveryAddressDetail?: string;
+  isPaused?: boolean;
+  nextActivity?: ProductionActivityType;
+  completedActivities?: ProductionActivityType[];
 }
 
 export interface Expense {
@@ -81,6 +95,9 @@ export interface RetailBagStock {
   coffeeName: string;
   type: '250g' | '500g' | '1kg';
   quantity: number;
+  clientName?: string;
+  roastDate?: string;
+  roastId?: string;
 }
 
 export type ProductionActivityType = 
@@ -104,6 +121,40 @@ export interface ProductionItem {
   quantity: number; // 0-100 for rechargeable, count for unit
   minThreshold: number;
   format?: '250g' | '500g' | '1kg'; // For automatic deduction linkage
+}
+
+export interface CuppingForm {
+  fragranceIntensity: number;
+  fragranceDescriptors: string[];
+  fragranceNotes: string;
+  aromaIntensity: number;
+  aromaDescriptors: string[];
+  aromaNotes: string;
+  flavorIntensity: number;
+  flavorDescriptors: string[];
+  flavorNotes: string;
+  aftertasteIntensity: number;
+  aftertasteDescriptors: string[];
+  aftertasteNotes: string;
+  acidityIntensity: number;
+  acidityNotes: string;
+  sweetnessIntensity: number;
+  sweetnessNotes: string;
+  mouthfeelIntensity: number;
+  mouthfeelDescriptors: string[];
+  mouthfeelNotes: string;
+}
+
+export interface CuppingSession {
+  id: string;
+  roastStockId: string;
+  roastId?: string;
+  coffeeName: string;
+  clientName?: string;
+  tasterName: string;
+  date: string;
+  objective?: string;
+  form: CuppingForm;
 }
 
 export type UserRole = 'admin' | 'editor' | 'viewer';

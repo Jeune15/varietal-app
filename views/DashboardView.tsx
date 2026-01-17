@@ -42,12 +42,25 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
 
   const today = new Date().toISOString().split('T')[0];
 
+  const orderNeedsRoast = (order: Order) => {
+    const isServiceOrder = order.type === 'Servicio de Tueste';
+    const currentAccumulated = order.accumulatedRoastedKg || 0;
+    const currentGreenAccumulated = order.accumulatedGreenUsedKg || 0;
+
+    if (isServiceOrder) {
+      return currentGreenAccumulated < (order.quantityKg - 0.1);
+    }
+
+    return currentAccumulated < (order.quantityKg - 0.1);
+  };
+
   const roastingQueue = useMemo(
     () =>
       orders.filter(
         o =>
           (o.status === 'Pendiente' || o.status === 'En Producción') &&
-          (o.requiresRoasting ?? true)
+          (o.requiresRoasting ?? true) &&
+          orderNeedsRoast(o)
       ),
     [orders]
   );

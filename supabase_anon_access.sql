@@ -15,6 +15,7 @@ ALTER TABLE "roastedStocks" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "retailBags" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "history" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "productionInventory" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "cuppingSessions" ENABLE ROW LEVEL SECURITY;
 
 -- 2. Eliminar políticas existentes para 'anon' si las hubiera (para evitar duplicados)
 DROP POLICY IF EXISTS "Anon Access Profiles" ON "profiles";
@@ -26,6 +27,7 @@ DROP POLICY IF EXISTS "Anon Access RoastedStocks" ON "roastedStocks";
 DROP POLICY IF EXISTS "Anon Access RetailBags" ON "retailBags";
 DROP POLICY IF EXISTS "Anon Access History" ON "history";
 DROP POLICY IF EXISTS "Anon Access Inventory" ON "productionInventory";
+DROP POLICY IF EXISTS "Anon Access CuppingSessions" ON "cuppingSessions";
 
 -- 3. Crear políticas permisivas para el rol 'anon' (usuario no logueado)
 -- Esto permite SELECT, INSERT, UPDATE, DELETE a cualquier usuario que tenga la ANON KEY
@@ -80,6 +82,12 @@ WITH CHECK (true);
 
 -- ProductionInventory
 CREATE POLICY "Anon Access Inventory" ON "productionInventory"
+FOR ALL TO anon
+USING (true)
+WITH CHECK (true);
+
+-- CuppingSessions
+CREATE POLICY "Anon Access CuppingSessions" ON "cuppingSessions"
 FOR ALL TO anon
 USING (true)
 WITH CHECK (true);

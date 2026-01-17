@@ -116,6 +116,20 @@ create table if not exists "productionInventory" (
 );
 alter table "productionInventory" enable row level security;
 
+-- 10. CUPPING SESSIONS
+create table if not exists "cuppingSessions" (
+  "id" text primary key,
+  "roastStockId" text,
+  "roastId" text,
+  "coffeeName" text,
+  "clientName" text,
+  "tasterName" text,
+  "date" text,
+  "objective" text,
+  "form" jsonb
+);
+alter table "cuppingSessions" enable row level security;
+
 
 -- POLICIES
 
@@ -177,6 +191,8 @@ create policy "Read access for authenticated" on "history" for select using (aut
 
 drop policy if exists "Read access for authenticated" on "productionInventory";
 create policy "Read access for authenticated" on "productionInventory" for select using (auth.role() = 'authenticated');
+drop policy if exists "Read access for authenticated" on "cuppingSessions";
+create policy "Read access for authenticated" on "cuppingSessions" for select using (auth.role() = 'authenticated');
 
 -- WRITE (Insert/Update): Admins and Editors
 drop policy if exists "Write access for editors/admins" on "greenCoffees";
@@ -209,6 +225,8 @@ create policy "Write access for editors/admins" on "history" for all using (is_e
 
 drop policy if exists "Write access for editors/admins" on "productionInventory";
 create policy "Write access for editors/admins" on "productionInventory" for all using (is_editor_or_admin());
+drop policy if exists "Write access for editors/admins" on "cuppingSessions";
+create policy "Write access for editors/admins" on "cuppingSessions" for all using (is_editor_or_admin());
 
 -- TRIGGER for new users
 -- Automatically create a profile entry when a new user signs up via Auth

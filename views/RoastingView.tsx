@@ -176,11 +176,14 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
     }
     
     // Create Roast Record
+    const linkedOrder = selectedOrderId ? orders.find(o => o.id === selectedOrderId) : undefined;
+    const baseClientName = linkedOrder?.clientName || 'Stock';
+
     const newRoast: Roast = {
         id: Math.random().toString(36).substr(2, 9),
         greenCoffeeId: selectedGreenCoffeeId,
         orderId: selectedOrderId || undefined,
-        clientName: selectedOrderId ? orders.find(o => o.id === selectedOrderId)?.clientName || 'Stock' : 'Stock',
+        clientName: baseClientName,
         greenQtyKg,
         roastedQtyKg,
         weightLossPercentage: shrinkage,
@@ -204,7 +207,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
     let excessStockQty = 0;
 
     if (selectedOrderId) {
-        const order = orders.find(o => o.id === selectedOrderId);
+        const order = linkedOrder;
         if (order) {
             const currentAccumulated = order.accumulatedRoastedKg || 0;
             const newAccumulated = currentAccumulated + roastedQtyKg;
@@ -276,7 +279,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
             id: Math.random().toString(36).substr(2, 9),
             roastId: newRoast.id,
             variety: greenCoffee?.variety || 'Unknown',
-            clientName: newRoast.clientName || 'Stock',
+            clientName: baseClientName,
             totalQtyKg: clientStockQty,
             remainingQtyKg: clientStockQty,
             isSelected: false,
@@ -292,7 +295,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
             id: Math.random().toString(36).substr(2, 9),
             roastId: newRoast.id,
             variety: greenCoffee?.variety || 'Unknown',
-            clientName: 'Stock', // Explicitly mark as Stock
+            clientName: baseClientName,
             totalQtyKg: excessStockQty,
             remainingQtyKg: excessStockQty,
             isSelected: false,

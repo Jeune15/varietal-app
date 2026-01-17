@@ -100,6 +100,19 @@ create table if not exists "productionInventory" (
   "format" text
 );
 
+-- 9. Cupping Sessions
+create table if not exists "cuppingSessions" (
+  "id" text primary key,
+  "roastStockId" text,
+  "roastId" text,
+  "coffeeName" text,
+  "clientName" text,
+  "tasterName" text,
+  "date" text,
+  "objective" text,
+  "form" jsonb
+);
+
 -- 9. Profiles
 create table if not exists "profiles" (
   "id" uuid primary key references auth.users(id),
@@ -138,6 +151,7 @@ alter table "history" enable row level security;
 alter table "expenses" enable row level security;
 alter table "productionInventory" enable row level security;
 alter table "profiles" enable row level security;
+alter table "cuppingSessions" enable row level security;
 
 -- Create Policies (Public Access for now, or authenticated)
 -- For simplicity in this dev phase, allowing anon access if not already present
@@ -168,6 +182,8 @@ create policy "Public Access ProductionInventory" on "productionInventory" for a
 
 drop policy if exists "Public Access Profiles" on "profiles";
 create policy "Public Access Profiles" on "profiles" for all using (true);
+drop policy if exists "Public Access CuppingSessions" on "cuppingSessions";
+create policy "Public Access CuppingSessions" on "cuppingSessions" for all using (true);
 
 -- Notify Schema Reload
 NOTIFY pgrst, 'reload schema';

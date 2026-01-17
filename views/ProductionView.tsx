@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -8,7 +9,8 @@ import {
   RetailBagStock, 
   ProductionActivityType, 
   ProductionActivity,
-  ProductionItem
+  ProductionItem,
+  Roast
 } from '../types';
 import { 
   CheckCircle, 
@@ -85,6 +87,9 @@ const ProductionView: React.FC<Props> = ({
     });
   };
 
+  const history = useLiveQuery(() => db.history.orderBy('date').reverse().limit(50).toArray() as Promise<ProductionActivity[]>) || [];
+  const roasts = useLiveQuery(() => db.roasts.toArray() as Promise<Roast[]>) || [];
+
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEdit) return;
@@ -117,18 +122,27 @@ const ProductionView: React.FC<Props> = ({
       }
 
       // Update Retail Bags
-      const existingBag = retailBags.find(b => b.coffeeName === selectedStock.variety && b.type === additionalInfo.bagType);
+      const existingBag = retailBags.find(
+        b =>
+          b.coffeeName === selectedStock.variety &&
+          b.type === additionalInfo.bagType &&
+          b.roastId === selectedStock.roastId
+      );
       
       if (existingBag) {
-        const updatedBag = { ...existingBag, quantity: existingBag.quantity + productionValue };
+        const updatedBag: RetailBagStock = { ...existingBag, quantity: existingBag.quantity + productionValue };
         await db.retailBags.update(existingBag.id, { quantity: updatedBag.quantity });
         await syncToCloud('retailBags', updatedBag);
       } else {
+        const roast = roasts.find(r => r.id === selectedStock.roastId);
         const newBag: RetailBagStock = { 
           id: Math.random().toString(36).substr(2, 9), 
           coffeeName: selectedStock.variety, 
           type: additionalInfo.bagType, 
-          quantity: productionValue 
+          quantity: productionValue,
+          clientName: selectedStock.clientName,
+          roastDate: roast?.roastDate,
+          roastId: selectedStock.roastId
         };
         await db.retailBags.add(newBag);
         await syncToCloud('retailBags', newBag);
@@ -178,13 +192,50 @@ const ProductionView: React.FC<Props> = ({
       if (order && selectedStock) {
         const isServiceOrder = order.type === 'Servicio de Tueste';
         const markReady = additionalInfo.markOrderReady;
-        
-        if (!isServiceOrder && order.quantityKg > selectedStock.remainingQtyKg) {
-          showToast(`Stock insuficiente en el lote seleccionado. Disponible: ${selectedStock.remainingQtyKg.toFixed(2)} Kg`, 'error');
+        const requestedQty = productionValue;
+
+        if (!requestedQty || requestedQty <= 0) {
+          showToast("Ingresa la cantidad a despachar en Kg.", 'error');
           return;
         }
 
-        const deductionQty = isServiceOrder ? selectedStock.remainingQtyKg : order.quantityKg;
+        const stockAvailable = selectedStock.remainingQtyKg;
+        let deductionQty = requestedQty;
+
+        if (!isServiceOrder) {
+          const currentFulfilled = order.fulfilledKg || 0;
+          const remainingOrderQty = Math.max(0, order.quantityKg - currentFulfilled);
+
+          if (remainingOrderQty <= 0.001) {
+            showToast("Este pedido ya está completamente armado.", 'info');
+            return;
+          }
+
+          const maxPossible = Math.min(stockAvailable, remainingOrderQty);
+
+          if (requestedQty > maxPossible + 0.001) {
+            showToast(
+              `Solo se despacharán ${maxPossible.toFixed(2)} Kg por límite de stock o pedido.`,
+              'info'
+            );
+          }
+
+          deductionQty = Math.min(requestedQty, maxPossible);
+        } else {
+          if (requestedQty > stockAvailable + 0.001) {
+            showToast(
+              `Solo se despacharán ${stockAvailable.toFixed(2)} Kg por límite de stock disponible.`,
+              'info'
+            );
+          }
+          deductionQty = Math.min(requestedQty, stockAvailable);
+        }
+
+        if (deductionQty <= 0) {
+          showToast("No hay cantidad válida para despachar.", 'error');
+          return;
+        }
+
         const newRemaining = selectedStock.remainingQtyKg - deductionQty;
         
         if (newRemaining <= 0.001) {
@@ -209,9 +260,21 @@ const ProductionView: React.FC<Props> = ({
           fulfilledFromStockId: selectedStock.id
         };
 
+        const newFulfilled = (order.fulfilledKg || 0) + deductionQty;
+        updates.fulfilledKg = newFulfilled;
+
         if (!isServiceOrder) {
-          updates.progress = 100;
-          updates.status = 'Listo para Despacho';
+          if (order.quantityKg > 0) {
+            const progressPercentage = Math.round((newFulfilled / order.quantityKg) * 100);
+            updates.progress = Number.isNaN(progressPercentage) ? 0 : Math.min(100, Math.max(0, progressPercentage));
+          }
+
+          if (newFulfilled >= order.quantityKg - 0.01) {
+            updates.status = 'Listo para Despacho';
+            updates.progress = 100;
+          } else if (order.status === 'Pendiente') {
+            updates.status = 'En Producción';
+          }
         } else {
           if (markReady) {
             updates.status = 'Listo para Despacho';
@@ -269,6 +332,7 @@ const ProductionView: React.FC<Props> = ({
         selectedStockId, 
         productionValue, 
         ...additionalInfo,
+        orderId: orderForActivity?.id,
         orderType: orderForActivity?.type,
         orderClientName: orderForActivity?.clientName,
         stockVariety: stockForActivity?.variety,
@@ -403,7 +467,13 @@ const ProductionView: React.FC<Props> = ({
                     <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none" value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)}>
                       <option value="">-- Elija un pedido activo --</option>
                       {orders.filter(o => {
-                        if (activeMode === 'Despacho de Pedido') return o.status === 'Listo para Despacho';
+                        if (activeMode === 'Despacho de Pedido') {
+                          const hasPackagingForSale = o.type === 'Venta Café Tostado' && (o.bagsUsed || 0) > 0;
+                          if (o.type === 'Venta Café Tostado') {
+                            return o.status === 'Listo para Despacho' && hasPackagingForSale;
+                          }
+                          return o.status === 'Listo para Despacho';
+                        }
                         if (activeMode === 'Armado de Pedido') {
                           if (o.type === 'Servicio de Tueste') {
                             return o.status === 'En Producción' || o.status === 'Pendiente' || o.status === 'Listo para Despacho';
@@ -433,7 +503,7 @@ const ProductionView: React.FC<Props> = ({
                     )}
                   </div>
                 )}
-                {selectedOrderSummary && selectedStockSummary && (
+                {selectedOrderSummary && (
                   <div className="bg-stone-50 border border-stone-200 p-4 flex flex-col gap-2">
                     <div className="flex justify-between text-xs">
                       <div>
@@ -442,30 +512,80 @@ const ProductionView: React.FC<Props> = ({
                           {selectedOrderSummary.clientName}
                         </p>
                         <p className="text-[11px] text-stone-500">
-                          {selectedOrderSummary.orderLines && selectedOrderSummary.orderLines.length > 0 ? 'Múltiples cafés' : selectedOrderSummary.variety}
+                          {selectedOrderSummary.type === 'Servicio de Tueste' ? 'Servicio de Tueste' : 'Venta Café Tostado'}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold uppercase tracking-widest text-stone-500">Cantidad Pedido</p>
                         <p className="font-black text-sm">
-                          {selectedOrderSummary.quantityKg} Kg
+                          {(() => {
+                            const order = selectedOrderSummary;
+                            const displayQty =
+                              order.type === 'Servicio de Tueste' && typeof order.serviceRoastedQtyKg === 'number'
+                                ? order.serviceRoastedQtyKg
+                                : order.quantityKg;
+                            return `${displayQty.toFixed(2)} Kg`;
+                          })()}
                         </p>
+                        {typeof selectedOrderSummary.fulfilledKg === 'number' && (
+                          <p className="text-[10px] text-stone-500">
+                            Despachado: {selectedOrderSummary.fulfilledKg.toFixed(2)} Kg
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2">
-                      <div>
-                        <p className="font-bold uppercase tracking-widest text-stone-500">Lote Tostado</p>
-                        <p className="font-bold text-black">
-                          {selectedStockSummary.variety} ({selectedStockSummary.clientName})
+                    {selectedOrderSummary.orderLines && selectedOrderSummary.orderLines.length > 0 && (
+                      <div className="border-t border-stone-100 pt-3 mt-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">
+                          Detalle del pedido
                         </p>
+                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                          {selectedOrderSummary.orderLines.map(line => (
+                            <p key={line.id} className="text-[11px] text-stone-600">
+                              {line.variety} • {line.quantityKg.toFixed(2)} Kg
+                              {line.grindType ? ` • ${line.grindType === 'molido' ? 'Molido' : 'Grano'}` : ''}
+                            </p>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold uppercase tracking-widest text-stone-500">Disponible</p>
-                        <p className="font-black text-sm">
-                          {selectedStockSummary.remainingQtyKg.toFixed(2)} Kg
-                        </p>
+                    )}
+                    {(selectedOrderSummary.deliveryAddress || selectedOrderSummary.deliveryAddressDetail) && (
+                      <div className="border-t border-stone-100 pt-3 mt-2 flex justify-between gap-4 text-xs">
+                        <div>
+                          <p className="font-bold uppercase tracking-widest text-stone-500">Dirección de envío</p>
+                          <p className="font-medium text-black">
+                            {selectedOrderSummary.deliveryAddress}
+                          </p>
+                          {selectedOrderSummary.deliveryAddressDetail && (
+                            <p className="text-[11px] text-stone-500 mt-1">
+                              {selectedOrderSummary.deliveryAddressDetail}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold uppercase tracking-widest text-stone-500">Entrega</p>
+                          <p className="text-[11px] text-stone-600">
+                            {selectedOrderSummary.defaultGrindType === 'molido' ? 'Molido' : 'Grano'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    {selectedStockSummary && (
+                      <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2">
+                        <div>
+                          <p className="font-bold uppercase tracking-widest text-stone-500">Lote Tostado</p>
+                          <p className="font-bold text-black">
+                            {selectedStockSummary.clientName} — {selectedStockSummary.variety}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold uppercase tracking-widest text-stone-500">Disponible</p>
+                          <p className="font-black text-sm">
+                            {selectedStockSummary.remainingQtyKg.toFixed(2)} Kg
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 {['Selección de Café', 'Armado de Bolsas Retail', 'Armado de Pedido'].includes(activeMode) && (
@@ -483,7 +603,7 @@ const ProductionView: React.FC<Props> = ({
                         })
                         .map(s => (
                         <option key={s.id} value={s.id}>
-                          {s.variety} ({s.clientName}) — Disp: {s.remainingQtyKg.toFixed(2)} Kg
+                          {s.clientName} — {s.variety} — Disp: {s.remainingQtyKg.toFixed(2)} Kg
                           {s.isSelected ? ' [Seleccionado]' : ''}
                         </option>
                       ))}
@@ -521,6 +641,32 @@ const ProductionView: React.FC<Props> = ({
                           <span className="text-xs font-black uppercase tracking-widest">Bolsas</span>
                         </button>
                       </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">
+                        Cantidad a despachar (Kg)
+                      </label>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold"
+                        value={productionValue || ''}
+                        onChange={e => setProductionValue(parseFloat(e.target.value) || 0)}
+                        placeholder="Ej: 50"
+                      />
+                      {selectedOrderSummary && selectedOrderSummary.type !== 'Servicio de Tueste' && (
+                        <p className="text-[10px] text-stone-500 font-medium">
+                          Pendiente del pedido:{' '}
+                          {Math.max(
+                            0,
+                            selectedOrderSummary.quantityKg - (selectedOrderSummary.fulfilledKg || 0)
+                          ).toFixed(2)}{' '}
+                          Kg
+                        </p>
+                      )}
                     </div>
 
                     {(additionalInfo.packagingType === 'bags' || additionalInfo.packagingType === 'grainpro') && (
@@ -603,6 +749,88 @@ const ProductionView: React.FC<Props> = ({
                 )}
                 <div className="pt-6"><button type="submit" className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black">Guardar Actividad</button></div>
               </form>
+            </div>
+          )}
+
+          {!activeMode && (
+            <div className="bg-white border border-stone-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+                <div className="flex items-center gap-3">
+                  <Activity className="w-4 h-4 text-black" />
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-black">
+                    Historial de Actividades de Producción
+                  </h4>
+                </div>
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">
+                  Últimas {history.length} entradas
+                </span>
+              </div>
+              {history.length === 0 ? (
+                <div className="px-6 py-8 text-center text-xs text-stone-400 font-medium uppercase tracking-widest">
+                  Sin actividades registradas
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-stone-50 border-b border-stone-200">
+                      <tr>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Fecha</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Actividad</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Cliente</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Lote / Café</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest text-right">Detalle</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {history.map((a) => {
+                        const details: any = a.details || {};
+                        const date = a.date ? a.date.split('T')[0] : '';
+                        const client = details.orderClientName || '—';
+                        const stock = details.stockVariety || details.stockClientName || '—';
+                        let detailText = '';
+
+                        if (a.type === 'Armado de Pedido') {
+                          if (typeof details.productionValue === 'number' && !Number.isNaN(details.productionValue)) {
+                            detailText = `${details.productionValue.toFixed(2)} Kg despachados`;
+                          }
+                          if (details.packagingType === 'grainpro' && details.bagsUsed) {
+                            detailText += detailText ? ` · GrainPro x${details.bagsUsed}` : `GrainPro x${details.bagsUsed}`;
+                          } else if (details.packagingType === 'bags' && details.bagsUsed) {
+                            detailText += detailText ? ` · Bolsas x${details.bagsUsed}` : `Bolsas x${details.bagsUsed}`;
+                          }
+                        } else if (a.type === 'Selección de Café') {
+                          if (typeof details.merma === 'number' && !Number.isNaN(details.merma)) {
+                            detailText = `${details.merma.toFixed(0)} g merma`;
+                          }
+                        } else if (a.type === 'Armado de Bolsas Retail') {
+                          if (typeof details.productionValue === 'number' && !Number.isNaN(details.productionValue)) {
+                            const bag = details.bagType || '';
+                            detailText = `${details.productionValue.toFixed(0)} uds ${bag}`;
+                          }
+                        } else if (a.type === 'Despacho de Pedido') {
+                          if (typeof details.shippingCost === 'number' && details.shippingCost > 0) {
+                            detailText = `Envío $${details.shippingCost.toFixed(2)}`;
+                          }
+                        }
+
+                        if (!detailText) {
+                          detailText = '—';
+                        }
+
+                        return (
+                          <tr key={a.id} className="hover:bg-stone-50 transition-colors">
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{date}</td>
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{a.type}</td>
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{client}</td>
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{stock}</td>
+                            <td className="px-6 py-3 text-right font-medium text-stone-700">{detailText}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>

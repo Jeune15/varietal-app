@@ -27,10 +27,10 @@ import GreenCoffeeView from './views/GreenCoffeeView';
 import RoastingView from './views/RoastingView';
 import OrdersView from './views/OrdersView';
 import InventoryView from './views/InventoryView';
-import ProductionView from './views/ProductionView';
 import InvoicingView from './views/InvoicingView';
 import DashboardView from './views/DashboardView';
 import LoginView from './views/LoginView';
+import CuppingView from './views/CuppingView';
 import SettingsModal from './components/SettingsModal';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -45,7 +45,7 @@ const AppContent: React.FC = () => {
   const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [stockTab, setStockTab] = useState<'green' | 'roasted'>('green');
+  const [stockTab, setStockTab] = useState<'green' | 'roasted' | 'utility'>('green');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -215,7 +215,7 @@ const AppContent: React.FC = () => {
     { id: 'stock', label: 'Stock', icon: Package },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList },
     { id: 'roasting', label: 'Tostado', icon: Flame },
-    { id: 'production', label: 'Producción', icon: Settings2 },
+    { id: 'cupping', label: 'Catación', icon: BarChart3 },
     { id: 'invoicing', label: 'Facturación', icon: Receipt },
   ];
 
@@ -307,7 +307,7 @@ const AppContent: React.FC = () => {
         )}
 
         {/* Header - Minimalist */}
-        <header className="h-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 flex items-center justify-between px-8 shrink-0 z-[120]">
+        <header className="h-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 flex items-center justify-between px-8 shrink-0 relative z-[300]">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => {
@@ -371,7 +371,7 @@ const AppContent: React.FC = () => {
                         Inventario verde y tostado
                       </p>
                     </div>
-                    <div className="flex gap-4 mt-2 md:mt-0">
+                    <div className="flex flex-wrap gap-4 mt-2 md:mt-0">
                       <button
                         onClick={() => setStockTab('green')}
                         className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
@@ -392,13 +392,37 @@ const AppContent: React.FC = () => {
                       >
                         <Package className="w-4 h-4" /> Café Tostado
                       </button>
+                      <button
+                        onClick={() => setStockTab('utility')}
+                        className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
+                          stockTab === 'utility'
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black'
+                        }`}
+                      >
+                        <Settings2 className="w-4 h-4" /> Utilería
+                      </button>
                     </div>
                   </div>
 
                   {stockTab === 'green' ? (
                     <GreenCoffeeView coffees={greenCoffees} setCoffees={() => {}} />
+                  ) : stockTab === 'roasted' ? (
+                    <InventoryView
+                      stocks={roastedStocks}
+                      roasts={roasts}
+                      retailBags={retailBags}
+                      setRetailBags={() => {}}
+                      mode="coffee"
+                    />
                   ) : (
-                    <InventoryView stocks={roastedStocks} retailBags={retailBags} setRetailBags={() => {}} />
+                    <InventoryView
+                      stocks={roastedStocks}
+                      roasts={roasts}
+                      retailBags={retailBags}
+                      setRetailBags={() => {}}
+                      mode="utility"
+                    />
                   )}
                 </div>
               ) : activeTab === 'roasting' ? (
@@ -409,17 +433,8 @@ const AppContent: React.FC = () => {
                 />
               ) : activeTab === 'orders' ? (
                 <OrdersView orders={orders} />
-              ) : activeTab === 'production' ? (
-                <ProductionView 
-                  orders={orders} 
-                  setOrders={() => {}} 
-                  stocks={roastedStocks} 
-                  setStocks={() => {}} 
-                  retailBags={retailBags} 
-                  setRetailBags={() => {}} 
-                  setHistory={() => {}}
-                  productionInventory={productionInventory}
-                />
+              ) : activeTab === 'cupping' ? (
+                <CuppingView stocks={roastedStocks} />
               ) : activeTab === 'invoicing' ? (
                 <InvoicingView 
                   orders={orders} 

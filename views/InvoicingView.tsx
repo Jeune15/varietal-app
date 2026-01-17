@@ -21,8 +21,12 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
 
   const history = useLiveQuery(() => db.history.toArray() as Promise<ProductionActivity[]>) || [];
 
-  const shippedOrders = orders.filter(o => o.status === 'Enviado' || o.status === 'Facturado');
-  const pendingOrders = orders.filter(o => o.status === 'Enviado');
+  const pendingServiceOrders = orders.filter(
+    o => o.type === 'Servicio de Tueste' && o.status === 'Enviado'
+  );
+  const shippedSaleOrders = orders.filter(
+    o => o.type === 'Venta Café Tostado' && (o.status === 'Enviado' || o.status === 'Facturado')
+  );
 
   const handleMarkAsInvoiced = async (id: string) => {
     const order = orders.find(o => o.id === id);
@@ -109,102 +113,225 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
       </div>
 
       {activeTab === 'invoices' ? (
-        <div className="border border-stone-200 bg-white print:border-none">
-          <div className="p-6 border-b border-stone-200 bg-stone-50 flex justify-between items-center print:hidden">
-             <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Pedidos Despachados</span>
-             <div className="flex items-center gap-4">
-               <button 
-                 onClick={() => setShowPendingReport(true)}
-                 className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 text-xs font-bold uppercase tracking-wider text-black hover:bg-black hover:text-white transition-all"
-               >
-                 <Download className="w-4 h-4" /> Reporte Pendientes
-               </button>
-               <div className="relative">
-                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" />
-                 <input 
-                   type="text" 
-                   placeholder="BUSCAR..." 
-                   className="pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-48 transition-colors"
-                 />
-               </div>
-             </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-stone-50 border-b border-stone-200">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Cliente</th>
-                  <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Fecha Envío</th>
-                  <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Fecha Facturación</th>
-                  <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Estado</th>
-                  <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {shippedOrders.length === 0 ? (
+        <div className="space-y-10">
+          <div className="border border-stone-200 bg-white print:border-none">
+            <div className="p-6 border-b border-stone-200 bg-stone-50 flex justify-between items-center print:hidden">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">
+                Pendiente de Facturación (Servicios de Tueste)
+              </span>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowPendingReport(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 text-xs font-bold uppercase tracking-wider text-black hover:bg-black hover:text-white transition-all"
+                >
+                  <Download className="w-4 h-4" /> Reporte Pendientes
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-stone-50 border-b border-stone-200">
                   <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center text-stone-400 font-medium uppercase text-sm">
-                      No hay pedidos pendientes de facturar.
-                    </td>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Fecha Envío
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Fecha Facturación
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Estado
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">
+                      Acciones
+                    </th>
                   </tr>
-                ) : (
-                  shippedOrders.map((o) => (
-                    <tr 
-                      key={o.id} 
-                      className="group hover:bg-stone-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 border-r border-stone-100">
-                        <div className="font-bold text-black text-sm tracking-tight">{o.clientName}</div>
-                        <div className="text-xs text-stone-500 font-bold uppercase mt-1">{o.variety} • {o.quantityKg} Kg</div>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-stone-600 font-bold uppercase tracking-wider tabular-nums border-r border-stone-100">
-                        {o.shippedDate?.split('T')[0] || '—'}
-                      </td>
-                      <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider tabular-nums border-r border-stone-100">
-                        {o.invoicedDate ? (
-                          <span className="text-black">{o.invoicedDate.split('T')[0]}</span>
-                        ) : (
-                          <span className="text-stone-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 border-r border-stone-100">
-                        <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border ${
-                          o.status === 'Facturado' 
-                            ? 'bg-black text-white border-black' 
-                            : 'bg-white text-stone-500 border-stone-200'
-                        }`}>
-                          {o.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          {o.status === 'Enviado' && canEdit && (
-                            <button 
-                              onClick={() => handleMarkAsInvoiced(o.id)}
-                              className="p-2 text-stone-400 hover:text-black hover:bg-stone-200 transition-colors border border-transparent hover:border-black"
-                              title="Marcar como Facturado"
-                            >
-                              <CheckCircle className="w-5 h-5" />
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => {
-                              setSelectedOrder(o);
-                              setShowSummary(true);
-                            }}
-                            className="p-2 text-stone-400 hover:text-black hover:bg-stone-200 transition-colors border border-transparent hover:border-black"
-                            title="Ver Ficha / Descargar"
-                          >
-                            <FileText className="w-5 h-5" />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {pendingServiceOrders.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-6 py-16 text-center text-stone-400 font-medium uppercase text-sm"
+                      >
+                        No hay servicios de tueste pendientes de facturar.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    pendingServiceOrders.map(o => (
+                      <tr key={o.id} className="group hover:bg-stone-50 transition-colors">
+                        <td className="px-6 py-4 border-r border-stone-100">
+                          <div className="font-bold text-black text-sm tracking-tight">
+                            {o.clientName}
+                          </div>
+                          <div className="text-xs text-stone-500 font-bold uppercase mt-1">
+                            {o.variety} •{' '}
+                            {(
+                              typeof o.serviceRoastedQtyKg === 'number'
+                                ? o.serviceRoastedQtyKg
+                                : o.quantityKg
+                            )}{' '}
+                            Kg
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-stone-600 font-bold uppercase tracking-wider tabular-nums border-r border-stone-100">
+                          {o.shippedDate?.split('T')[0] || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider tabular-nums border-r border-stone-100">
+                          {o.invoicedDate ? (
+                            <span className="text-black">{o.invoicedDate.split('T')[0]}</span>
+                          ) : (
+                            <span className="text-stone-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 border-r border-stone-100">
+                          <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider border bg-white text-stone-500 border-stone-200">
+                            {o.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            {o.status === 'Enviado' && canEdit && (
+                              <button
+                                onClick={() => handleMarkAsInvoiced(o.id)}
+                                className="p-2 text-stone-400 hover:text-black hover:bg-stone-200 transition-colors border border-transparent hover:border-black"
+                                title="Marcar como Facturado"
+                              >
+                                <CheckCircle className="w-5 h-5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(o);
+                                setShowSummary(true);
+                              }}
+                              className="p-2 text-stone-400 hover:text-black hover:bg-stone-200 transition-colors border border-transparent hover:border-black"
+                              title="Ver Ficha / Descargar"
+                            >
+                              <FileText className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="border border-stone-200 bg-white print:border-none">
+            <div className="p-6 border-b border-stone-200 bg-stone-50 flex justify-between items-center print:hidden">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">
+                Pedidos Enviados (Ventas de Café Tostado)
+              </span>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="BUSCAR..."
+                    className="pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-48 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-stone-50 border-b border-stone-200">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Fecha Envío
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Fecha Facturación
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">
+                      Estado
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {shippedSaleOrders.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-6 py-16 text-center text-stone-400 font-medium uppercase text-sm"
+                      >
+                        No hay ventas de café tostado enviadas.
+                      </td>
+                    </tr>
+                  ) : (
+                    shippedSaleOrders.map(o => (
+                      <tr key={o.id} className="group hover:bg-stone-50 transition-colors">
+                        <td className="px-6 py-4 border-r border-stone-100">
+                          <div className="font-bold text-black text-sm tracking-tight">
+                            {o.clientName}
+                          </div>
+                          <div className="text-xs text-stone-500 font-bold uppercase mt-1">
+                            {o.variety} • {o.quantityKg} Kg
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-stone-600 font-bold uppercase tracking-wider tabular-nums border-r border-stone-100">
+                          {o.shippedDate?.split('T')[0] || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider tabular-nums border-r border-stone-100">
+                          {o.invoicedDate ? (
+                            <span className="text-black">{o.invoicedDate.split('T')[0]}</span>
+                          ) : (
+                            <span className="text-stone-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 border-r border-stone-100">
+                          <span
+                            className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border ${
+                              o.status === 'Facturado'
+                                ? 'bg-black text-white border-black'
+                                : 'bg-white text-stone-500 border-stone-200'
+                            }`}
+                          >
+                            {o.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            {o.status === 'Enviado' && canEdit && (
+                              <button
+                                onClick={() => handleMarkAsInvoiced(o.id)}
+                                className="p-2 text-stone-400 hover:text-black hover:bg-stone-200 transition-colors border border-transparent hover:border-black"
+                                title="Marcar como Facturado"
+                              >
+                                <CheckCircle className="w-5 h-5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(o);
+                                setShowSummary(true);
+                              }}
+                              className="p-2 text-stone-400 hover:text-black hover:bg-stone-200 transition-colors border border-transparent hover:border-black"
+                              title="Ver Ficha / Descargar"
+                            >
+                              <FileText className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       ) : null}
@@ -255,7 +382,16 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
                   </div>
                   <div>
                     <span className="block text-xs font-bold text-stone-400 uppercase">Cantidad</span>
-                    <span className="font-bold text-lg">{selectedOrder.quantityKg} Kg</span>
+                    <span className="font-bold text-lg">
+                      {(() => {
+                        const order = selectedOrder;
+                        const displayQty =
+                          order.type === 'Servicio de Tueste' && typeof order.serviceRoastedQtyKg === 'number'
+                            ? order.serviceRoastedQtyKg
+                            : order.quantityKg;
+                        return `${displayQty} Kg`;
+                      })()}
+                    </span>
                   </div>
                   <div>
                     <span className="block text-xs font-bold text-stone-400 uppercase">Fecha Envío</span>
@@ -285,9 +421,11 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
                         <table className="w-full text-sm border-collapse border border-stone-200">
                           <thead>
                             <tr className="bg-stone-100 print:bg-stone-50">
-                              <th className="p-2 text-left font-bold border border-stone-200 uppercase text-xs">Fecha</th>
+                              <th className="p-2 text-left font-bold border border-stone-200 uppercase text-xs">Fecha Tueste</th>
                               <th className="p-2 text-left font-bold border border-stone-200 uppercase text-xs">Lote</th>
-                              <th className="p-2 text-right font-bold border border-stone-200 uppercase text-xs">Merma</th>
+                              <th className="p-2 text-right font-bold border border-stone-200 uppercase text-xs">Café Verde (Kg)</th>
+                              <th className="p-2 text-right font-bold border border-stone-200 uppercase text-xs">Café Tostado (Kg)</th>
+                              <th className="p-2 text-right font-bold border border-stone-200 uppercase text-xs">Merma (%)</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -295,6 +433,8 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
                               <tr key={r.id}>
                                 <td className="p-2 border border-stone-200 font-medium">{r.roastDate.split('T')[0]}</td>
                                 <td className="p-2 border border-stone-200 font-bold">{r.id.slice(0, 8)}</td>
+                                <td className="p-2 text-right border border-stone-200 font-medium">{r.greenQtyKg.toFixed(2)} Kg</td>
+                                <td className="p-2 text-right border border-stone-200 font-medium">{r.roastedQtyKg.toFixed(2)} Kg</td>
                                 <td className="p-2 text-right border border-stone-200 font-medium">{r.weightLossPercentage.toFixed(1)}%</td>
                               </tr>
                             ))}
@@ -372,12 +512,13 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
               <div className="mb-6">
                 <p className="text-sm font-bold text-stone-500 uppercase tracking-wide mb-2">Total por Cobrar</p>
                 <h2 className="text-5xl font-black tracking-tighter">
-                  {pendingOrders.length} <span className="text-lg font-bold text-stone-400">PEDIDOS</span>
+                  {pendingServiceOrders.length}{' '}
+                  <span className="text-lg font-bold text-stone-400">PEDIDOS</span>
                 </h2>
               </div>
               
               <div className="space-y-4 max-h-60 overflow-y-auto pr-2 mb-8 border border-stone-200 p-4 bg-stone-50">
-                {pendingOrders.map(order => (
+                {pendingServiceOrders.map(order => (
                   <div key={order.id} className="flex justify-between items-center border-b border-stone-200 pb-2 last:border-0 last:pb-0">
                     <div>
                       <p className="font-bold text-sm uppercase">{order.clientName}</p>
