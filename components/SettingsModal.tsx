@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Database, Users, Shield, CheckCircle, AlertTriangle, RefreshCw, UploadCloud, Trash2, HardDrive } from 'lucide-react';
+import { X, Save, Database, Users, Shield, CheckCircle, AlertTriangle, RefreshCw, UploadCloud, Trash2, HardDrive, Moon, Sun, LogOut, Settings2 } from 'lucide-react';
 import { initSupabase, db, syncToCloud, getSupabase, pushToCloud, pullFromCloud, resetDatabase } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { UserProfile, UserRole } from '../types';
@@ -9,11 +9,14 @@ import { useAuth } from '../contexts/AuthContext';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
+  onLogout: () => void;
 }
 
-const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { isAdmin, refreshSession, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'connection' | 'users' | 'system'>('connection');
+const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkMode, onLogout }) => {
+  const { isAdmin, refreshSession, user, profile } = useAuth();
+  const [activeTab, setActiveTab] = useState<'general' | 'connection' | 'users' | 'system'>('general');
   
   // Connection State
   const [url, setUrl] = useState('');
@@ -93,11 +96,11 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-white/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white w-full max-w-2xl border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[200] bg-white/90 dark:bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-stone-900 w-full max-w-2xl border-2 border-black dark:border-stone-700 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)] animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="bg-black text-white p-6 flex justify-between items-center shrink-0">
+        <div className="bg-black dark:bg-stone-950 text-white p-6 flex justify-between items-center shrink-0">
           <div>
             <h3 className="text-xl font-black uppercase tracking-tight">Configuración</h3>
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">Sistema & Usuarios</p>
@@ -108,23 +111,29 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stone-200">
+        <div className="flex border-b border-stone-200 dark:border-stone-800 overflow-x-auto scrollbar-hide">
+          <button 
+            onClick={() => setActiveTab('general')}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'general' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
+          >
+            <Settings2 className="w-4 h-4" /> General
+          </button>
           <button 
             onClick={() => setActiveTab('connection')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${activeTab === 'connection' ? 'bg-stone-100 text-black' : 'text-stone-400 hover:text-black'}`}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'connection' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
           >
             <Database className="w-4 h-4" /> Conexión
           </button>
           <button 
             onClick={() => setActiveTab('system')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${activeTab === 'system' ? 'bg-stone-100 text-black' : 'text-stone-400 hover:text-black'}`}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'system' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
           >
             <HardDrive className="w-4 h-4" /> Sistema / Datos
           </button>
           {isAdmin && (
             <button 
               onClick={() => setActiveTab('users')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${activeTab === 'users' ? 'bg-stone-100 text-black' : 'text-stone-400 hover:text-black'}`}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'users' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
             >
               <Users className="w-4 h-4" /> Usuarios
             </button>
@@ -133,6 +142,42 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         {/* Content */}
         <div className="p-8 overflow-y-auto">
+          {activeTab === 'general' && (
+            <div className="space-y-6">
+              {/* User Info */}
+              <div className="bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 p-6 flex items-center justify-between">
+                <div>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-1">Usuario Actual</p>
+                   <p className="text-sm font-bold text-black dark:text-white">{user?.email}</p>
+                   <p className="text-xs text-stone-500 mt-1 capitalize">{profile?.role || 'Visualizador'}</p>
+                </div>
+                <button 
+                  onClick={onLogout}
+                  className="px-4 py-2 border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-black dark:text-stone-200 hover:border-black dark:hover:border-white hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                >
+                  <LogOut className="w-3 h-3" /> Salir
+                </button>
+              </div>
+
+              {/* Dark Mode Toggle */}
+              <div className="border border-stone-200 dark:border-stone-700 p-6 bg-white dark:bg-stone-800/20">
+                <div className="mb-4">
+                   <h4 className="text-xs font-bold uppercase tracking-wider text-black dark:text-white mb-1">Apariencia</h4>
+                   <p className="text-[10px] text-stone-500 font-medium leading-relaxed">
+                     Cambie entre el modo claro (arquitectónico) y el modo oscuro (nocturno).
+                   </p>
+                </div>
+                <button 
+                  onClick={toggleDarkMode}
+                  className="w-full py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-stone-500 text-black dark:text-white transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wide"
+                >
+                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  {darkMode ? 'Activar Modo Claro' : 'Activar Modo Oscuro'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'connection' && (
             <div className="space-y-6">
               <div className="bg-stone-50 border border-stone-200 p-4 flex items-start gap-3">

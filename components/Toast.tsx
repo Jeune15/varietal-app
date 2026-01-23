@@ -18,9 +18,9 @@ const icons = {
 };
 
 const bgColors = {
-  success: 'bg-white border-l-4 border-green-500',
-  error: 'bg-white border-l-4 border-red-500',
-  info: 'bg-white border-l-4 border-blue-500'
+  success: 'border-l-4 border-green-500',
+  error: 'border-l-4 border-red-500',
+  info: 'border-l-4 border-blue-500'
 };
 
 export const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, duration = 3000 }) => {
@@ -34,15 +34,15 @@ export const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, durati
 
   return (
     <div className={`
-      flex items-center gap-3 p-4 min-w-[300px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border border-black 
-      animate-in slide-in-from-right duration-300
+      flex items-center gap-3 p-4 min-w-[300px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border border-black bg-white
+      animate-in slide-in-from-right duration-300 dark:bg-stone-900 dark:border-stone-700 dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]
       ${bgColors[type]}
     `}>
       {icons[type]}
-      <p className="flex-1 font-bold text-sm text-black">{message}</p>
+      <p className="flex-1 font-bold text-sm text-black dark:text-white">{message}</p>
       <button 
         onClick={() => onClose(id)}
-        className="text-stone-400 hover:text-black transition-colors"
+        className="text-stone-400 hover:text-black transition-colors dark:text-stone-500 dark:hover:text-white"
       >
         <X className="w-4 h-4" />
       </button>

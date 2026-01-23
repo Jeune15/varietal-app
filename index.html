@@ -14,13 +14,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
+                    borderRadius: {
+                        'none': '0',
+                        'sm': '0',
+                        DEFAULT: '0',
+                        'md': '0',
+                        'lg': '0',
+                        'xl': '0',
+                        '2xl': '0',
+                        '3xl': '0',
+                        // Keep 'full' for circular elements (badges, avatars)
+                    },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         serif: ['Inter', 'sans-serif'], // Unifying for architectural look
                     },
                     colors: {
+                        brand: {
+                            DEFAULT: '#CD8566', // Muted Clay / Pastel Opaque Orange
+                            light: '#E6A58D',
+                            dark: '#9E5E42',
+                        },
+                        accent: {
+                            DEFAULT: '#5C5346', // Warm Grey (Contrast for orange)
+                            light: '#7D7365',
+                            dark: '#3D362E',
+                        },
                         // Architectural White/Black Palette
                         stone: {
                             50: '#FFFFFF',  // Pure White
@@ -70,12 +92,22 @@
             background-color: #FFFFFF;
             color: #000000;
         }
+
+        .dark body {
+            background-color: #0c0a09; /* stone-950 */
+            color: #FFFFFF;
+        }
         
         /* Architectural Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #FFFFFF; border-left: 1px solid #E5E5E5; }
         ::-webkit-scrollbar-thumb { background: #000000; }
         ::-webkit-scrollbar-thumb:hover { background: #404040; }
+
+        /* Dark Mode Scrollbar */
+        .dark ::-webkit-scrollbar-track { background: #1c1917; border-left: 1px solid #292524; } /* stone-900 / stone-800 */
+        .dark ::-webkit-scrollbar-thumb { background: #FFFFFF; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #a8a29e; } /* stone-400 */
 
         /* Typography Utilities */
         h1, h2, h3, h4, h5, h6 { 
@@ -88,6 +120,10 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid #E5E5E5;
+        }
+
+        .safe-area-pb {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
         }
     </style>
     
@@ -111,7 +147,7 @@
     }
     </script>
 </head>
-<body class="bg-stone-50 text-stone-900 overflow-x-hidden selection:bg-amber-200 selection:text-amber-900">
+<body class="bg-stone-50 dark:bg-black text-stone-900 dark:text-stone-100 overflow-x-hidden selection:bg-brand selection:text-white">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

@@ -120,7 +120,12 @@ export const getSupabase = () => supabase;
 export async function syncToCloud(table: string, data: any) {
   if (!supabase) return;
   try {
-    const payload = sanitizeRecord(table, data);
+    let payload;
+    if (Array.isArray(data)) {
+      payload = data.map(item => sanitizeRecord(table, item));
+    } else {
+      payload = sanitizeRecord(table, data);
+    }
     const { error } = await supabase.from(table).upsert(payload);
     if (error) throw error;
   } catch (err) {

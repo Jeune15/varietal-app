@@ -77,6 +77,7 @@ export interface Expense {
   date: string;
   status: 'pending' | 'paid';
   relatedOrderId?: string;
+  createdBy?: 'Anthony' | 'Alei';
 }
 
 export interface RoastedStock {

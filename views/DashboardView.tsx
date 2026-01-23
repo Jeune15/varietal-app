@@ -157,34 +157,34 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black pb-6">
+    <div className="space-y-8 animate-fade-in pb-48 text-stone-900 dark:text-stone-100">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black dark:border-stone-700 pb-6">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black text-black uppercase tracking-tighter">Panel Diario</h2>
-          <p className="text-stone-500 font-mono text-xs uppercase tracking-widest">
+          <h2 className="text-3xl font-black text-black dark:text-white uppercase tracking-tighter">Panel Diario</h2>
+          <p className="text-stone-500 dark:text-stone-400 font-mono text-xs uppercase tracking-widest">
             Resumen operativo para la tostaduría
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="bg-black text-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
+          <div className="bg-black dark:bg-stone-800 text-white dark:text-stone-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
             {today}
           </div>
           <div className="hidden md:flex gap-2">
             <button
               onClick={() => onNavigate && onNavigate('orders')}
-              className="px-3 py-1 border border-stone-200 text-[10px] font-bold uppercase tracking-widest hover:border-black hover:bg-black hover:text-white transition-colors"
+              className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
             >
               Pedidos
             </button>
             <button
               onClick={() => onNavigate && onNavigate('roasting')}
-              className="px-3 py-1 border border-stone-200 text-[10px] font-bold uppercase tracking-widest hover:border-black hover:bg-black hover:text-white transition-colors"
+              className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
             >
               Tostado
             </button>
             <button
               onClick={() => onNavigate && onNavigate('invoicing')}
-              className="px-3 py-1 border border-stone-200 text-[10px] font-bold uppercase tracking-widest hover:border-black hover:bg-black hover:text-white transition-colors"
+              className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
             >
               Facturación
             </button>
@@ -221,44 +221,92 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-6">
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300">
+          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 dark:text-stone-500">
                   Cola de producción
                 </p>
-                <h3 className="text-lg font-black uppercase tracking-tight">
+                <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
                   Órdenes para tostar
                 </h3>
               </div>
-              <span className="text-[10px] font-bold bg-black text-white px-3 py-1 tracking-widest uppercase">
+              <span className="text-[10px] font-bold bg-black text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
                 {roastingQueue.length} activas
               </span>
             </div>
-            <div className="overflow-x-auto">
+            {/* Mobile Cards for Roasting Queue */}
+            <div className="lg:hidden space-y-4">
+              {roastingQueuePreview.length === 0 ? (
+                <div className="p-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700 dark:text-stone-500">
+                  No hay órdenes pendientes de tueste
+                </div>
+              ) : (
+                roastingQueuePreview.map(order => {
+                  const isService = order.type === 'Servicio de Tueste';
+                  const produced = isService
+                    ? order.accumulatedGreenUsedKg || 0
+                    : order.accumulatedRoastedKg || 0;
+                  const remaining = Math.max(0, order.quantityKg - produced);
+                  return (
+                    <div key={order.id} className="bg-white border border-stone-200 p-4 shadow-sm space-y-3 dark:bg-stone-900 dark:border-stone-800">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold text-black text-xs truncate max-w-[140px] dark:text-white">{order.clientName}</div>
+                          <div className="text-[10px] text-stone-400 font-mono">#{order.id.slice(0, 8)}</div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-black text-black dark:text-white">{remaining.toFixed(2)}</span>
+                          <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">Kg</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-stone-50 p-3 rounded text-xs space-y-2 border border-stone-100 dark:bg-stone-800 dark:border-stone-700">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wide dark:text-stone-300">
+                            {order.orderLines && order.orderLines.length > 0 ? 'Múltiples cafés' : order.variety}
+                          </span>
+                          {order.roastType && (
+                            <span className="inline-flex self-start items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-100 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-900/30">
+                              {order.roastType}
+                            </span>
+                          )}
+                        </div>
+                        <div className="pt-2 border-t border-stone-200 flex justify-between items-center dark:border-stone-700">
+                          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Entrega</span>
+                          <span className="text-[11px] font-mono text-stone-500 dark:text-stone-400">{order.dueDate}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 border-b border-stone-200">
+                <thead className="bg-stone-50 border-b border-stone-200 dark:bg-stone-950 dark:border-stone-800">
                   <tr>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest">
+                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
                       Pedido
                     </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest">
+                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
                       Café
                     </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right">
+                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right dark:text-stone-400">
                       Pendiente Kg
                     </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right">
+                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right dark:text-stone-400">
                       Entrega
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   {roastingQueuePreview.length === 0 ? (
                     <tr>
                       <td
                         colSpan={4}
-                        className="px-4 py-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest"
+                        className="px-4 py-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600"
                       >
                         No hay órdenes pendientes de tueste
                       </td>
@@ -271,9 +319,9 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                         : order.accumulatedRoastedKg || 0;
                       const remaining = Math.max(0, order.quantityKg - produced);
                       return (
-                        <tr key={order.id} className="hover:bg-stone-50 transition-colors">
+                        <tr key={order.id} className="hover:bg-stone-50 transition-colors dark:hover:bg-stone-800/50">
                           <td className="px-4 py-3 align-top">
-                            <div className="font-bold text-black text-xs truncate max-w-[140px]">
+                            <div className="font-bold text-black text-xs truncate max-w-[140px] dark:text-white">
                               {order.clientName}
                             </div>
                             <div className="text-[10px] text-stone-400 font-mono">
@@ -282,11 +330,11 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                           </td>
                           <td className="px-4 py-3 align-top">
                             <div className="flex flex-col gap-1">
-                              <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wide truncate max-w-[140px]">
+                              <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wide truncate max-w-[140px] dark:text-stone-300">
                                 {order.orderLines && order.orderLines.length > 0 ? 'Múltiples cafés' : order.variety}
                               </span>
                               {order.orderLines && order.orderLines.length > 0 && (
-                                <div className="space-y-0.5 text-[9px] text-stone-500 font-mono max-w-[160px]">
+                                <div className="space-y-0.5 text-[9px] text-stone-500 font-mono max-w-[160px] dark:text-stone-400">
                                   {order.orderLines.slice(0, 2).map(line => (
                                     <div key={line.id} className="flex justify-between">
                                       <span className="truncate max-w-[100px]">{line.variety}</span>
@@ -294,21 +342,21 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                                     </div>
                                   ))}
                                   {order.orderLines.length > 2 && (
-                                    <div className="text-[8px] text-stone-400">
+                                    <div className="text-[8px] text-stone-400 dark:text-stone-600">
                                       +{order.orderLines.length - 2} más
                                     </div>
                                   )}
                                 </div>
                               )}
                               {order.roastType && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-100">
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-100 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-900/30">
                                   {order.roastType}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right align-top">
-                            <span className="text-sm font-black text-black">
+                            <span className="text-sm font-black text-black dark:text-white">
                               {remaining.toFixed(2)}
                             </span>
                             <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
@@ -316,7 +364,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right align-top">
-                            <span className="text-[11px] font-mono text-stone-500">
+                            <span className="text-[11px] font-mono text-stone-500 dark:text-stone-400">
                               {order.dueDate}
                             </span>
                           </td>
@@ -328,10 +376,10 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
               </table>
             </div>
             {roastingQueue.length > roastingQueuePreview.length && (
-              <div className="pt-3 mt-3 border-t border-stone-100 flex justify-end">
+              <div className="pt-3 mt-3 border-t border-stone-100 flex justify-end dark:border-stone-800">
                 <button
                   onClick={() => onNavigate && onNavigate('roasting')}
-                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-black underline underline-offset-4"
+                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-black underline underline-offset-4 dark:text-white"
                 >
                   Ver cola completa en Tostado
                 </button>
@@ -339,50 +387,90 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
             )}
           </div>
 
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300">
+          <div className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 hover:border-black dark:hover:border-stone-600 transition-colors duration-300">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">
+                <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] mb-1">
                   Flujo de pedidos
                 </p>
-                <h3 className="text-lg font-black uppercase tracking-tight">
+                <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
                   Órdenes abiertas
                 </h3>
               </div>
-              <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase">
+              <span className="text-[10px] font-bold bg-stone-900 dark:bg-stone-700 text-white dark:text-stone-200 px-3 py-1 tracking-widest uppercase">
                 {openOrders.length}
               </span>
             </div>
-            <div className="overflow-x-auto">
+            {/* Mobile Cards for Open Orders */}
+            <div className="lg:hidden space-y-4">
+              {openOrders.length === 0 ? (
+                <div className="p-8 text-center text-[11px] text-stone-400 dark:text-stone-500 font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700">
+                  No hay pedidos activos
+                </div>
+              ) : (
+                openOrders.slice(0, 6).map(order => (
+                  <div key={order.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 shadow-sm space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-black dark:text-white text-xs truncate max-w-[140px]">{order.clientName}</div>
+                        <div className="text-[10px] text-stone-400 font-mono">
+                          {order.variety} • {order.quantityKg.toFixed(2)} Kg
+                        </div>
+                      </div>
+                      <span className="border border-black dark:border-stone-500 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-black dark:text-white whitespace-nowrap">
+                        {order.status}
+                      </span>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1 pt-2 border-t border-stone-100 dark:border-stone-800">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Progreso</span>
+                        <span className="text-[9px] font-mono text-stone-400">{Number.isNaN(order.progress) ? 0 : order.progress}%</span>
+                      </div>
+                      <div className="w-full bg-stone-100 dark:bg-stone-800 h-1 overflow-hidden">
+                        <div
+                          className={`h-full ${order.progress === 100 ? 'bg-black dark:bg-stone-200' : 'bg-stone-400'}`}
+                          style={{
+                            width: `${Number.isNaN(order.progress) ? 0 : order.progress}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 border-b border-stone-200">
+                <thead className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700">
                   <tr>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest">
+                    <th className="px-4 py-3 font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
                       Cliente
                     </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest">
+                    <th className="px-4 py-3 font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
                       Estado
                     </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right">
+                    <th className="px-4 py-3 font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest text-right">
                       Progreso
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   {openOrders.length === 0 ? (
                     <tr>
                       <td
                         colSpan={3}
-                        className="px-4 py-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest"
+                        className="px-4 py-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600"
                       >
                         No hay pedidos activos
                       </td>
                     </tr>
                   ) : (
                     openOrders.slice(0, 6).map(order => (
-                      <tr key={order.id} className="hover:bg-stone-50 transition-colors">
+                      <tr key={order.id} className="hover:bg-stone-50 transition-colors dark:hover:bg-stone-800/50">
                         <td className="px-4 py-3 align-top">
-                          <div className="font-bold text-black text-xs truncate max-w-[140px]">
+                          <div className="font-bold text-black text-xs truncate max-w-[140px] dark:text-white">
                             {order.clientName}
                           </div>
                           <div className="text-[10px] text-stone-400 font-mono">
@@ -390,15 +478,15 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <span className="border border-black px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-black whitespace-nowrap">
+                          <span className="border border-black px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-black whitespace-nowrap dark:border-stone-500 dark:text-white">
                             {order.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
                           <div className="flex flex-col items-end gap-1">
-                            <div className="w-20 bg-stone-100 h-0.5 overflow-hidden">
+                            <div className="w-20 bg-stone-100 h-0.5 overflow-hidden dark:bg-stone-800">
                               <div
-                                className={`h-full ${order.progress === 100 ? 'bg-black' : 'bg-stone-400'}`}
+                                className={`h-full ${order.progress === 100 ? 'bg-black dark:bg-stone-200' : 'bg-stone-400'}`}
                                 style={{
                                   width: `${Number.isNaN(order.progress) ? 0 : order.progress}%`
                                 }}
@@ -419,22 +507,22 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
         </div>
 
         <div className="space-y-6">
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300">
+          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 dark:text-stone-500">
                   Alertas de stock
                 </p>
-                <h3 className="text-lg font-black uppercase tracking-tight">
+                <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
                   Verde crítico
                 </h3>
               </div>
-              <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase">
+              <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
                 {lowGreen.length}
               </span>
             </div>
             {lowGreen.length === 0 ? (
-              <div className="h-32 flex items-center justify-center text-[11px] text-stone-400 font-mono uppercase tracking-widest">
+              <div className="h-32 flex items-center justify-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600">
                 Sin alertas de stock verde
               </div>
             ) : (
@@ -442,18 +530,18 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                 {lowGreen.map(item => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between border border-stone-100 px-3 py-2 text-xs"
+                    className="flex items-center justify-between border border-stone-100 px-3 py-2 text-xs dark:border-stone-800"
                   >
                     <div className="flex flex-col">
-                      <span className="font-bold text-black uppercase tracking-wide truncate max-w-[140px]">
+                      <span className="font-bold text-black uppercase tracking-wide truncate max-w-[140px] dark:text-white">
                         {item.variety}
                       </span>
-                      <span className="text-[10px] text-stone-400 uppercase tracking-widest truncate max-w-[140px]">
+                      <span className="text-[10px] text-stone-400 uppercase tracking-widest truncate max-w-[140px] dark:text-stone-500">
                         {item.clientName}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-black text-red-600">
+                      <span className="text-sm font-black text-red-600 dark:text-red-500">
                         {item.quantityKg.toFixed(1)}
                       </span>
                       <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
@@ -466,23 +554,23 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
             )}
           </div>
 
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300">
+          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em]">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] dark:text-white">
                 Resumen rápido
               </h3>
-              <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">
+              <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest dark:text-stone-500">
                 {pendingOrders} pedidos abiertos
               </span>
             </div>
-            <div className="space-y-2 text-[11px] text-stone-600">
+            <div className="space-y-2 text-[11px] text-stone-600 dark:text-stone-400">
               <div className="flex justify-between">
                 <span>Kg tostados históricos</span>
-                <span className="font-bold">{totalRoasted.toFixed(1)} Kg</span>
+                <span className="font-bold dark:text-stone-300">{totalRoasted.toFixed(1)} Kg</span>
               </div>
               <div className="flex justify-between">
                 <span>Kg verdes en sistema</span>
-                <span className="font-bold">{totalGreen.toFixed(1)} Kg</span>
+                <span className="font-bold dark:text-stone-300">{totalGreen.toFixed(1)} Kg</span>
               </div>
             </div>
           </div>
@@ -490,8 +578,8 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="border border-stone-200 bg-white p-8 hover:border-black transition-colors duration-300">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 flex items-center gap-2 border-b border-stone-100 pb-4">
+        <div className="border border-stone-200 bg-white p-8 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 flex items-center gap-2 border-b border-stone-100 pb-4 dark:border-stone-800 dark:text-white">
             <BarChartIcon className="w-4 h-4" />
             Producción Reciente
           </h3>
@@ -504,7 +592,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{fill: '#000', fontSize: 10, fontFamily: 'Inter', fontWeight: 600}} 
+                    tick={{fill: '#737373', fontSize: 10, fontFamily: 'Inter', fontWeight: 600}} 
                     dy={10}
                   />
                   <YAxis 
@@ -515,19 +603,19 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                   <Tooltip 
                     cursor={{fill: '#F5F5F5'}} 
                     contentStyle={{
-                        backgroundColor: '#000', 
-                        border: 'none', 
+                        backgroundColor: '#1c1917', 
+                        border: '1px solid #292524', 
                         color: '#fff',
                         fontFamily: 'Inter',
                         fontSize: '12px',
                         borderRadius: '0px'
                     }} 
                   />
-                  <Bar dataKey="kg" fill="#000000" radius={[0, 0, 0, 0]} barSize={24} />
+                  <Bar dataKey="kg" fill="#44403c" radius={[0, 0, 0, 0]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-stone-300">
+                <div className="h-full flex flex-col items-center justify-center text-stone-300 dark:text-stone-700">
                     <Flame className="w-10 h-10 mb-4 opacity-10" />
                     <p className="text-[10px] font-black uppercase tracking-widest italic">Sin registros</p>
                 </div>
@@ -536,8 +624,8 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
         </div>
 
         {/* Gráfico de Pastel - Estado de Ordenes */}
-        <div className="border border-stone-200 bg-white p-8 hover:border-black transition-colors duration-300 flex flex-col">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 flex items-center gap-2 border-b border-stone-100 pb-4">
+        <div className="border border-stone-200 bg-white p-8 hover:border-black transition-colors duration-300 flex flex-col dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 flex items-center gap-2 border-b border-stone-100 pb-4 dark:border-stone-800 dark:text-white">
             <PieChartIcon className="w-4 h-4" />
             Estado de Ordenes
           </h3>
@@ -562,7 +650,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                         value={orders.length}
                         position="center"
                         className="text-3xl font-black"
-                        style={{ fill: '#000', fontSize: '24px', fontWeight: '900', fontFamily: 'Inter' }}
+                        style={{ fill: '#737373', fontSize: '24px', fontWeight: '900', fontFamily: 'Inter' }}
                     />
                     </Pie>
                     <Tooltip 
@@ -570,7 +658,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                             if (active && payload && payload.length) {
                             const data = payload[0].payload;
                             return (
-                                <div className="bg-black text-white p-3 shadow-xl">
+                                <div className="bg-black text-white p-3 shadow-xl dark:bg-stone-800 dark:border dark:border-stone-700">
                                 <p className="text-[10px] uppercase tracking-widest font-bold mb-1">{data.fullName}</p>
                                 <p className="text-sm font-mono">{data.value} Ordenes ({data.percentage}%)</p>
                                 <p className="text-xs text-stone-400 font-mono mt-1">{data.kg.toFixed(1)} Kg</p>
@@ -583,7 +671,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                 </PieChart>
                 </ResponsiveContainer>
              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-stone-300">
+                <div className="h-full flex flex-col items-center justify-center text-stone-300 dark:text-stone-700">
                     <Package className="w-10 h-10 mb-4 opacity-10" />
                     <p className="text-[10px] font-black uppercase tracking-widest italic">Sin datos</p>
                 </div>
@@ -595,11 +683,11 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                 <div key={entry.name} className="flex items-center justify-between group cursor-default">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                    <span className="text-[10px] uppercase tracking-wider text-stone-600 font-bold group-hover:text-black transition-colors">{entry.fullName}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-stone-600 font-bold group-hover:text-black transition-colors dark:text-stone-400 dark:group-hover:text-stone-200">{entry.fullName}</span>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-[10px] font-mono text-stone-400">{entry.kg.toFixed(1)} Kg</span>
-                    <span className="text-xs font-bold text-black min-w-[3rem] text-right">{entry.value} ({entry.percentage}%)</span>
+                    <span className="text-xs font-bold text-black min-w-[3rem] text-right dark:text-white">{entry.value} ({entry.percentage}%)</span>
                   </div>
                 </div>
               ))}
@@ -607,7 +695,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
         </div>
       </div>
 
-      <div className="flex justify-center pt-8 border-t border-stone-100">
+      <div className="flex justify-center pt-8 border-t border-stone-100 dark:border-stone-800">
         <div className="flex items-center gap-2 text-stone-400">
           <Info className="w-3 h-3" />
           <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Varietal App V1.0</span>
@@ -618,13 +706,13 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
 };
 
 const MetricCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode; description?: string }> = ({ label, value, icon, description }) => (
-  <div className="bg-white border border-stone-200 p-8 flex items-start justify-between hover:border-black transition-all duration-300 group">
+  <div className="bg-white border border-stone-200 p-8 flex items-start justify-between hover:border-black transition-all duration-300 group dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
     <div>
-      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-3">{label}</p>
-      <h3 className="text-4xl font-black text-black tracking-tighter mt-1">{value}</h3>
-      {description && <p className="text-[10px] text-stone-400 mt-3 font-mono border-l-2 border-stone-100 pl-2">{description}</p>}
+      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-3 dark:text-stone-500">{label}</p>
+      <h3 className="text-4xl font-black text-black tracking-tighter mt-1 dark:text-white">{value}</h3>
+      {description && <p className="text-[10px] text-stone-400 mt-3 font-mono border-l-2 border-stone-100 pl-2 dark:text-stone-500 dark:border-stone-800">{description}</p>}
     </div>
-    <div className="text-stone-300 group-hover:text-black transition-colors duration-300 transform group-hover:scale-110">
+    <div className="text-stone-300 group-hover:text-black transition-colors duration-300 transform group-hover:scale-110 dark:text-stone-700 dark:group-hover:text-stone-200">
       {React.cloneElement(icon as React.ReactElement<any>, { size: 28 })}
     </div>
   </div>

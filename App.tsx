@@ -34,6 +34,7 @@ import CuppingView from './views/CuppingView';
 import SettingsModal from './components/SettingsModal';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { BrandLogoFull } from './components/BrandLogo';
 
 const AppContent: React.FC = () => {
   const { user, loading, profile, refreshSession } = useAuth();
@@ -54,6 +55,21 @@ const AppContent: React.FC = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [accessPassword, setAccessPassword] = useState('');
   const [accessError, setAccessError] = useState('');
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', String(darkMode));
+  }, [darkMode]);
 
   useEffect(() => {
     // Restore connection from local storage
@@ -143,10 +159,10 @@ const AppContent: React.FC = () => {
 
   if (loading) {
       return (
-          <div className="flex h-screen items-center justify-center bg-white">
+          <div className="flex h-screen items-center justify-center bg-white dark:bg-stone-950">
               <div className="flex flex-col items-center gap-4">
-                <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Cargando Varietal...</p>
+                <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin dark:border-white"></div>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Cargando Varietal...</p>
               </div>
           </div>
       );
@@ -154,21 +170,23 @@ const AppContent: React.FC = () => {
 
   if (!isUnlocked) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="w-full max-w-sm border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 space-y-6">
+      <div className="flex h-[100dvh] items-center justify-center bg-white dark:bg-stone-950">
+        <div className="w-full max-w-sm border-2 border-brand shadow-[8px_8px_0px_0px_rgba(205,133,102,1)] p-8 space-y-6 dark:bg-stone-900 dark:border-stone-800 dark:text-white">
+          <div className="flex justify-center pb-4">
+             <BrandLogoFull className="h-16" color="#CD8566" />
+          </div>
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight">Varietal</h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 mt-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 mt-1 text-center dark:text-stone-500">
               Acceso restringido
             </p>
           </div>
           <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider mb-1 dark:text-stone-300">
               Contraseña de acceso
             </label>
             <input
               type="password"
-              className="w-full px-4 py-3 border border-stone-300 focus:border-black outline-none text-sm"
+              className="w-full px-4 py-3 border border-stone-300 focus:border-black outline-none text-sm dark:bg-stone-950 dark:border-stone-700 dark:focus:border-stone-500 dark:text-white"
               value={accessPassword}
               onChange={(e) => setAccessPassword(e.target.value)}
               onKeyDown={(e) => {
@@ -178,18 +196,18 @@ const AppContent: React.FC = () => {
               }}
             />
             {accessError && (
-              <p className="text-[11px] text-red-600 font-medium">
+              <p className="text-[11px] text-red-600 font-medium dark:text-red-400">
                 {accessError}
               </p>
             )}
           </div>
           <button
             onClick={handleAccess}
-            className="w-full py-3 bg-black text-white font-black uppercase tracking-[0.2em] text-xs border border-black hover:bg-white hover:text-black transition-colors"
+            className="w-full py-3 bg-black text-white font-black uppercase tracking-[0.2em] text-xs border border-black hover:bg-white hover:text-black transition-colors dark:bg-stone-800 dark:border-stone-700 dark:hover:bg-stone-700 dark:hover:text-white"
           >
             Entrar
           </button>
-          <p className="text-[10px] text-stone-400 leading-relaxed">
+          <p className="text-[10px] text-stone-400 leading-relaxed dark:text-stone-600">
             La contraseña se recordará mientras esta ventana del navegador permanezca abierta.
           </p>
         </div>
@@ -220,9 +238,15 @@ const AppContent: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden font-sans text-stone-900 antialiased selection:bg-stone-200 selection:text-black">
+    <div className="flex h-[100dvh] bg-white dark:bg-stone-950 overflow-hidden font-sans text-stone-900 dark:text-stone-100 antialiased selection:bg-brand-light selection:text-white">
       {/* Settings Modal */}
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <SettingsModal 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+        darkMode={darkMode}
+        toggleDarkMode={() => setDarkMode(!darkMode)}
+        onLogout={handleLogout}
+      />
 
       {/* Mobile Drawer Overlay */}
       {isSidebarOpen && (
@@ -232,97 +256,16 @@ const AppContent: React.FC = () => {
         />
       )}
 
-      {/* Sidebar - Architectural Navigation */}
-      <aside className={`fixed inset-y-0 left-0 bg-white border-r border-stone-200 z-[150] transform transition-transform duration-500 ease-in-out w-80 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDesktopSidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}`}>
-        <div className="h-20 flex items-center justify-between px-8 border-b border-stone-200 min-w-[20rem]">
-          <div className="flex items-center gap-4">
-            {/* Logo Placeholder - Removed Icon, Text Only */}
-            <div>
-              <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Varietal</h1>
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Desarrolladores de Café</span>
-            </div>
-          </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-stone-500 hover:bg-stone-100 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <nav className="p-0 overflow-y-auto h-[calc(100vh-160px)] scrollbar-hide">
-          <div className="px-8 py-6">
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4 pl-4">Menu Principal</p>
-            <div className="space-y-1">
-              {menuItems.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => handleSelectSection(item.id)}
-                  className={`w-full flex items-center gap-4 px-4 py-3 border-l-2 transition-all duration-200 group ${
-                    activeTab === item.id 
-                      ? 'border-black text-black bg-stone-50' 
-                      : 'border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-200'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'text-black' : 'text-stone-300 group-hover:text-stone-400'}`} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                  <span className={`text-xs font-bold uppercase tracking-wider ${activeTab === item.id ? 'text-black' : ''}`}>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-8 border-t border-stone-200 bg-white min-w-[20rem]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-              <div className={`w-2 h-2 rounded-full ${cloudStatus === 'connected' ? 'bg-green-500' : 'bg-black'}`} />
-              <span className={`text-[10px] font-bold uppercase tracking-widest ${cloudStatus === 'connected' ? 'text-green-600' : 'text-stone-400'}`}>
-                {cloudStatus === 'connected' ? 'Online' : 'Offline'}
-              </span>
-              </div>
-              <button 
-                onClick={() => { 
-                  setShowSettings(true);
-                  setIsSidebarOpen(false);
-                  setIsDesktopSidebarOpen(false);
-                }}
-                className="p-2 -mr-2 text-stone-400 hover:text-black transition-colors"
-                title="Configuración"
-            >
-                <Settings className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </aside>
+      {/* Sidebar Removed as per user request */}
 
       {/* Main Container */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-stone-950">
         
-        {/* Desktop Sidebar Toggle Button */}
-        {isDesktopSidebarOpen && (
-          <button
-            onClick={() => setIsDesktopSidebarOpen(false)}
-            className="hidden lg:flex fixed left-80 top-1/2 -translate-y-1/2 z-[130] -ml-3 bg-white border border-stone-200 shadow-md p-1.5 rounded-full hover:border-black hover:bg-stone-50 transition-all duration-300"
-            title="Colapsar Menú"
-          >
-            <ChevronLeft className="w-4 h-4 text-stone-500" />
-          </button>
-        )}
-
         {/* Header - Minimalist */}
-        <header className="h-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 flex items-center justify-between px-8 shrink-0 relative z-[300]">
+        <header className="hidden lg:flex h-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 items-center justify-between px-8 shrink-0 relative z-[300] dark:bg-stone-950/95 dark:border-stone-800">
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => {
-                if (window.innerWidth >= 1024) {
-                  setIsDesktopSidebarOpen(!isDesktopSidebarOpen);
-                } else {
-                  setIsSidebarOpen(true);
-                }
-              }} 
-              className={`p-2 -ml-2 text-stone-500 hover:text-black transition-colors ${isDesktopSidebarOpen ? 'lg:hidden' : 'lg:block'}`}
-            >
-              <Menu className="w-6 h-6" />
-            </button>
             <div className="flex flex-col">
-              <span className="text-2xl font-black uppercase tracking-tighter text-black">
+              <span className="text-2xl font-black uppercase tracking-tighter text-black dark:text-white">
                 {menuItems.find(m => m.id === activeTab)?.label}
               </span>
             </div>
@@ -330,7 +273,7 @@ const AppContent: React.FC = () => {
           
           <div className="flex items-center gap-6">
             <div className="hidden sm:flex flex-col text-right">
-              <p className="text-xs font-bold uppercase tracking-wide text-black">
+              <p className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">
                   {user ? (profile?.role === 'admin' ? 'Administrador' : profile?.role === 'editor' ? 'Editor' : 'Visualizador') : 'Administrador'}
               </p>
               {/* Ocultado para limpieza visual
@@ -342,7 +285,7 @@ const AppContent: React.FC = () => {
             {user && (
               <button 
                   onClick={handleLogout}
-                  className="w-10 h-10 border border-stone-200 flex items-center justify-center text-stone-400 hover:border-black hover:text-black transition-colors cursor-pointer bg-stone-50"
+                  className="w-10 h-10 border border-stone-200 flex items-center justify-center text-stone-400 hover:border-black hover:text-black transition-colors cursor-pointer bg-stone-50 dark:bg-stone-900 dark:border-stone-700 dark:text-stone-500 dark:hover:border-stone-500 dark:hover:text-white"
                   title="Cerrar Sesión"
               >
                 <LogOut className="w-4 h-4" />
@@ -353,8 +296,8 @@ const AppContent: React.FC = () => {
 
         {/* Dynamic Content Area */}
         <section className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">
-          <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto">
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="p-4 md:p-8 lg:p-10 pb-32 max-w-7xl mx-auto">
+            <div key={activeTab} className="animate-slide-up">
               {activeTab === 'dashboard' ? (
                 <DashboardView 
                   green={greenCoffees} 
@@ -362,90 +305,118 @@ const AppContent: React.FC = () => {
                   orders={orders} 
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                 />
-              ) : activeTab === 'stock' ? (
-                <div className="space-y-8">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black pb-6">
-                    <div>
-                      <h2 className="text-3xl font-black text-black uppercase tracking-tighter">Stock</h2>
-                      <p className="text-stone-500 font-mono text-xs uppercase tracking-widest">
-                        Inventario verde y tostado
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-4 mt-2 md:mt-0">
-                      <button
-                        onClick={() => setStockTab('green')}
-                        className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
-                          stockTab === 'green'
-                            ? 'bg-black text-white border-black'
-                            : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black'
-                        }`}
-                      >
-                        <Coffee className="w-4 h-4" /> Café Verde
-                      </button>
-                      <button
-                        onClick={() => setStockTab('roasted')}
-                        className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
-                          stockTab === 'roasted'
-                            ? 'bg-black text-white border-black'
-                            : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black'
-                        }`}
-                      >
-                        <Package className="w-4 h-4" /> Café Tostado
-                      </button>
-                      <button
-                        onClick={() => setStockTab('utility')}
-                        className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
-                          stockTab === 'utility'
-                            ? 'bg-black text-white border-black'
-                            : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black'
-                        }`}
-                      >
-                        <Settings2 className="w-4 h-4" /> Utilería
-                      </button>
-                    </div>
-                  </div>
-
-                  {stockTab === 'green' ? (
-                    <GreenCoffeeView coffees={greenCoffees} setCoffees={() => {}} />
-                  ) : stockTab === 'roasted' ? (
-                    <InventoryView
-                      stocks={roastedStocks}
-                      roasts={roasts}
-                      retailBags={retailBags}
-                      setRetailBags={() => {}}
-                      mode="coffee"
-                    />
-                  ) : (
-                    <InventoryView
-                      stocks={roastedStocks}
-                      roasts={roasts}
-                      retailBags={retailBags}
-                      setRetailBags={() => {}}
-                      mode="utility"
-                    />
-                  )}
-                </div>
               ) : activeTab === 'roasting' ? (
                 <RoastingView 
                   roasts={roasts} 
                   greenCoffees={greenCoffees} 
-                  orders={orders}
+                  orders={orders} 
+                />
+              ) : activeTab === 'green-coffee' ? (
+                <GreenCoffeeView 
+                  coffees={greenCoffees}
+                  setCoffees={() => {}} 
                 />
               ) : activeTab === 'orders' ? (
                 <OrdersView orders={orders} />
+              ) : activeTab === 'stock' ? (
+                <div className="space-y-8">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
+                    <div>
+                      <h2 className="text-3xl font-black text-black dark:text-white uppercase tracking-tighter">Inventario</h2>
+                    </div>
+                    <div className="flex gap-8">
+                      {['green', 'roasted', 'utility'].map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setStockTab(tab as any)}
+                          className={`pb-2 text-xs font-bold uppercase tracking-widest transition-all relative ${
+                            stockTab === tab 
+                              ? 'text-black dark:text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-black dark:after:bg-white' 
+                              : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                          }`}
+                        >
+                          {tab === 'green' ? 'Café Verde' : tab === 'roasted' ? 'Café Tostado' : 'Utilería'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div key={stockTab} className="animate-fade-in">
+                    {stockTab === 'green' ? (
+                      <GreenCoffeeView 
+                        coffees={greenCoffees}
+                        setCoffees={() => {}}
+                      />
+                    ) : stockTab === 'roasted' ? (
+                      <InventoryView
+                        stocks={roastedStocks}
+                        roasts={roasts}
+                        retailBags={retailBags}
+                        setRetailBags={() => {}}
+                        mode="coffee"
+                      />
+                    ) : (
+                      <InventoryView
+                        stocks={roastedStocks}
+                        roasts={roasts}
+                        retailBags={retailBags}
+                        setRetailBags={() => {}}
+                        mode="utility"
+                      />
+                    )}
+                  </div>
+                </div>
               ) : activeTab === 'cupping' ? (
                 <CuppingView stocks={roastedStocks} />
               ) : activeTab === 'invoicing' ? (
                 <InvoicingView 
-                  orders={orders} 
+                  orders={orders}
                   roasts={roasts}
                   stocks={roastedStocks}
                 />
-              ) : null}
+              ) : (
+                <DashboardView 
+                  green={greenCoffees} 
+                  roasts={roasts} 
+                  orders={orders} 
+                  onNavigate={(tabId) => setActiveTab(tabId)} 
+                />
+              )}
             </div>
           </div>
         </section>
       </main>
+
+      {/* Mobile Bottom Navigation - Visible on all screens now as per user request to replace sidebar */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 z-[200] safe-area-pb">
+        <div className="flex items-center justify-around p-2">
+          {menuItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center justify-center gap-2 p-3 rounded-full transition-all duration-300 ${
+                  isActive ? 'bg-brand text-white px-5' : 'text-stone-400 hover:text-brand dark:text-stone-500 dark:hover:text-brand'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                {isActive && (
+                  <span className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="flex items-center justify-center gap-2 p-3 rounded-full transition-all duration-300 text-stone-400 hover:text-brand dark:text-stone-500 dark:hover:text-brand"
+          >
+            <Settings2 className="w-5 h-5" />
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

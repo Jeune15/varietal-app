@@ -27,6 +27,29 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+interface ModeCardProps {
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
+
+const ModeCard: React.FC<ModeCardProps> = ({ title, desc, icon, onClick }) => (
+  <button onClick={onClick} className="group flex flex-col p-8 bg-white border border-stone-200 hover:border-black transition-all text-left relative overflow-hidden h-full dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
+    <div className="bg-black text-white p-4 w-fit mb-6 group-hover:scale-105 transition-transform dark:bg-stone-800 dark:text-stone-200">
+      {icon}
+    </div>
+    <h4 className="text-xl font-black text-black mb-3 tracking-tight uppercase group-hover:underline decoration-2 underline-offset-4 dark:text-white">{title}</h4>
+    <p className="text-xs text-stone-500 leading-relaxed font-bold uppercase tracking-wide dark:text-stone-400">{desc}</p>
+    
+    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="bg-black text-white p-1 dark:bg-stone-800 dark:text-stone-200">
+        <Plus className="w-4 h-4" />
+      </div>
+    </div>
+  </button>
+);
+
 interface Props {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
@@ -404,7 +427,8 @@ const ProductionView: React.FC<Props> = ({
   const selectedStockSummary = stocks.find(s => s.id === selectedStockId) || null;
 
   return (
-    <div className="space-y-12">
+    <>
+    <div className="space-y-12 pb-48">
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-8 border-b-4 border-black pb-8">
         <div className="space-y-2">
           <h3 className="text-4xl font-black text-black tracking-tighter uppercase">Producción</h3>
@@ -452,8 +476,8 @@ const ProductionView: React.FC<Props> = ({
               <ModeCard title="Despacho" desc="Salida de pedidos listos a logística." icon={<Truck className="w-6 h-6" />} onClick={() => setActiveMode('Despacho de Pedido')} />
             </div>
           ) : (
-            <div className="bg-white border border-stone-200 max-w-2xl mx-auto animate-in zoom-in-95 duration-200">
-              <div className="p-8 bg-black text-white flex justify-between items-center">
+            <div className="bg-white border border-stone-200 max-w-2xl mx-auto animate-in zoom-in-95 duration-200 dark:bg-stone-900 dark:border-stone-800">
+              <div className="p-8 bg-black text-white flex justify-between items-center dark:bg-stone-950">
                 <div className="space-y-1">
                   <h4 className="text-xl font-black tracking-tight uppercase">{activeMode}</h4>
                   <p className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">Formulario de Actividad</p>
@@ -463,8 +487,8 @@ const ProductionView: React.FC<Props> = ({
               <form onSubmit={handleAction} className="p-8 space-y-8">
                 {['Armado de Pedido', 'Despacho de Pedido'].includes(activeMode) && (
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Seleccionar Pedido</label>
-                    <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none" value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)}>
+                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Seleccionar Pedido</label>
+                    <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)}>
                       <option value="">-- Elija un pedido activo --</option>
                       {orders.filter(o => {
                         if (activeMode === 'Despacho de Pedido') {
@@ -497,27 +521,27 @@ const ProductionView: React.FC<Props> = ({
                       }
                       return true;
                     }).length === 0 && (
-                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-medium">
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-medium dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200">
                         No hay café tostado disponible para este pedido. Si tiene café verde en silos, asegúrese de tostarlo primero en la sección "Tueste".
                       </div>
                     )}
                   </div>
                 )}
                 {selectedOrderSummary && (
-                  <div className="bg-stone-50 border border-stone-200 p-4 flex flex-col gap-2">
+                  <div className="bg-stone-50 border border-stone-200 p-4 flex flex-col gap-2 dark:bg-stone-900 dark:border-stone-800">
                     <div className="flex justify-between text-xs">
                       <div>
-                        <p className="font-bold uppercase tracking-widest text-stone-500">Pedido</p>
-                        <p className="font-bold text-black">
+                        <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Pedido</p>
+                        <p className="font-bold text-black dark:text-white">
                           {selectedOrderSummary.clientName}
                         </p>
-                        <p className="text-[11px] text-stone-500">
+                        <p className="text-[11px] text-stone-500 dark:text-stone-400">
                           {selectedOrderSummary.type === 'Servicio de Tueste' ? 'Servicio de Tueste' : 'Venta Café Tostado'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold uppercase tracking-widest text-stone-500">Cantidad Pedido</p>
-                        <p className="font-black text-sm">
+                        <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Cantidad Pedido</p>
+                        <p className="font-black text-sm dark:text-white">
                           {(() => {
                             const order = selectedOrderSummary;
                             const displayQty =
@@ -528,20 +552,20 @@ const ProductionView: React.FC<Props> = ({
                           })()}
                         </p>
                         {typeof selectedOrderSummary.fulfilledKg === 'number' && (
-                          <p className="text-[10px] text-stone-500">
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400">
                             Despachado: {selectedOrderSummary.fulfilledKg.toFixed(2)} Kg
                           </p>
                         )}
                       </div>
                     </div>
                     {selectedOrderSummary.orderLines && selectedOrderSummary.orderLines.length > 0 && (
-                      <div className="border-t border-stone-100 pt-3 mt-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">
+                      <div className="border-t border-stone-100 pt-3 mt-2 dark:border-stone-800">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1 dark:text-stone-500">
                           Detalle del pedido
                         </p>
                         <div className="space-y-1 max-h-24 overflow-y-auto">
                           {selectedOrderSummary.orderLines.map(line => (
-                            <p key={line.id} className="text-[11px] text-stone-600">
+                            <p key={line.id} className="text-[11px] text-stone-600 dark:text-stone-400">
                               {line.variety} • {line.quantityKg.toFixed(2)} Kg
                               {line.grindType ? ` • ${line.grindType === 'molido' ? 'Molido' : 'Grano'}` : ''}
                             </p>
@@ -550,37 +574,37 @@ const ProductionView: React.FC<Props> = ({
                       </div>
                     )}
                     {(selectedOrderSummary.deliveryAddress || selectedOrderSummary.deliveryAddressDetail) && (
-                      <div className="border-t border-stone-100 pt-3 mt-2 flex justify-between gap-4 text-xs">
+                      <div className="border-t border-stone-100 pt-3 mt-2 flex justify-between gap-4 text-xs dark:border-stone-800">
                         <div>
-                          <p className="font-bold uppercase tracking-widest text-stone-500">Dirección de envío</p>
-                          <p className="font-medium text-black">
+                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Dirección de envío</p>
+                          <p className="font-medium text-black dark:text-white">
                             {selectedOrderSummary.deliveryAddress}
                           </p>
                           {selectedOrderSummary.deliveryAddressDetail && (
-                            <p className="text-[11px] text-stone-500 mt-1">
+                            <p className="text-[11px] text-stone-500 mt-1 dark:text-stone-400">
                               {selectedOrderSummary.deliveryAddressDetail}
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-bold uppercase tracking-widest text-stone-500">Entrega</p>
-                          <p className="text-[11px] text-stone-600">
+                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Entrega</p>
+                          <p className="text-[11px] text-stone-600 dark:text-stone-400">
                             {selectedOrderSummary.defaultGrindType === 'molido' ? 'Molido' : 'Grano'}
                           </p>
                         </div>
                       </div>
                     )}
                     {selectedStockSummary && (
-                      <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2">
+                      <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2 dark:border-stone-800">
                         <div>
-                          <p className="font-bold uppercase tracking-widest text-stone-500">Lote Tostado</p>
-                          <p className="font-bold text-black">
+                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Lote Tostado</p>
+                          <p className="font-bold text-black dark:text-white">
                             {selectedStockSummary.clientName} — {selectedStockSummary.variety}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold uppercase tracking-widest text-stone-500">Disponible</p>
-                          <p className="font-black text-sm">
+                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Disponible</p>
+                          <p className="font-black text-sm dark:text-white">
                             {selectedStockSummary.remainingQtyKg.toFixed(2)} Kg
                           </p>
                         </div>
@@ -590,8 +614,8 @@ const ProductionView: React.FC<Props> = ({
                 )}
                 {['Selección de Café', 'Armado de Bolsas Retail', 'Armado de Pedido'].includes(activeMode) && (
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Existencias de Café (Origen)</label>
-                    <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none" value={selectedStockId} onChange={e => setSelectedStockId(e.target.value)}>
+                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Existencias de Café (Origen)</label>
+                    <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedStockId} onChange={e => setSelectedStockId(e.target.value)}>
                       <option value="">-- Elija un lote tostado --</option>
                       {stocks
                         .filter(s => s.remainingQtyKg > 0)
@@ -614,15 +638,15 @@ const ProductionView: React.FC<Props> = ({
                 {activeMode === 'Armado de Pedido' && (
                   <div className="space-y-8">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Tipo de Carga</label>
+                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Tipo de Carga</label>
                       <div className="grid grid-cols-2 gap-4">
                         <button
                           type="button"
                           onClick={() => setAdditionalInfo({ ...additionalInfo, packagingType: 'grainpro' })}
                           className={`p-6 border flex flex-col items-center justify-center gap-3 transition-all ${
                             additionalInfo.packagingType === 'grainpro' 
-                              ? 'bg-black text-white border-black' 
-                              : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black'
+                              ? 'bg-black text-white border-black dark:bg-stone-800 dark:border-stone-700' 
+                              : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
                           }`}
                         >
                           <Container className="w-6 h-6" />
@@ -633,8 +657,8 @@ const ProductionView: React.FC<Props> = ({
                           onClick={() => setAdditionalInfo({ ...additionalInfo, packagingType: 'bags' })}
                           className={`p-6 border flex flex-col items-center justify-center gap-3 transition-all ${
                             additionalInfo.packagingType === 'bags' 
-                              ? 'bg-black text-white border-black' 
-                              : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black'
+                              ? 'bg-black text-white border-black dark:bg-stone-800 dark:border-stone-700' 
+                              : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
                           }`}
                         >
                           <Package className="w-6 h-6" />
@@ -644,7 +668,7 @@ const ProductionView: React.FC<Props> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">
+                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                         Cantidad a despachar (Kg)
                       </label>
                       <input
@@ -652,13 +676,13 @@ const ProductionView: React.FC<Props> = ({
                         min="0.01"
                         step="0.01"
                         required
-                        className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold"
+                        className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500"
                         value={productionValue || ''}
                         onChange={e => setProductionValue(parseFloat(e.target.value) || 0)}
                         placeholder="Ej: 50"
                       />
                       {selectedOrderSummary && selectedOrderSummary.type !== 'Servicio de Tueste' && (
-                        <p className="text-[10px] text-stone-500 font-medium">
+                        <p className="text-[10px] text-stone-500 font-medium dark:text-stone-400">
                           Pendiente del pedido:{' '}
                           {Math.max(
                             0,
@@ -671,7 +695,7 @@ const ProductionView: React.FC<Props> = ({
 
                     {(additionalInfo.packagingType === 'bags' || additionalInfo.packagingType === 'grainpro') && (
                       <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">
+                        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                           {additionalInfo.packagingType === 'grainpro' ? 'Cantidad de Bolsas GrainPro' : 'Bolsas Utilizadas'}
                         </label>
                         <input 
@@ -679,7 +703,7 @@ const ProductionView: React.FC<Props> = ({
                           min="1" 
                           step="1"
                           required
-                          className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" 
+                          className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" 
                           value={additionalInfo.bagsUsed || ''} 
                           onChange={e => setAdditionalInfo({...additionalInfo, bagsUsed: parseInt(e.target.value) || 0})}
                           placeholder="Ingrese cantidad..."
@@ -692,19 +716,19 @@ const ProductionView: React.FC<Props> = ({
                         <input
                           id="mark-ready"
                           type="checkbox"
-                          className="w-4 h-4 border-stone-300"
+                          className="w-4 h-4 border-stone-300 dark:border-stone-700 dark:bg-stone-900"
                           checked={additionalInfo.markOrderReady}
                           onChange={e => setAdditionalInfo({ ...additionalInfo, markOrderReady: e.target.checked })}
                         />
-                        <label htmlFor="mark-ready" className="text-xs font-bold text-stone-700 uppercase tracking-widest">
+                        <label htmlFor="mark-ready" className="text-xs font-bold text-stone-700 uppercase tracking-widest dark:text-stone-300">
                           Marcar pedido listo para despacho
                         </label>
                       </div>
                     )}
                     
-                    <div className="bg-stone-50 p-6 border border-stone-200 flex gap-4 items-center">
-                        <CheckCircle className="w-5 h-5 text-black" />
-                        <p className="text-xs text-stone-600 font-medium leading-relaxed">
+                    <div className="bg-stone-50 p-6 border border-stone-200 flex gap-4 items-center dark:bg-stone-900 dark:border-stone-800">
+                        <CheckCircle className="w-5 h-5 text-black dark:text-white" />
+                        <p className="text-xs text-stone-600 font-medium leading-relaxed dark:text-stone-400">
                           Al guardar, se descontará café del lote seleccionado y se actualizará el estado del pedido. 
                           Los pedidos de venta se marcarán como Listo para Despacho automáticamente; los servicios de tueste pueden registrarse en varias tandas antes de despachar.
                         </p>
@@ -712,76 +736,76 @@ const ProductionView: React.FC<Props> = ({
                   </div>
                 )}
                 {activeMode === 'Selección de Café' && (
-                  <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Merma Detectada (Gramos)</label><input type="number" step="0.1" min="0" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" value={additionalInfo.merma} onChange={e => setAdditionalInfo({...additionalInfo, merma: parseFloat(e.target.value)})} /></div>
+                  <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Merma Detectada (Gramos)</label><input type="number" step="0.1" min="0" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.merma} onChange={e => setAdditionalInfo({...additionalInfo, merma: parseFloat(e.target.value)})} /></div>
                 )}
                 {activeMode === 'Armado de Bolsas Retail' && (
                   <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Formato Bolsa</label><select className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold appearance-none rounded-none" value={additionalInfo.bagType} onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}>
+                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato Bolsa</label><select className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.bagType} onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}>
                       <option value="250g">250g</option><option value="500g">500g</option><option value="1kg">1kg</option>
                     </select></div>
-                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Unidades</label><input type="number" min="1" step="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value) || 0)} /></div>
+                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Unidades</label><input type="number" min="1" step="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value) || 0)} /></div>
                   </div>
                 )}
                 {activeMode === 'Despacho de Pedido' && (
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Costo de Envío</label>
+                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Costo de Envío</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-4 text-stone-400 font-bold">$</span>
+                        <span className="absolute left-4 top-4 text-stone-400 font-bold dark:text-stone-500">$</span>
                         <input 
                           type="number" 
                           min="0" 
                           step="0.01"
-                          className="w-full pl-8 pr-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold" 
+                          className="w-full pl-8 pr-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" 
                           value={additionalInfo.shippingCost || ''} 
                           onChange={e => setAdditionalInfo({...additionalInfo, shippingCost: parseFloat(e.target.value) || 0})}
                           placeholder="0"
                         />
                       </div>
                     </div>
-                    <div className="bg-stone-50 p-6 border border-stone-200 flex items-start gap-4">
-                      <Truck className="w-5 h-5 text-black mt-0.5" />
-                      <p className="text-xs text-stone-600 font-medium leading-relaxed">
+                    <div className="bg-stone-50 p-6 border border-stone-200 flex items-start gap-4 dark:bg-stone-900 dark:border-stone-800">
+                      <Truck className="w-5 h-5 text-black mt-0.5 dark:text-white" />
+                      <p className="text-xs text-stone-600 font-medium leading-relaxed dark:text-stone-400">
                         Confirma el envío del pedido seleccionado. Si ingresas un costo de envío, se generará automáticamente un registro en Gastos.
                       </p>
                     </div>
                   </div>
                 )}
-                <div className="pt-6"><button type="submit" className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black">Guardar Actividad</button></div>
+                <div className="pt-6"><button type="submit" className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700">Guardar Actividad</button></div>
               </form>
             </div>
           )}
 
           {!activeMode && (
-            <div className="bg-white border border-stone-200">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+            <div className="bg-white border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800">
                 <div className="flex items-center gap-3">
-                  <Activity className="w-4 h-4 text-black" />
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-black">
+                  <Activity className="w-4 h-4 text-black dark:text-white" />
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-black dark:text-white">
                     Historial de Actividades de Producción
                   </h4>
                 </div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] dark:text-stone-500">
                   Últimas {history.length} entradas
                 </span>
               </div>
               {history.length === 0 ? (
-                <div className="px-6 py-8 text-center text-xs text-stone-400 font-medium uppercase tracking-widest">
+                <div className="px-6 py-8 text-center text-xs text-stone-400 font-medium uppercase tracking-widest dark:text-stone-500">
                   Sin actividades registradas
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-stone-50 border-b border-stone-200">
+                    <thead className="bg-stone-50 border-b border-stone-200 dark:bg-stone-950 dark:border-stone-800">
                       <tr>
-                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Fecha</th>
-                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Actividad</th>
-                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Cliente</th>
-                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100">Lote / Café</th>
-                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest text-right">Detalle</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">Fecha</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">Actividad</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">Cliente</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">Lote / Café</th>
+                        <th className="px-6 py-3 font-bold text-stone-500 uppercase tracking-widest text-right dark:text-stone-400">Detalle</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-stone-100">
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                       {history.map((a) => {
                         const details: any = a.details || {};
                         const date = a.date ? a.date.split('T')[0] : '';
@@ -818,12 +842,12 @@ const ProductionView: React.FC<Props> = ({
                         }
 
                         return (
-                          <tr key={a.id} className="hover:bg-stone-50 transition-colors">
-                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{date}</td>
-                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{a.type}</td>
-                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{client}</td>
-                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700">{stock}</td>
-                            <td className="px-6 py-3 text-right font-medium text-stone-700">{detailText}</td>
+                          <tr key={a.id} className="hover:bg-stone-50 transition-colors dark:hover:bg-stone-800/50">
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700 dark:border-stone-800 dark:text-stone-300">{date}</td>
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700 dark:border-stone-800 dark:text-stone-300">{a.type}</td>
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700 dark:border-stone-800 dark:text-stone-300">{client}</td>
+                            <td className="px-6 py-3 border-r border-stone-100 font-medium text-stone-700 dark:border-stone-800 dark:text-stone-300">{stock}</td>
+                            <td className="px-6 py-3 text-right font-medium text-stone-700 dark:text-stone-300">{detailText}</td>
                           </tr>
                         );
                       })}
@@ -857,10 +881,89 @@ const ProductionView: React.FC<Props> = ({
             )}
           </div>
 
-          <div className="bg-white border border-stone-200">
+          {/* Mobile Inventory Cards */}
+          <div className="lg:hidden space-y-4">
+            {productionInventory.length === 0 ? (
+               <div className="p-8 text-center text-stone-400 text-xs font-mono uppercase tracking-widest bg-white border border-stone-200 dark:bg-stone-900 dark:border-stone-800 dark:text-stone-500">
+                  No hay insumos registrados
+               </div>
+            ) : (
+               productionInventory.map(item => (
+                 <div key={item.id} className="bg-white border border-stone-200 p-5 space-y-4 shadow-sm dark:bg-stone-900 dark:border-stone-800">
+                    <div className="flex justify-between items-start gap-4">
+                       <span className="font-black text-black text-sm uppercase tracking-tight dark:text-white">{item.name}</span>
+                       {item.type === 'rechargeable' ? (
+                          <span className="text-[9px] font-bold bg-stone-100 text-stone-600 px-2 py-1 border border-stone-200 uppercase tracking-wider rounded-sm dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700">Recargable</span>
+                       ) : (
+                          <div className="flex flex-col items-end gap-1">
+                             <span className="text-[9px] font-bold bg-black text-white px-2 py-1 border border-black uppercase tracking-wider rounded-sm dark:bg-stone-800 dark:border-stone-700 dark:text-stone-200">Unidad</span>
+                             {item.format && <span className="text-[9px] text-stone-400 font-bold uppercase tracking-wider dark:text-stone-500">{item.format}</span>}
+                          </div>
+                       )}
+                    </div>
+                    
+                    <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+                       <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest dark:text-stone-500">Existencias</span>
+                          <span className="text-xs font-black text-black dark:text-white">
+                             {item.quantity}{item.type === 'rechargeable' ? '%' : ' Uds'}
+                          </span>
+                       </div>
+                       
+                       {item.type === 'rechargeable' ? (
+                          <div className="flex items-center gap-4">
+                             <input 
+                               type="range" 
+                               min="0" 
+                               max="100" 
+                               value={item.quantity} 
+                               disabled={!canEdit}
+                               onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value))}
+                               className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-black disabled:opacity-50 dark:bg-stone-700 dark:accent-white"
+                             />
+                          </div>
+                       ) : (
+                          <div className="flex items-center gap-2">
+                             <button 
+                               onClick={() => updateItemQuantity(item.id, Math.max(0, item.quantity - 1))}
+                               disabled={!canEdit || item.quantity <= 0}
+                               className="w-8 h-8 flex items-center justify-center bg-stone-100 hover:bg-stone-200 text-black font-bold rounded-full disabled:opacity-50 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-white"
+                             >
+                               -
+                             </button>
+                             <input 
+                               type="number" 
+                               value={item.quantity}
+                               disabled={!canEdit}
+                               onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value))}
+                               className="flex-1 py-2 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold text-black text-center disabled:bg-stone-50 dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500"
+                             />
+                             <button 
+                               onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
+                               disabled={!canEdit}
+                               className="w-8 h-8 flex items-center justify-center bg-stone-100 hover:bg-stone-200 text-black font-bold rounded-full disabled:opacity-50 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-white"
+                             >
+                               +
+                             </button>
+                          </div>
+                       )}
+                    </div>
+
+                    {item.quantity <= item.minThreshold && (
+                       <div className="bg-red-50 border border-red-100 p-3 flex items-center gap-2 text-red-600 dark:bg-red-900/20 dark:border-red-900/50 dark:text-red-400">
+                          <AlertCircle className="w-4 h-4" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Reordenar (Min: {item.minThreshold})</span>
+                       </div>
+                    )}
+                 </div>
+               ))
+            )}
+          </div>
+
+          <div className="hidden lg:block bg-white border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-[700px]">
-                <thead className="bg-black text-white">
+                <thead className="bg-black text-white dark:bg-stone-950 dark:text-stone-200">
                   <tr>
                     <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em]">Producto</th>
                     <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em]">Tipo</th>
@@ -868,27 +971,27 @@ const ProductionView: React.FC<Props> = ({
                     <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-right">Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-200">
+                <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
                   {productionInventory.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-24 text-center">
                         <div className="flex flex-col items-center gap-4">
-                          <Settings2 className="w-12 h-12 text-stone-200" strokeWidth={1} />
-                          <p className="text-stone-400 font-medium text-sm uppercase tracking-widest">No hay insumos registrados</p>
+                          <Settings2 className="w-12 h-12 text-stone-200 dark:text-stone-800" strokeWidth={1} />
+                          <p className="text-stone-400 font-medium text-sm uppercase tracking-widest dark:text-stone-600">No hay insumos registrados</p>
                         </div>
                       </td>
                     </tr>
                   ) : (
                     productionInventory.map(item => (
-                      <tr key={item.id} className="hover:bg-stone-50 transition-colors group">
-                        <td className="px-6 py-6 font-black text-black text-sm uppercase">{item.name}</td>
+                      <tr key={item.id} className="hover:bg-stone-50 transition-colors group dark:hover:bg-stone-800/50">
+                        <td className="px-6 py-6 font-black text-black text-sm uppercase dark:text-white">{item.name}</td>
                         <td className="px-6 py-6">
                           {item.type === 'rechargeable' ? (
-                            <span className="text-[10px] font-bold bg-stone-100 text-stone-600 px-3 py-1 border border-stone-200 uppercase tracking-wider">Recargable</span>
+                            <span className="text-[10px] font-bold bg-stone-100 text-stone-600 px-3 py-1 border border-stone-200 uppercase tracking-wider dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700">Recargable</span>
                           ) : (
                             <div className="flex flex-col gap-1">
-                              <span className="text-[10px] font-bold bg-white text-black px-3 py-1 border border-black w-fit uppercase tracking-wider">Unidad</span>
-                              {item.format && <span className="text-[9px] text-stone-400 font-bold uppercase tracking-wider mt-1">{item.format}</span>}
+                              <span className="text-[10px] font-bold bg-white text-black px-3 py-1 border border-black w-fit uppercase tracking-wider dark:bg-stone-800 dark:text-stone-200 dark:border-stone-700">Unidad</span>
+                              {item.format && <span className="text-[9px] text-stone-400 font-bold uppercase tracking-wider mt-1 dark:text-stone-500">{item.format}</span>}
                             </div>
                           )}
                         </td>
@@ -902,9 +1005,9 @@ const ProductionView: React.FC<Props> = ({
                                 value={item.quantity} 
                                 disabled={!canEdit}
                                 onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value))}
-                                className="w-full h-1 bg-stone-200 rounded-none appearance-none cursor-pointer accent-black disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full h-1 bg-stone-200 rounded-none appearance-none cursor-pointer accent-black disabled:opacity-50 disabled:cursor-not-allowed dark:bg-stone-700 dark:accent-white"
                               />
-                              <span className="text-xs font-black text-black w-12 text-right">{item.quantity}%</span>
+                              <span className="text-xs font-black text-black w-12 text-right dark:text-white">{item.quantity}%</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
@@ -913,15 +1016,15 @@ const ProductionView: React.FC<Props> = ({
                                 value={item.quantity}
                                 disabled={!canEdit}
                                 onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value))}
-                                className="w-24 px-3 py-2 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold text-black transition-all text-center disabled:bg-stone-50 disabled:text-stone-500"
+                                className="w-24 px-3 py-2 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold text-black transition-all text-center disabled:bg-stone-50 disabled:text-stone-500 dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500"
                               />
-                              <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Uds</span>
+                              <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest dark:text-stone-500">Uds</span>
                             </div>
                           )}
                         </td>
                         <td className="px-6 py-6 text-right">
                           {(item.quantity <= item.minThreshold) && (
-                            <span className="inline-flex items-center gap-2 text-red-600 font-bold text-[10px] uppercase tracking-widest bg-red-50 px-3 py-1 border border-red-100">
+                            <span className="inline-flex items-center gap-2 text-red-600 font-bold text-[10px] uppercase tracking-widest bg-red-50 px-3 py-1 border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/50">
                               <AlertCircle className="w-3 h-3" /> Reordenar
                             </span>
                           )}
@@ -939,14 +1042,14 @@ const ProductionView: React.FC<Props> = ({
       {/* Modal for Packaging */}
       {showProdModal && (
         <div 
-          className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 dark:bg-black/80"
           onClick={() => setShowProdModal(false)}
         >
           <div 
-            className="bg-white border border-stone-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200"
+            className="bg-white border border-stone-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 dark:bg-stone-900 dark:border-stone-800 dark:text-white max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-black p-8 text-white flex justify-between items-center">
+            <div className="bg-black p-8 text-white flex justify-between items-center dark:bg-stone-950 sticky top-0 z-10">
               <div className="space-y-1">
                 <h4 className="text-xl font-black tracking-tight uppercase">Nuevo Insumo</h4>
                 <p className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">Registro de Materiales</p>
@@ -955,11 +1058,11 @@ const ProductionView: React.FC<Props> = ({
             </div>
             <form onSubmit={handleSaveProdItem} className="p-8 space-y-6">
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Nombre del Producto</label>
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Nombre del Producto</label>
                 <input 
                   type="text" 
                   required 
-                  className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all placeholder:text-stone-300" 
+                  className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all placeholder:text-stone-300 dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white dark:placeholder:text-stone-600" 
                   value={prodForm.name} 
                   onChange={e => setProdForm({...prodForm, name: e.target.value})}
                   placeholder="Ej. Bolsas 250g, Gas..."
@@ -968,9 +1071,9 @@ const ProductionView: React.FC<Props> = ({
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Tipo de Stock</label>
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Tipo de Stock</label>
                   <select 
-                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none"
+                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white"
                     value={prodForm.type}
                     onChange={e => setProdForm({...prodForm, type: e.target.value as 'unit' | 'rechargeable'})}
                   >
@@ -979,11 +1082,11 @@ const ProductionView: React.FC<Props> = ({
                   </select>
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Alerta Mínima</label>
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Alerta Mínima</label>
                   <input 
                     type="number" 
                     required 
-                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all" 
+                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white" 
                     value={prodForm.minThreshold} 
                     onChange={e => setProdForm({...prodForm, minThreshold: parseInt(e.target.value)})}
                   />
@@ -992,9 +1095,9 @@ const ProductionView: React.FC<Props> = ({
 
               {prodForm.type === 'unit' && (
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Formato (Opcional)</label>
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato (Opcional)</label>
                   <select 
-                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none"
+                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white"
                     value={prodForm.format || ''}
                     onChange={e => setProdForm({...prodForm, format: e.target.value as any || undefined})}
                   >
@@ -1008,20 +1111,20 @@ const ProductionView: React.FC<Props> = ({
               )}
 
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Stock Inicial</label>
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Stock Inicial</label>
                 <input 
                   type="number" 
                   required 
                   min="0"
                   max={prodForm.type === 'rechargeable' ? 100 : undefined}
-                  className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all" 
+                  className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white" 
                   value={prodForm.quantity} 
                   onChange={e => setProdForm({...prodForm, quantity: parseInt(e.target.value)})}
                 />
               </div>
 
               <div className="pt-6">
-                <button type="submit" className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] shadow-none transition-all text-xs border border-transparent hover:border-black">
+                <button type="submit" className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] shadow-none transition-all text-xs border border-transparent hover:border-black dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700">
                   Registrar Producto
                 </button>
               </div>
@@ -1030,30 +1133,10 @@ const ProductionView: React.FC<Props> = ({
         </div>
       )}
     </div>
+    </>
   );
 };
 
-interface ModeCardProps {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}
 
-const ModeCard: React.FC<ModeCardProps> = ({ title, desc, icon, onClick }) => (
-  <button onClick={onClick} className="group flex flex-col p-8 bg-white border border-stone-200 hover:border-black transition-all text-left relative overflow-hidden h-full">
-    <div className="bg-black text-white p-4 w-fit mb-6 group-hover:scale-105 transition-transform">
-      {icon}
-    </div>
-    <h4 className="text-xl font-black text-black mb-3 tracking-tight uppercase group-hover:underline decoration-2 underline-offset-4">{title}</h4>
-    <p className="text-xs text-stone-500 leading-relaxed font-bold uppercase tracking-wide">{desc}</p>
-    
-    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-      <div className="bg-black text-white p-1">
-        <Plus className="w-4 h-4" />
-      </div>
-    </div>
-  </button>
-);
 
 export default ProductionView;

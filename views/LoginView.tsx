@@ -49,36 +49,36 @@ const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-stone-200 shadow-2xl p-8 md:p-12 animate-in fade-in zoom-in-95 duration-500 relative overflow-hidden">
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4 dark:bg-stone-950">
+      <div className="w-full max-w-md bg-white border border-stone-200 shadow-2xl p-8 md:p-12 animate-in fade-in zoom-in-95 duration-500 relative overflow-hidden dark:bg-stone-900 dark:border-stone-800">
         {/* Decorative Top Border */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-black"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-black dark:bg-stone-800"></div>
 
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-black text-white flex items-center justify-center mb-6">
+          <div className="w-16 h-16 bg-black text-white flex items-center justify-center mb-6 dark:bg-stone-800 dark:text-stone-200">
             <Coffee className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-black">Varietal</h1>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.3em] mt-2">Desarrolladores de Café</p>
+          <h1 className="text-3xl font-black uppercase tracking-tighter text-black dark:text-white">Varietal</h1>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.3em] mt-2 dark:text-stone-500">Desarrolladores de Café</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-            <p className="text-xs text-red-600 font-bold leading-relaxed">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 flex items-start gap-3 dark:bg-red-900/20 dark:border-red-900/50">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 dark:text-red-400" />
+            <p className="text-xs text-red-600 font-bold leading-relaxed dark:text-red-400">{error}</p>
           </div>
         )}
 
         {message && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-100 flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0"></div>
-            <p className="text-xs text-green-700 font-bold leading-relaxed">{message}</p>
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 flex items-start gap-3 dark:bg-green-900/20 dark:border-green-900/50">
+            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0 dark:bg-green-400"></div>
+            <p className="text-xs text-green-700 font-bold leading-relaxed dark:text-green-400">{message}</p>
           </div>
         )}
 
         <form onSubmit={handleAuth} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1">Correo Electrónico</label>
+            <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 dark:text-white">Correo Electrónico</label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">
                 <Mail className="w-4 h-4" />
@@ -86,7 +86,7 @@ const LoginView: React.FC = () => {
               <input 
                 type="email" 
                 required 
-                className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all placeholder:text-stone-300" 
+                className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all placeholder:text-stone-300 dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white dark:placeholder:text-stone-600" 
                 placeholder="usuario@varietal.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -95,7 +95,7 @@ const LoginView: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1">Contraseña</label>
+            <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 dark:text-white">Contraseña</label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">
                 <Lock className="w-4 h-4" />
@@ -103,7 +103,7 @@ const LoginView: React.FC = () => {
               <input 
                 type="password" 
                 required 
-                className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all placeholder:text-stone-300" 
+                className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all placeholder:text-stone-300 dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white dark:placeholder:text-stone-600" 
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -114,24 +114,24 @@ const LoginView: React.FC = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-4 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700"
           >
             {loading ? 'Procesando...' : (mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta')}
             {!loading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
 
-        <div className="mt-8 pt-8 border-t border-stone-100 text-center">
+        <div className="mt-8 pt-8 border-t border-stone-100 text-center dark:border-stone-800">
           <button 
             onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="text-xs font-bold text-stone-400 hover:text-black uppercase tracking-wider transition-colors"
+            className="text-xs font-bold text-stone-400 hover:text-black uppercase tracking-wider transition-colors dark:text-stone-500 dark:hover:text-white"
           >
             {mode === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia Sesión'}
           </button>
         </div>
       </div>
       
-      <p className="mt-8 text-[10px] font-bold text-stone-300 uppercase tracking-widest">
+      <p className="mt-8 text-[10px] font-bold text-stone-300 uppercase tracking-widest dark:text-stone-700">
         v2.0 &middot; Varietal App
       </p>
     </div>
