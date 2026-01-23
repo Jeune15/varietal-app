@@ -261,38 +261,7 @@ const AppContent: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-stone-950">
         
-        {/* Header - Minimalist */}
-        <header className="hidden lg:flex h-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 items-center justify-between px-8 shrink-0 relative z-[300] dark:bg-stone-950/95 dark:border-stone-800">
-          <div className="flex items-center gap-6">
-            <div className="flex flex-col">
-              <span className="text-2xl font-black uppercase tracking-tighter text-black dark:text-white">
-                {menuItems.find(m => m.id === activeTab)?.label}
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="hidden sm:flex flex-col text-right">
-              <p className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">
-                  {user ? (profile?.role === 'admin' ? 'Administrador' : profile?.role === 'editor' ? 'Editor' : 'Visualizador') : 'Administrador'}
-              </p>
-              {/* Ocultado para limpieza visual
-              <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest truncate max-w-[120px]">
-                {user ? user.email : 'Sin Conexión'}
-              </p>
-              */}
-            </div>
-            {user && (
-              <button 
-                  onClick={handleLogout}
-                  className="w-10 h-10 border border-stone-200 flex items-center justify-center text-stone-400 hover:border-black hover:text-black transition-colors cursor-pointer bg-stone-50 dark:bg-stone-900 dark:border-stone-700 dark:text-stone-500 dark:hover:border-stone-500 dark:hover:text-white"
-                  title="Cerrar Sesión"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </header>
+
 
         {/* Dynamic Content Area */}
         <section className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">

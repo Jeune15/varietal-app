@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../db';
 import { Expense } from '../types';
@@ -82,15 +83,15 @@ export const ExpensesView = () => {
     <>
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-48">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="space-y-1">
-          <h3 className="text-xl font-black text-black uppercase tracking-tight">Gastos</h3>
-          <p className="text-xs font-bold text-stone-500 uppercase tracking-widest">Cuentas por Pagar</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+        <div className="space-y-2">
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Gastos</h3>
+          <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">Cuentas por Pagar</p>
         </div>
         {canEdit && (
           <button 
             onClick={() => setShowModal(true)}
-            className="w-full sm:w-auto bg-black text-white border border-black hover:bg-white hover:text-black px-6 py-3 flex items-center justify-center gap-2 transition-all text-xs font-bold uppercase tracking-widest"
+            className="w-full sm:w-auto px-6 py-3 bg-black dark:bg-stone-800 text-white dark:text-stone-200 border border-black dark:border-stone-700 hover:bg-white hover:text-black dark:hover:bg-stone-700 dark:hover:text-white font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             <Plus className="w-4 h-4" /> Nuevo Gasto
           </button>
@@ -171,23 +172,28 @@ export const ExpensesView = () => {
     </div>
 
       {/* New Expense Modal */}
-      {showModal && (
+      {showModal && createPortal(
         <div 
-          className="fixed inset-0 z-[100] bg-white/90 dark:bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowModal(false)}
         >
           <div 
-            className="bg-white dark:bg-stone-900 w-full max-w-md border-2 border-black dark:border-stone-800 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] p-0 animate-in fade-in zoom-in duration-200"
+            className="bg-white dark:bg-stone-900 w-full max-w-md border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center p-6 border-b border-black dark:bg-stone-950 dark:border-stone-800">
-              <h3 className="text-xl font-black text-black dark:text-white uppercase tracking-tight">Registrar Nuevo Gasto</h3>
-              <button onClick={() => setShowModal(false)} className="hover:bg-stone-100 dark:hover:bg-stone-800 p-1 transition-colors dark:text-white">
+            <div className="flex justify-between items-center p-6 bg-black dark:bg-stone-950 text-white border-b border-stone-800 shrink-0 sticky top-0 z-10">
+              <h3 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+                Registrar Nuevo Gasto
+              </h3>
+              <button 
+                onClick={() => setShowModal(false)} 
+                className="p-2 hover:bg-stone-800 transition-colors"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto scrollbar-hide">
               <div>
                 <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Motivo</label>
                 <input
@@ -331,7 +337,7 @@ export const ExpensesView = () => {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 };

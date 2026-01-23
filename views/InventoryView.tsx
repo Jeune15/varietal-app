@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { RoastedStock, RetailBagStock, Roast, ProductionItem } from '../types';
@@ -358,19 +359,11 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
       <>
       <div className="space-y-16 animate-fade-in pb-48">
         <section className="space-y-8">
-          <div className="flex items-center justify-between border-b-4 border-black dark:border-stone-700 pb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
             <div className="space-y-2">
-              <h3 className="text-4xl font-black text-black dark:text-white uppercase tracking-tighter">Utilería</h3>
-              <div className="flex items-center gap-3">
-                <div className="bg-black dark:bg-stone-800 text-white dark:text-stone-200 px-3 py-1 text-xs font-bold uppercase tracking-widest">
-                  Insumos
-                </div>
-                <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
-                  Bolsas y productos
-                </p>
-              </div>
+              <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Utilería</h3>
+              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Insumos &middot; Bolsas y Productos</p>
             </div>
-            <Settings2 className="w-12 h-12 text-stone-200 dark:text-stone-800" strokeWidth={1} />
           </div>
 
           <div className="space-y-6">
@@ -721,9 +714,9 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
         </section>
       </div>
 
-        {showBagStockModal && (
+        {showBagStockModal && createPortal(
           <div
-            className="fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
             onClick={() => {
               setShowBagStockModal(false);
               setSelectedBagItemId('');
@@ -731,10 +724,10 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
             }}
           >
             <div
-              className="bg-white dark:bg-stone-900 w-full max-w-md shadow-2xl border border-black dark:border-stone-700 max-h-[90vh] overflow-y-auto"
+              className="bg-white dark:bg-stone-900 w-full max-w-lg border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
               onClick={e => e.stopPropagation()}
             >
-              <div className="bg-black dark:bg-stone-950 p-6 text-white flex justify-between items-center sticky top-0 z-10">
+              <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
                 <div className="space-y-1">
                   <h4 className="text-lg font-black tracking-tighter uppercase">
                     Agregar stock de bolsas
@@ -755,14 +748,14 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
-              <form onSubmit={handleAddBagStock} className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+              <form onSubmit={handleAddBagStock} className="p-6 space-y-6 overflow-y-auto">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                     Bolsa
-                  </p>
+                  </label>
                   <select
                     required
-                    className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white"
+                    className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all appearance-none rounded-none"
                     value={selectedBagItemId}
                     onChange={e => setSelectedBagItemId(e.target.value)}
                   >
@@ -774,54 +767,44 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                     ))}
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                     Cantidad a agregar
-                  </p>
+                  </label>
                   <input
                     type="number"
                     min={1}
-                    className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white"
+                    className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
                     value={bagStockToAdd}
                     onChange={e =>
                       setBagStockToAdd(e.target.value === '' ? '' : parseInt(e.target.value, 10))
                     }
                   />
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowBagStockModal(false);
-                      setSelectedBagItemId('');
-                      setBagStockToAdd('');
-                    }}
-                    className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-stone-300 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-black hover:text-black dark:hover:border-white dark:hover:text-white"
-                  >
-                    Cancelar
-                  </button>
+                <div className="pt-6">
                   <button
                     type="submit"
-                    className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors"
+                    className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] shadow-none transition-all text-xs border border-transparent hover:border-black dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700"
                   >
                     Guardar
                   </button>
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {showProductModal && (
+        {showProductModal && createPortal(
           <div
-            className="fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
             onClick={() => setShowProductModal(false)}
           >
             <div
-              className="bg-white dark:bg-stone-900 w-full max-w-lg shadow-2xl border border-black dark:border-stone-700 max-h-[90vh] overflow-y-auto"
+              className="bg-white dark:bg-stone-900 w-full max-w-lg border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
               onClick={e => e.stopPropagation()}
             >
-              <div className="bg-black dark:bg-stone-950 p-6 text-white flex justify-between items-center sticky top-0 z-10">
+              <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
                 <div className="space-y-1">
                   <h4 className="text-lg font-black tracking-tighter uppercase">
                     Nuevo producto
@@ -838,7 +821,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
-              <form onSubmit={handleSaveProdItem} className="p-6 space-y-4">
+              <form onSubmit={handleSaveProdItem} className="p-6 space-y-4 overflow-y-auto">
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                     Nombre del producto
@@ -950,7 +933,8 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );
@@ -961,17 +945,11 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
     <div className="space-y-16 pb-48">
       {/* Roasted Bulk Inventory */}
       <section className="space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-4 border-black dark:border-stone-700 pb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div className="space-y-2">
-            <h3 className="text-4xl font-black text-black dark:text-white uppercase tracking-tighter">Silos de Café</h3>
-            <div className="flex items-center gap-3">
-              <div className="bg-black text-white dark:bg-stone-800 dark:text-stone-200 px-3 py-1 text-xs font-bold uppercase tracking-widest">
-                Granel
-              </div>
-              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">Existencias Tostadas</p>
-            </div>
+            <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Silos de Café</h3>
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Existencias Tostadas &middot; Granel</p>
           </div>
-          <Layers className="w-12 h-12 text-stone-200 dark:text-stone-800" strokeWidth={1} />
         </div>
 
         <div className="lg:hidden space-y-4">
@@ -1299,9 +1277,9 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
       </section>
     </div>
 
-      {showSelectionModal && selectedStockForSelection && (
+      {showSelectionModal && selectedStockForSelection && createPortal(
         <div
-          className="fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => {
             setShowSelectionModal(false);
             setSelectedStockForSelection(null);
@@ -1309,10 +1287,10 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
           }}
         >
           <div
-            className="bg-white dark:bg-stone-900 w-full max-w-md shadow-2xl border border-black dark:border-stone-700 max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-stone-900 w-full max-w-md border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={e => e.stopPropagation()}
           >
-            <div className="bg-black dark:bg-stone-950 p-6 text-white flex justify-between items-center sticky top-0 z-10">
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
               <div className="space-y-1">
                 <h4 className="text-lg font-black tracking-tighter uppercase">
                   Selección y merma
@@ -1333,7 +1311,8 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleConfirmSelection} className="p-6 space-y-4">
+            <div className="p-6 overflow-y-auto scrollbar-hide">
+            <form onSubmit={handleConfirmSelection} className="space-y-4">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                   Stock disponible
@@ -1378,13 +1357,15 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 </button>
               </div>
             </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showRetailModal && (
+      {showRetailModal && createPortal(
         <div
-          className="fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => {
             setShowRetailModal(false);
             setSelectedRoastedStockId('');
@@ -1393,10 +1374,10 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
           }}
         >
           <div
-            className="bg-white dark:bg-stone-900 w-full max-w-lg shadow-2xl border border-black dark:border-stone-700 max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-stone-900 w-full max-w-lg border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={e => e.stopPropagation()}
           >
-            <div className="bg-black dark:bg-stone-950 p-6 text-white flex justify-between items-center sticky top-0 z-10">
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
               <div className="space-y-1">
                 <h4 className="text-lg font-black tracking-tighter uppercase">
                   Armar bolsas retail
@@ -1418,14 +1399,15 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleRetailBagsSubmit} className="p-6 space-y-4">
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+            <div className="p-6 overflow-y-auto scrollbar-hide">
+            <form onSubmit={handleRetailBagsSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                   Café tostado
-                </p>
+                </label>
                 <select
                   required
-                  className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold text-black dark:text-white"
+                  className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all appearance-none rounded-none"
                   value={selectedRoastedStockId}
                   onChange={e => setSelectedRoastedStockId(e.target.value)}
                 >
@@ -1439,13 +1421,13 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                     ))}
                 </select>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                     Tipo de bolsa
-                  </p>
+                  </label>
                   <select
-                    className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold text-black dark:text-white"
+                    className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all appearance-none rounded-none"
                     value={selectedBagType}
                     onChange={e =>
                       setSelectedBagType(e.target.value as '250g' | '500g' | '1kg')
@@ -1456,14 +1438,14 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                     <option value="1kg">1 kg</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                     Número de bolsas
-                  </p>
+                  </label>
                   <input
                     type="number"
                     min={1}
-                    className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold text-black dark:text-white"
+                    className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
                     value={bagUnits}
                     onChange={e =>
                       setBagUnits(
@@ -1473,33 +1455,23 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRetailModal(false);
-                    setSelectedRoastedStockId('');
-                    setBagUnits('');
-                    setSelectedBagType('250g');
-                  }}
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white"
-                >
-                  Cancelar
-                </button>
+              <div className="pt-6">
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-white dark:hover:bg-stone-200 hover:text-black dark:hover:text-black"
+                  className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] shadow-none transition-all text-xs border border-transparent hover:border-black dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700"
                 >
                   Guardar
                 </button>
               </div>
             </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    {showEditStockModal && editingStock && (
+    {showEditStockModal && editingStock && createPortal(
         <div
-          className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => {
             setShowEditStockModal(false);
             setEditingStock(null);
@@ -1507,15 +1479,15 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
           }}
         >
           <div
-            className="bg-white dark:bg-stone-900 w-full max-w-sm shadow-2xl border border-black dark:border-white animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-stone-900 w-full max-w-sm border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={e => e.stopPropagation()}
           >
-            <div className="bg-black dark:bg-white p-6 text-white dark:text-black flex justify-between items-center">
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
               <div className="space-y-1">
                 <h4 className="text-lg font-black tracking-tighter uppercase">
                   Ajustar Stock
                 </h4>
-                <p className="text-stone-400 dark:text-stone-600 text-[10px] font-bold uppercase tracking-[0.2em]">
+                <p className="text-stone-400 dark:text-stone-500 text-[10px] font-bold uppercase tracking-[0.2em]">
                   {editingStock.clientName}
                 </p>
               </div>
@@ -1526,12 +1498,13 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                   setEditingStock(null);
                   setEditStockWeight('');
                 }}
-                className="text-white hover:text-stone-300 dark:text-black dark:hover:text-stone-600 transition-colors"
+                className="text-white hover:text-stone-300 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleEditStockSubmit} className="p-6 space-y-6">
+            <div className="p-6 overflow-y-auto scrollbar-hide">
+            <form onSubmit={handleEditStockSubmit} className="space-y-6">
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-black dark:text-white uppercase tracking-widest">
                   Peso Actual (Kg)
@@ -1557,8 +1530,10 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 </button>
               </div>
             </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </>
   );

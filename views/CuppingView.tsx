@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../db';
 import { CuppingForm, CuppingSession, RoastedStock } from '../types';
@@ -295,14 +296,14 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
   return (
     <>
     <div className="space-y-10 max-w-6xl mx-auto pb-48">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-black dark:border-white pb-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-black uppercase tracking-tighter text-black dark:text-white">Catación</h2>
-          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-stone-500 dark:text-stone-400">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-8">
+        <div className="space-y-2">
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Catación</h3>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
             Sistema descriptivo de evaluación sensorial
           </p>
         </div>
-        <div className="flex flex-col items-stretch gap-3 text-xs text-stone-600 dark:text-stone-400 md:items-end">
+        <div className="flex flex-col items-stretch gap-3 text-xs text-stone-600 dark:text-stone-400 sm:items-end w-full sm:w-auto">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <Coffee className="w-4 h-4" />
@@ -583,16 +584,16 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
         </div>
       )}
       </div>
-      {selectedSessionForSummary && (
+      {selectedSessionForSummary && createPortal(
         <div
-          className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[160] flex items-center justify-center p-4 dark:bg-black/90"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setSelectedSessionForSummary(null)}
         >
           <div
-            className="bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto border border-black shadow-2xl dark:bg-stone-900 dark:border-stone-800"
+            className="bg-white dark:bg-stone-900 w-full max-w-6xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-8 py-6 border-b border-stone-200 flex items-center justify-between bg-black text-white dark:bg-stone-950 dark:border-stone-800">
+            <div className="p-4 border-b border-stone-800 flex items-center justify-between bg-black text-white dark:bg-stone-950 shrink-0 sticky top-0 z-10">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
                   Ficha de catación
@@ -618,7 +619,7 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
                 </button>
               </div>
             </div>
-            <div className="p-8 space-y-8 bg-stone-50 dark:bg-stone-950">
+            <div className="p-8 space-y-8 bg-stone-50 dark:bg-stone-950 overflow-y-auto">
               <div className="border border-stone-200 bg-white p-5 space-y-3 dark:bg-stone-900 dark:border-stone-800">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div className="space-y-1">
@@ -740,7 +741,8 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

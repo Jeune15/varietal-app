@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { GreenCoffee, Roast, Order } from '../types';
 import { exportDatabaseToJson, initSupabase } from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon } from 'lucide-react';
+import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -158,15 +159,15 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
 
   return (
     <div className="space-y-8 animate-fade-in pb-48 text-stone-900 dark:text-stone-100">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black dark:border-stone-700 pb-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-black text-black dark:text-white uppercase tracking-tighter">Panel Diario</h2>
-          <p className="text-stone-500 dark:text-stone-400 font-mono text-xs uppercase tracking-widest">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+        <div className="space-y-2">
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Panel Diario</h3>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
             Resumen operativo para la tostaduría
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="bg-black dark:bg-stone-800 text-white dark:text-stone-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
+        <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
+          <div className="bg-black dark:bg-stone-800 text-white dark:text-stone-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest self-end">
             {today}
           </div>
           <div className="hidden md:flex gap-2">
@@ -701,6 +702,79 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
           <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Varietal App V1.0</span>
         </div>
       </div>
+
+      {showSyncConfig && createPortal(
+        <div
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setShowSyncConfig(false)}
+        >
+          <div
+            className="bg-white dark:bg-stone-900 w-full max-w-md border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
+              <div className="space-y-1">
+                <h4 className="text-lg font-black tracking-tighter uppercase">
+                  Configuración de Sincronización
+                </h4>
+                <p className="text-stone-400 dark:text-stone-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+                  Conexión a Base de Datos
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSyncConfig(false)}
+                className="text-white hover:text-stone-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                  URL del Proyecto Supabase
+                </p>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white"
+                  placeholder="https://tu-proyecto.supabase.co"
+                  value={syncForm.url}
+                  onChange={e => setSyncForm({ ...syncForm, url: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                  Clave Anónima (anon key)
+                </p>
+                <input
+                  type="password"
+                  className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white"
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  value={syncForm.key}
+                  onChange={e => setSyncForm({ ...syncForm, key: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSyncConfig(false)}
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-stone-300 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-black hover:text-black dark:hover:border-white dark:hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConnection}
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors"
+                >
+                  Guardar Conexión
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
@@ -719,3 +793,4 @@ const MetricCard: React.FC<{ label: string; value: string | number; icon: React.
 );
 
 export default DashboardView;
+

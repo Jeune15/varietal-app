@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../db';
 import { Order, Roast, RoastedStock, ProductionActivity } from '../types';
@@ -186,13 +187,13 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
     <>
     <div className="bg-white min-h-screen text-black font-sans p-8 animate-fade-in dark:bg-black dark:text-white pb-48">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-black pb-6 dark:border-white">
-        <div>
-          <h2 className="text-4xl font-black uppercase tracking-tight mb-2">Facturación</h2>
-          <p className="text-stone-500 font-medium uppercase tracking-wide dark:text-stone-400">Cierre y Gestión de Cobros</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+        <div className="space-y-2">
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Facturación</h3>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Cierre y Gestión de Cobros</p>
         </div>
         
-        <div className="flex gap-4 mt-4 md:mt-0">
+        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('invoices')}
             className={`px-6 py-3 font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
@@ -719,7 +720,7 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
       </div>
 
       {/* Summary Modal (Printable) */}
-      {showSummary && selectedOrder && (
+      {showSummary && selectedOrder && createPortal(
         <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0 dark:bg-black/90">
           <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] print:shadow-none print:border-none print:w-full print:max-w-none print:h-auto animate-in fade-in zoom-in duration-200 dark:bg-stone-900 dark:border-white dark:text-white">
             {/* Modal Header - Hidden on Print */}
@@ -869,17 +870,18 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Pending Report Modal */}
-      {showPendingReport && (
+      {showPendingReport && createPortal(
         <div 
-          className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 dark:bg-black/90"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowPendingReport(false)}
         >
           <div 
-            className="bg-white w-full max-w-lg border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in duration-200 dark:bg-stone-900 dark:border-stone-800 dark:text-white"
+            className="bg-white w-full max-w-lg border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in zoom-in-95 duration-300 dark:bg-stone-900 dark:border-stone-800 dark:text-white"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center p-6 border-b border-black dark:bg-stone-950 dark:border-stone-800">
@@ -918,18 +920,19 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Report Modal */}
-      {showReportModal && reportData && (
-        <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex items-center justify-center p-4 dark:bg-black/90">
-          <div className="bg-white w-full max-w-md border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in duration-200 dark:bg-stone-900 dark:border-white dark:text-white">
-            <div className="p-6 border-b border-stone-200 flex justify-between items-center dark:border-stone-800">
+      {showReportModal && reportData && createPortal(
+        <div className="fixed inset-0 z-[200] bg-white/80 dark:bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md border border-black dark:border-white shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="p-4 bg-black dark:bg-stone-950 text-white border-b border-stone-800 flex justify-between items-center">
               <h3 className="text-lg font-black uppercase tracking-tight">
                 Reporte {reportType === 'daily' ? 'Diario' : reportType === 'weekly' ? 'Semanal' : 'Anual'}
               </h3>
-              <button onClick={() => setShowReportModal(false)}>
+              <button onClick={() => setShowReportModal(false)} className="text-white hover:text-stone-300 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -975,7 +978,8 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

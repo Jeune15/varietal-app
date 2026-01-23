@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Flame, Clock, Scale, Calendar, ChevronRight, X, Coffee, ArrowRight, Printer, AlertCircle, ClipboardList, Search } from 'lucide-react';
 import { Roast, GreenCoffee, Order, RoastedStock } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -366,12 +367,12 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
     <>
     <div className="bg-white dark:bg-black min-h-screen text-black dark:text-white font-sans p-8 animate-fade-in pb-48">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 border-b border-black dark:border-stone-700 pb-6">
-        <div>
-          <h2 className="text-4xl font-black uppercase tracking-tight mb-2">Gestión de Tueste</h2>
-          <p className="text-stone-500 dark:text-stone-400 font-medium uppercase tracking-wide">Control de producción y perfiles</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+        <div className="space-y-2">
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Gestión de Tueste</h3>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Control de producción y perfiles</p>
         </div>
-        <div className="flex gap-4 mt-4 md:mt-0">
+        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           <button 
             onClick={() => setShowDailySummary(true)}
             className="px-6 py-3 border border-stone-200 dark:border-stone-800 hover:border-black dark:hover:border-stone-500 text-black dark:text-white font-bold uppercase tracking-wider transition-all flex items-center gap-2"
@@ -710,7 +711,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
       </div>
 
       {/* New Roast Modal */}
-      {showNewRoastModal && (
+      {showNewRoastModal && createPortal(
         <div 
           className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowNewRoastModal(false)}
@@ -869,11 +870,12 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Daily Summary Modal */}
-      {showDailySummary && (
+      {showDailySummary && createPortal(
         <div 
           className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowDailySummary(false)}
@@ -949,7 +951,8 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

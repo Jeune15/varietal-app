@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { Order, OrderType, OrderLine, ProductionActivity, RoastedStock, RetailBagStock, ProductionItem, ProductionActivityType } from '../types';
@@ -80,6 +81,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const [lineGrindReference, setLineGrindReference] = useState('');
   const [lineBagsCount, setLineBagsCount] = useState<number | ''>('');
   const [lineBagSizeGrams, setLineBagSizeGrams] = useState<number>(1000);
+  const [lineRoastType, setLineRoastType] = useState('');
 
   const createInitialFormData = () => ({
     clientName: '',
@@ -192,6 +194,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       quantityKg: 0
     }));
     setLineBagsCount('');
+    setLineRoastType('');
   };
 
   const removeLine = (id: string) => {
@@ -232,7 +235,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       }
 
       if (formData.type === 'Servicio de Tueste') {
-        newLine.roastProfile = formData.roastType || undefined;
+        newLine.roastProfile = lineRoastType || undefined;
         newLine.grindType = formData.defaultGrindType;
         if (formData.defaultGrindType === 'molido') {
           if (lineGrindNumber) {
@@ -723,18 +726,18 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   return (
     <>
     <div className="space-y-12 animate-in fade-in duration-700 pb-48">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 border-b border-black dark:border-white pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
         <div className="space-y-2">
-          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter">PEDIDOS</h3>
-          <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.3em]">Gestión de Demanda Activa</p>
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Pedidos</h3>
+          <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Gestión de Demanda Activa</p>
         </div>
-        <div className="flex items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           <button 
             onClick={() => { resetFormState(); setShowModal(true); }}
-            className="group flex-1 sm:flex-none bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white px-8 py-3 flex items-center justify-center gap-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300"
+            className="w-full sm:w-auto px-6 py-3 bg-black dark:bg-stone-800 text-white dark:text-stone-200 border border-black dark:border-stone-700 hover:bg-white hover:text-black dark:hover:bg-stone-700 dark:hover:text-white font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
           >
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Nuevo Pedido</span>
-            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+            <Plus className="w-4 h-4" />
+            Nuevo Pedido
           </button>
         </div>
       </div>
@@ -976,25 +979,28 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
         </div>
       )}
 
-      {showModal && (
+      {showModal && createPortal(
         <div 
-          className="fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => { setShowModal(false); resetFormState(); }}
         >
           <div 
-            className="bg-white dark:bg-stone-900 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-300 border border-black dark:border-stone-700 max-h-[90vh] overflow-y-auto scrollbar-hide"
+            className="bg-white dark:bg-stone-900 w-full max-w-2xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-black dark:bg-stone-950 p-8 text-white flex justify-between items-start sticky top-0 z-10">
-              <div className="space-y-2">
-                <h4 className="text-2xl font-black tracking-tighter uppercase">Nuevo Pedido</h4>
-                <p className="text-stone-400 dark:text-stone-500 text-[10px] font-bold uppercase tracking-[0.2em]">Requerimientos del Cliente</p>
-              </div>
-              <button onClick={() => { setShowModal(false); resetFormState(); }} className="text-white hover:text-stone-300 transition-colors">
+            <div className="flex justify-between items-center p-6 bg-black dark:bg-stone-950 text-white border-b border-stone-800 shrink-0 sticky top-0 z-10">
+              <h3 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+                <ShoppingBag className="w-6 h-6" /> Nuevo Pedido
+              </h3>
+              <button 
+                onClick={() => { setShowModal(false); resetFormState(); }}
+                className="p-2 hover:bg-stone-800 transition-colors"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <div className="p-8 overflow-y-auto scrollbar-hide">
+            <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Cliente</label>
@@ -1213,6 +1219,20 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                         />
                       </div>
                     )}
+                    {formData.type === 'Servicio de Tueste' && (
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">
+                          Perfil de Tueste
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Espresso, Filtro..."
+                          className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold transition-colors placeholder:text-stone-300 dark:placeholder:text-stone-600 text-black dark:text-white"
+                          value={lineRoastType}
+                          onChange={e => setLineRoastType(e.target.value)}
+                        />
+                      </div>
+                    )}
                     {formData.type === 'Venta Café Tostado' && (
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">
@@ -1287,25 +1307,6 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                   )}
                 </div>
 
-                {formData.type === 'Servicio de Tueste' && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Tipo de Tueste</label>
-                    <select 
-                      className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold transition-colors text-black dark:text-white"
-                      value={formData.roastType}
-                      onChange={e => setFormData({...formData, roastType: e.target.value})}
-                      required
-                    >
-                      <option value="">Seleccionar Tueste...</option>
-                      <option value="Filtrado">Filtrado</option>
-                      <option value="Espresso">Espresso</option>
-                      <option value="Medio">Medio</option>
-                      <option value="Espresso Oscuro">Espresso Oscuro</option>
-                      <option value="Según cliente">Según cliente</option>
-                    </select>
-                  </div>
-                )}
-
               </div>
 
               <button 
@@ -1317,27 +1318,29 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
             </form>
           </div>
         </div>
+      </div>,
+      document.body
       )}
 
       {/* Shipping Modal */}
-      {shippingModalOpen && (
+      {shippingModalOpen && createPortal(
         <div 
-          className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShippingModalOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-stone-900 w-full max-w-md border-2 border-black dark:border-stone-700 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-none animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-stone-900 w-full max-w-md border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center p-6 border-b border-black dark:border-stone-700 sticky top-0 bg-white dark:bg-stone-900 z-10">
-              <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2 text-black dark:text-white">
-                <Truck className="w-6 h-6" /> Confirmar Envío
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
+              <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                <Truck className="w-5 h-5" /> Confirmar Envío
               </h3>
-              <button onClick={() => setShippingModalOpen(false)}>
-                <X className="w-6 h-6 hover:scale-110 transition-transform text-black dark:text-white" />
+              <button onClick={() => setShippingModalOpen(false)} className="text-white hover:text-stone-300 transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-8 space-y-6">
+            <div className="p-6 space-y-6 overflow-y-auto">
               {selectedOrderForShipping && (selectedOrderForShipping.deliveryAddress || selectedOrderForShipping.deliveryAddressDetail) && (
                 <div className="bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 p-4 flex items-start justify-between gap-4">
                   <div>
@@ -1375,102 +1378,106 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                 </div>
               )}
 
-              <p className="font-medium text-stone-600 dark:text-stone-300">
-                ¿Cuál es el costo de envío para este pedido?
-              </p>
-              
-              <div className="relative">
-                <input 
-                  type="number" 
-                  className="w-full p-4 pl-12 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-bold text-xl transition-colors text-black dark:text-white"
-                  value={shippingCost}
-                  onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  autoFocus
-                />
-                <DollarSign className="w-6 h-6 absolute left-4 top-4 text-stone-400" />
+              <div className="space-y-2">
+                <p className="font-bold text-sm text-stone-600 dark:text-stone-300 uppercase tracking-wide">
+                  Costo de envío
+                </p>
+                
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    className="w-full p-4 pl-12 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-bold text-xl transition-colors text-black dark:text-white outline-none"
+                    value={shippingCost}
+                    onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    autoFocus
+                  />
+                  <DollarSign className="w-6 h-6 absolute left-4 top-4 text-stone-400" />
+                </div>
               </div>
 
-              <div className="flex justify-end gap-4 pt-4 border-t border-stone-100 dark:border-stone-800">
+              <div className="flex justify-end gap-3 pt-2">
                 <button 
                   onClick={() => setShippingModalOpen(false)}
-                  className="px-6 py-3 border border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white text-stone-600 dark:text-stone-400 hover:text-black dark:hover:text-white font-bold uppercase tracking-wider transition-all"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white transition-all"
                 >
                   Cancelar
                 </button>
                 <button 
                   onClick={confirmShipping}
-                  className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black border border-black dark:border-white hover:bg-stone-800 dark:hover:bg-stone-200 font-bold uppercase tracking-wider transition-all"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-white hover:text-black dark:hover:bg-stone-200 transition-all"
                 >
                   Confirmar
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteModalOpen && selectedOrderForDelete && (
+      {deleteModalOpen && selectedOrderForDelete && createPortal(
         <div 
-          className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setDeleteModalOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-stone-900 w-full max-w-md border-2 border-red-500 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] animate-in fade-in zoom-in duration-200"
+            className="bg-white dark:bg-stone-900 w-full max-w-md border border-red-500 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center p-6 border-b border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10">
-              <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2 text-red-600 dark:text-red-500">
-                <AlertTriangle className="w-6 h-6" /> Eliminar Pedido
+            <div className="flex justify-between items-center p-4 border-b border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 shrink-0 sticky top-0 z-10">
+              <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-red-600 dark:text-red-500">
+                <AlertTriangle className="w-5 h-5" /> Eliminar Pedido
               </h3>
-              <button onClick={() => setDeleteModalOpen(false)}>
-                <X className="w-6 h-6 text-red-400 hover:text-red-600 transition-colors" />
+              <button onClick={() => setDeleteModalOpen(false)} className="text-red-400 hover:text-red-600 transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-8 space-y-6">
-              <p className="font-medium text-stone-600 dark:text-stone-300">
+            <div className="p-6 space-y-6 overflow-y-auto">
+              <p className="font-medium text-stone-600 dark:text-stone-300 text-sm">
                 ¿Estás seguro de que deseas eliminar el pedido de <span className="font-bold text-black dark:text-white">{selectedOrderForDelete.clientName}</span>?
               </p>
-              <p className="text-xs font-bold text-red-500 uppercase tracking-widest bg-red-50 dark:bg-red-900/10 p-3 border border-red-100 dark:border-red-900/30">
+              <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-50 dark:bg-red-900/10 p-3 border border-red-100 dark:border-red-900/30">
                 Esta acción no se puede deshacer
               </p>
 
-              <div className="flex justify-end gap-4 pt-4 border-t border-stone-100 dark:border-stone-800">
+              <div className="flex justify-end gap-3 pt-2">
                 <button 
                   onClick={() => setDeleteModalOpen(false)}
-                  className="px-6 py-3 border border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white text-stone-600 dark:text-stone-400 hover:text-black dark:hover:text-white font-bold uppercase tracking-wider transition-all"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white transition-all"
                 >
                   Cancelar
                 </button>
                 <button 
                   onClick={confirmDelete}
-                  className="px-8 py-3 bg-red-600 text-white border border-red-600 hover:bg-red-700 font-bold uppercase tracking-wider transition-all"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700 transition-all"
                 >
                   Eliminar
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Activity Panel */}
-      {selectedOrderForActivities && (
+      {selectedOrderForActivities && createPortal(
         <div
-          className="fixed inset-0 bg-stone-900/40 dark:bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setSelectedOrderForActivities(null)}
         >
           <div
-            className="bg-white dark:bg-stone-900 w-full max-w-6xl shadow-2xl border border-black dark:border-stone-700 max-h-[95vh] overflow-hidden flex flex-col relative"
+            className="bg-white dark:bg-stone-900 w-full max-w-6xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[95vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-black dark:bg-stone-950 text-white px-8 py-6 flex items-center justify-between">
+            <div className="bg-black dark:bg-stone-950 text-white px-6 py-4 flex items-center justify-between shrink-0 sticky top-0 z-10 border-b border-stone-800">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
                   Flujo de Producción
                 </p>
-                <h3 className="text-2xl font-black tracking-tight">
+                <h3 className="text-xl font-black tracking-tight uppercase">
                   {selectedOrderForActivities.clientName}
                 </h3>
                 <p className="text-[11px] text-stone-300 font-mono">
@@ -2033,7 +2040,8 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                 </div>
               )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

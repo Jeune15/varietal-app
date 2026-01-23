@@ -54,12 +54,12 @@ const LoginView: React.FC = () => {
         {/* Decorative Top Border */}
         <div className="absolute top-0 left-0 w-full h-1 bg-black dark:bg-stone-800"></div>
 
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-12 space-y-2">
           <div className="w-16 h-16 bg-black text-white flex items-center justify-center mb-6 dark:bg-stone-800 dark:text-stone-200">
             <Coffee className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-black dark:text-white">Varietal</h1>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.3em] mt-2 dark:text-stone-500">Desarrolladores de Café</p>
+          <h1 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">Varietal</h1>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest dark:text-stone-500">Desarrolladores de Café</p>
         </div>
 
         {error && (
@@ -95,7 +95,7 @@ const LoginView: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 dark:text-white">Contraseña</label>
+            <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-1 dark:text-stone-500">Contraseña</label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">
                 <Lock className="w-4 h-4" />
@@ -114,7 +114,7 @@ const LoginView: React.FC = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-4 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700"
+            className="w-full py-4 bg-black dark:bg-stone-800 text-white dark:text-stone-200 border border-black dark:border-stone-700 hover:bg-white hover:text-black dark:hover:bg-stone-700 dark:hover:text-white font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Procesando...' : (mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta')}
             {!loading && <ArrowRight className="w-4 h-4" />}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { useAuth } from '../contexts/AuthContext';
@@ -429,14 +430,14 @@ const ProductionView: React.FC<Props> = ({
   return (
     <>
     <div className="space-y-12 pb-48">
-      <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-8 border-b-4 border-black pb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
         <div className="space-y-2">
           <h3 className="text-4xl font-black text-black tracking-tighter uppercase">Producción</h3>
-          <p className="text-xs font-bold text-stone-500 uppercase tracking-[0.25em]">Centro de Operaciones</p>
+          <p className="text-xs font-bold text-stone-500 uppercase tracking-widest">Centro de Operaciones</p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('activities')}
             className={`flex-1 md:flex-none flex items-center gap-3 px-6 py-4 text-xs font-black uppercase tracking-widest transition-all border ${
@@ -468,316 +469,343 @@ const ProductionView: React.FC<Props> = ({
                 Solo usuarios autorizados pueden registrar actividades de producción
               </p>
             </div>
-          ) : !activeMode ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <ModeCard title="Armado de Pedido" desc="Envasado y preparación final de pedidos." icon={<BarChart2 className="w-6 h-6" />} onClick={() => setActiveMode('Armado de Pedido')} />
-              <ModeCard title="Selección de Café" desc="Control de mermas y selección técnica." icon={<Scissors className="w-6 h-6" />} onClick={() => setActiveMode('Selección de Café')} />
-              <ModeCard title="Bolsas Retail" desc="Conversión a empaques de venta unitaria." icon={<ShoppingBag className="w-6 h-6" />} onClick={() => setActiveMode('Armado de Bolsas Retail')} />
-              <ModeCard title="Despacho" desc="Salida de pedidos listos a logística." icon={<Truck className="w-6 h-6" />} onClick={() => setActiveMode('Despacho de Pedido')} />
-            </div>
           ) : (
-            <div className="bg-white border border-stone-200 max-w-2xl mx-auto animate-in zoom-in-95 duration-200 dark:bg-stone-900 dark:border-stone-800">
-              <div className="p-8 bg-black text-white flex justify-between items-center dark:bg-stone-950">
-                <div className="space-y-1">
-                  <h4 className="text-xl font-black tracking-tight uppercase">{activeMode}</h4>
-                  <p className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">Formulario de Actividad</p>
-                </div>
-                <button onClick={resetForm} className="p-2 hover:bg-white/10 transition-colors"><X className="w-6 h-6" /></button>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <ModeCard title="Armado de Pedido" desc="Envasado y preparación final de pedidos." icon={<BarChart2 className="w-6 h-6" />} onClick={() => setActiveMode('Armado de Pedido')} />
+                <ModeCard title="Selección de Café" desc="Control de mermas y selección técnica." icon={<Scissors className="w-6 h-6" />} onClick={() => setActiveMode('Selección de Café')} />
+                <ModeCard title="Bolsas Retail" desc="Conversión a empaques de venta unitaria." icon={<ShoppingBag className="w-6 h-6" />} onClick={() => setActiveMode('Armado de Bolsas Retail')} />
+                <ModeCard title="Despacho" desc="Salida de pedidos listos a logística." icon={<Truck className="w-6 h-6" />} onClick={() => setActiveMode('Despacho de Pedido')} />
               </div>
-              <form onSubmit={handleAction} className="p-8 space-y-8">
-                {['Armado de Pedido', 'Despacho de Pedido'].includes(activeMode) && (
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Seleccionar Pedido</label>
-                    <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)}>
-                      <option value="">-- Elija un pedido activo --</option>
-                      {orders.filter(o => {
-                        if (activeMode === 'Despacho de Pedido') {
-                          const hasPackagingForSale = o.type === 'Venta Café Tostado' && (o.bagsUsed || 0) > 0;
-                          if (o.type === 'Venta Café Tostado') {
-                            return o.status === 'Listo para Despacho' && hasPackagingForSale;
-                          }
-                          return o.status === 'Listo para Despacho';
-                        }
-                        if (activeMode === 'Armado de Pedido') {
-                          if (o.type === 'Servicio de Tueste') {
-                            return o.status === 'En Producción' || o.status === 'Pendiente' || o.status === 'Listo para Despacho';
-                          }
-                          return o.status === 'En Producción' || o.status === 'Pendiente';
-                        }
-                        return false;
-                      }).map(o => (
-                        <option key={o.id} value={o.id}>
-                          {o.clientName} — {o.orderLines && o.orderLines.length > 0 ? 'Múltiples cafés' : o.variety} ({o.quantityKg}Kg) — {o.type === 'Servicio de Tueste' ? 'Servicio' : 'Venta'} — [{o.status}]
-                        </option>
-                      ))}
-                    </select>
-                    {stocks.filter(s => s.remainingQtyKg > 0).filter(s => {
-                      if (activeMode === 'Armado de Pedido' && selectedOrderId) {
-                        const order = orders.find(o => o.id === selectedOrderId);
-                        if (order) {
-                          if (order.type === 'Servicio de Tueste') return true;
-                          return s.clientName === order.clientName || s.clientName === 'Stock';
-                        }
-                      }
-                      return true;
-                    }).length === 0 && (
-                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-medium dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200">
-                        No hay café tostado disponible para este pedido. Si tiene café verde en silos, asegúrese de tostarlo primero en la sección "Tueste".
+
+              {activeMode && createPortal(
+                <div 
+                  className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
+                  onClick={resetForm}
+                >
+                  <div 
+                    className="bg-white dark:bg-stone-900 w-full max-w-2xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
+                      <div className="space-y-1">
+                        <h4 className="text-lg font-black tracking-tighter uppercase">{activeMode}</h4>
+                        <p className="text-stone-400 dark:text-stone-500 text-[10px] font-bold uppercase tracking-[0.2em]">Formulario de Actividad</p>
                       </div>
-                    )}
-                  </div>
-                )}
-                {selectedOrderSummary && (
-                  <div className="bg-stone-50 border border-stone-200 p-4 flex flex-col gap-2 dark:bg-stone-900 dark:border-stone-800">
-                    <div className="flex justify-between text-xs">
-                      <div>
-                        <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Pedido</p>
-                        <p className="font-bold text-black dark:text-white">
-                          {selectedOrderSummary.clientName}
-                        </p>
-                        <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                          {selectedOrderSummary.type === 'Servicio de Tueste' ? 'Servicio de Tueste' : 'Venta Café Tostado'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Cantidad Pedido</p>
-                        <p className="font-black text-sm dark:text-white">
-                          {(() => {
-                            const order = selectedOrderSummary;
-                            const displayQty =
-                              order.type === 'Servicio de Tueste' && typeof order.serviceRoastedQtyKg === 'number'
-                                ? order.serviceRoastedQtyKg
-                                : order.quantityKg;
-                            return `${displayQty.toFixed(2)} Kg`;
-                          })()}
-                        </p>
-                        {typeof selectedOrderSummary.fulfilledKg === 'number' && (
-                          <p className="text-[10px] text-stone-500 dark:text-stone-400">
-                            Despachado: {selectedOrderSummary.fulfilledKg.toFixed(2)} Kg
-                          </p>
-                        )}
-                      </div>
+                      <button onClick={resetForm} className="text-white hover:text-stone-300 transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                    {selectedOrderSummary.orderLines && selectedOrderSummary.orderLines.length > 0 && (
-                      <div className="border-t border-stone-100 pt-3 mt-2 dark:border-stone-800">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1 dark:text-stone-500">
-                          Detalle del pedido
-                        </p>
-                        <div className="space-y-1 max-h-24 overflow-y-auto">
-                          {selectedOrderSummary.orderLines.map(line => (
-                            <p key={line.id} className="text-[11px] text-stone-600 dark:text-stone-400">
-                              {line.variety} • {line.quantityKg.toFixed(2)} Kg
-                              {line.grindType ? ` • ${line.grindType === 'molido' ? 'Molido' : 'Grano'}` : ''}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {(selectedOrderSummary.deliveryAddress || selectedOrderSummary.deliveryAddressDetail) && (
-                      <div className="border-t border-stone-100 pt-3 mt-2 flex justify-between gap-4 text-xs dark:border-stone-800">
-                        <div>
-                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Dirección de envío</p>
-                          <p className="font-medium text-black dark:text-white">
-                            {selectedOrderSummary.deliveryAddress}
-                          </p>
-                          {selectedOrderSummary.deliveryAddressDetail && (
-                            <p className="text-[11px] text-stone-500 mt-1 dark:text-stone-400">
-                              {selectedOrderSummary.deliveryAddressDetail}
-                            </p>
+                    <form onSubmit={handleAction} className="p-6 space-y-6 overflow-y-auto">
+                      {['Armado de Pedido', 'Despacho de Pedido'].includes(activeMode) && (
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Seleccionar Pedido</label>
+                          <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)}>
+                            <option value="">-- Elija un pedido activo --</option>
+                            {orders.filter(o => {
+                              if (activeMode === 'Despacho de Pedido') {
+                                const hasPackagingForSale = o.type === 'Venta Café Tostado' && (o.bagsUsed || 0) > 0;
+                                if (o.type === 'Venta Café Tostado') {
+                                  return o.status === 'Listo para Despacho' && hasPackagingForSale;
+                                }
+                                return o.status === 'Listo para Despacho';
+                              }
+                              if (activeMode === 'Armado de Pedido') {
+                                if (o.type === 'Servicio de Tueste') {
+                                  return o.status === 'En Producción' || o.status === 'Pendiente' || o.status === 'Listo para Despacho';
+                                }
+                                return o.status === 'En Producción' || o.status === 'Pendiente';
+                              }
+                              return false;
+                            }).map(o => (
+                              <option key={o.id} value={o.id}>
+                                {o.clientName} — {o.orderLines && o.orderLines.length > 0 ? 'Múltiples cafés' : o.variety} ({o.quantityKg}Kg) — {o.type === 'Servicio de Tueste' ? 'Servicio' : 'Venta'} — [{o.status}]
+                              </option>
+                            ))}
+                          </select>
+                          {stocks.filter(s => s.remainingQtyKg > 0).filter(s => {
+                            if (activeMode === 'Armado de Pedido' && selectedOrderId) {
+                              const order = orders.find(o => o.id === selectedOrderId);
+                              if (order) {
+                                if (order.type === 'Servicio de Tueste') return true;
+                                return s.clientName === order.clientName || s.clientName === 'Stock';
+                              }
+                            }
+                            return true;
+                          }).length === 0 && (
+                            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-medium dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200">
+                              No hay café tostado disponible para este pedido. Si tiene café verde en silos, asegúrese de tostarlo primero en la sección "Tueste".
+                            </div>
                           )}
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Entrega</p>
-                          <p className="text-[11px] text-stone-600 dark:text-stone-400">
-                            {selectedOrderSummary.defaultGrindType === 'molido' ? 'Molido' : 'Grano'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedStockSummary && (
-                      <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2 dark:border-stone-800">
-                        <div>
-                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Lote Tostado</p>
-                          <p className="font-bold text-black dark:text-white">
-                            {selectedStockSummary.clientName} — {selectedStockSummary.variety}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Disponible</p>
-                          <p className="font-black text-sm dark:text-white">
-                            {selectedStockSummary.remainingQtyKg.toFixed(2)} Kg
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {['Selección de Café', 'Armado de Bolsas Retail', 'Armado de Pedido'].includes(activeMode) && (
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Existencias de Café (Origen)</label>
-                    <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedStockId} onChange={e => setSelectedStockId(e.target.value)}>
-                      <option value="">-- Elija un lote tostado --</option>
-                      {stocks
-                        .filter(s => s.remainingQtyKg > 0)
-                        .filter(s => {
-                          if (activeMode === 'Armado de Pedido' && selectedOrderId) {
-                            return true;
-                          }
-                          return true;
-                        })
-                        .map(s => (
-                        <option key={s.id} value={s.id}>
-                          {s.clientName} — {s.variety} — Disp: {s.remainingQtyKg.toFixed(2)} Kg
-                          {s.isSelected ? ' [Seleccionado]' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                {activeMode === 'Armado de Pedido' && (
-                  <div className="space-y-8">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Tipo de Carga</label>
-                      <div className="grid grid-cols-2 gap-4">
-                        <button
-                          type="button"
-                          onClick={() => setAdditionalInfo({ ...additionalInfo, packagingType: 'grainpro' })}
-                          className={`p-6 border flex flex-col items-center justify-center gap-3 transition-all ${
-                            additionalInfo.packagingType === 'grainpro' 
-                              ? 'bg-black text-white border-black dark:bg-stone-800 dark:border-stone-700' 
-                              : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
-                          }`}
-                        >
-                          <Container className="w-6 h-6" />
-                          <span className="text-xs font-black uppercase tracking-widest">Grain Pro</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAdditionalInfo({ ...additionalInfo, packagingType: 'bags' })}
-                          className={`p-6 border flex flex-col items-center justify-center gap-3 transition-all ${
-                            additionalInfo.packagingType === 'bags' 
-                              ? 'bg-black text-white border-black dark:bg-stone-800 dark:border-stone-700' 
-                              : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
-                          }`}
-                        >
-                          <Package className="w-6 h-6" />
-                          <span className="text-xs font-black uppercase tracking-widest">Bolsas</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
-                        Cantidad a despachar (Kg)
-                      </label>
-                      <input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        required
-                        className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500"
-                        value={productionValue || ''}
-                        onChange={e => setProductionValue(parseFloat(e.target.value) || 0)}
-                        placeholder="Ej: 50"
-                      />
-                      {selectedOrderSummary && selectedOrderSummary.type !== 'Servicio de Tueste' && (
-                        <p className="text-[10px] text-stone-500 font-medium dark:text-stone-400">
-                          Pendiente del pedido:{' '}
-                          {Math.max(
-                            0,
-                            selectedOrderSummary.quantityKg - (selectedOrderSummary.fulfilledKg || 0)
-                          ).toFixed(2)}{' '}
-                          Kg
-                        </p>
                       )}
-                    </div>
+                      {selectedOrderSummary && (
+                        <div className="bg-stone-50 border border-stone-200 p-4 flex flex-col gap-2 dark:bg-stone-900 dark:border-stone-800">
+                          <div className="flex justify-between text-xs">
+                            <div>
+                              <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Pedido</p>
+                              <p className="font-bold text-black dark:text-white">
+                                {selectedOrderSummary.clientName}
+                              </p>
+                              <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                                {selectedOrderSummary.type === 'Servicio de Tueste' ? 'Servicio de Tueste' : 'Venta Café Tostado'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Cantidad Pedido</p>
+                              <p className="font-black text-sm dark:text-white">
+                                {(() => {
+                                  const order = selectedOrderSummary;
+                                  const displayQty =
+                                    order.type === 'Servicio de Tueste' && typeof order.serviceRoastedQtyKg === 'number'
+                                      ? order.serviceRoastedQtyKg
+                                      : order.quantityKg;
+                                  return `${displayQty.toFixed(2)} Kg`;
+                                })()}
+                              </p>
+                              {typeof selectedOrderSummary.fulfilledKg === 'number' && (
+                                <p className="text-[10px] text-stone-500 dark:text-stone-400">
+                                  Despachado: {selectedOrderSummary.fulfilledKg.toFixed(2)} Kg
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {selectedOrderSummary.orderLines && selectedOrderSummary.orderLines.length > 0 && (
+                            <div className="border-t border-stone-100 pt-3 mt-2 dark:border-stone-800">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1 dark:text-stone-500">
+                                Detalle del pedido
+                              </p>
+                              <div className="space-y-1 max-h-24 overflow-y-auto">
+                                {selectedOrderSummary.orderLines.map(line => (
+                                  <p key={line.id} className="text-[11px] text-stone-600 dark:text-stone-400">
+                                    {line.variety} • {line.quantityKg.toFixed(2)} Kg
+                                    {line.grindType ? ` • ${line.grindType === 'molido' ? 'Molido' : 'Grano'}` : ''}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(selectedOrderSummary.deliveryAddress || selectedOrderSummary.deliveryAddressDetail) && (
+                            <div className="border-t border-stone-100 pt-3 mt-2 flex justify-between gap-4 text-xs dark:border-stone-800">
+                              <div>
+                                <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Dirección de envío</p>
+                                <p className="font-medium text-black dark:text-white">
+                                  {selectedOrderSummary.deliveryAddress}
+                                </p>
+                                {selectedOrderSummary.deliveryAddressDetail && (
+                                  <p className="text-[11px] text-stone-500 mt-1 dark:text-stone-400">
+                                    {selectedOrderSummary.deliveryAddressDetail}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Entrega</p>
+                                <p className="text-[11px] text-stone-600 dark:text-stone-400">
+                                  {selectedOrderSummary.defaultGrindType === 'molido' ? 'Molido' : 'Grano'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          {selectedStockSummary && (
+                            <div className="flex justify-between items-end text-xs border-t border-stone-100 pt-3 mt-2 dark:border-stone-800">
+                              <div>
+                                <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Lote Tostado</p>
+                                <p className="font-bold text-black dark:text-white">
+                                  {selectedStockSummary.clientName} — {selectedStockSummary.variety}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Disponible</p>
+                                <p className="font-black text-sm dark:text-white">
+                                  {selectedStockSummary.remainingQtyKg.toFixed(2)} Kg
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {['Selección de Café', 'Armado de Bolsas Retail', 'Armado de Pedido'].includes(activeMode) && (
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Existencias de Café (Origen)</label>
+                          <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedStockId} onChange={e => setSelectedStockId(e.target.value)}>
+                            <option value="">-- Elija un lote tostado --</option>
+                            {stocks
+                              .filter(s => s.remainingQtyKg > 0)
+                              .filter(s => {
+                                if (activeMode === 'Armado de Pedido' && selectedOrderId) {
+                                  return true;
+                                }
+                                return true;
+                              })
+                              .map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.clientName} — {s.variety} — Disp: {s.remainingQtyKg.toFixed(2)} Kg
+                                {s.isSelected ? ' [Seleccionado]' : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      
+                      {activeMode === 'Armado de Pedido' && (
+                        <div className="space-y-8">
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Tipo de Carga</label>
+                            <div className="grid grid-cols-2 gap-4">
+                              <button
+                                type="button"
+                                onClick={() => setAdditionalInfo({ ...additionalInfo, packagingType: 'grainpro' })}
+                                className={`p-6 border flex flex-col items-center justify-center gap-3 transition-all ${
+                                  additionalInfo.packagingType === 'grainpro' 
+                                    ? 'bg-black text-white border-black dark:bg-stone-800 dark:border-stone-700' 
+                                    : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                                }`}
+                              >
+                                <Container className="w-6 h-6" />
+                                <span className="text-xs font-black uppercase tracking-widest">Grain Pro</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setAdditionalInfo({ ...additionalInfo, packagingType: 'bags' })}
+                                className={`p-6 border flex flex-col items-center justify-center gap-3 transition-all ${
+                                  additionalInfo.packagingType === 'bags' 
+                                    ? 'bg-black text-white border-black dark:bg-stone-800 dark:border-stone-700' 
+                                    : 'bg-white text-stone-400 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                                }`}
+                              >
+                                <Package className="w-6 h-6" />
+                                <span className="text-xs font-black uppercase tracking-widest">Bolsas</span>
+                              </button>
+                            </div>
+                          </div>
 
-                    {(additionalInfo.packagingType === 'bags' || additionalInfo.packagingType === 'grainpro') && (
-                      <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
-                          {additionalInfo.packagingType === 'grainpro' ? 'Cantidad de Bolsas GrainPro' : 'Bolsas Utilizadas'}
-                        </label>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          step="1"
-                          required
-                          className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" 
-                          value={additionalInfo.bagsUsed || ''} 
-                          onChange={e => setAdditionalInfo({...additionalInfo, bagsUsed: parseInt(e.target.value) || 0})}
-                          placeholder="Ingrese cantidad..."
-                        />
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                              Cantidad a despachar (Kg)
+                            </label>
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              required
+                              className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500"
+                              value={productionValue || ''}
+                              onChange={e => setProductionValue(parseFloat(e.target.value) || 0)}
+                              placeholder="Ej: 50"
+                            />
+                            {selectedOrderSummary && selectedOrderSummary.type !== 'Servicio de Tueste' && (
+                              <p className="text-[10px] text-stone-500 font-medium dark:text-stone-400">
+                                Pendiente del pedido:{' '}
+                                {Math.max(
+                                  0,
+                                  selectedOrderSummary.quantityKg - (selectedOrderSummary.fulfilledKg || 0)
+                                ).toFixed(2)}{' '}
+                                Kg
+                              </p>
+                            )}
+                          </div>
+
+                          {(additionalInfo.packagingType === 'bags' || additionalInfo.packagingType === 'grainpro') && (
+                            <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                              <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                                {additionalInfo.packagingType === 'grainpro' ? 'Cantidad de Bolsas GrainPro' : 'Bolsas Utilizadas'}
+                              </label>
+                              <input 
+                                type="number" 
+                                min="1" 
+                                step="1"
+                                required
+                                className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" 
+                                value={additionalInfo.bagsUsed || ''} 
+                                onChange={e => setAdditionalInfo({...additionalInfo, bagsUsed: parseInt(e.target.value) || 0})}
+                                placeholder="Ingrese cantidad..."
+                              />
+                            </div>
+                          )}
+                          
+                          {selectedOrderId && orders.find(o => o.id === selectedOrderId)?.type === 'Servicio de Tueste' && (
+                            <div className="flex items-center gap-3">
+                              <input
+                                id="mark-ready"
+                                type="checkbox"
+                                className="w-4 h-4 border-stone-300 dark:border-stone-700 dark:bg-stone-900"
+                                checked={additionalInfo.markOrderReady}
+                                onChange={e => setAdditionalInfo({ ...additionalInfo, markOrderReady: e.target.checked })}
+                              />
+                              <label htmlFor="mark-ready" className="text-xs font-bold text-stone-700 uppercase tracking-widest dark:text-stone-300">
+                                Marcar pedido listo para despacho
+                              </label>
+                            </div>
+                          )}
+                          
+                          <div className="bg-stone-50 p-6 border border-stone-200 flex gap-4 items-center dark:bg-stone-900 dark:border-stone-800">
+                              <CheckCircle className="w-5 h-5 text-black dark:text-white" />
+                              <p className="text-xs text-stone-600 font-medium leading-relaxed dark:text-stone-400">
+                                Al guardar, se descontará café del lote seleccionado y se actualizará el estado del pedido. 
+                                Los pedidos de venta se marcarán como Listo para Despacho automáticamente; los servicios de tueste pueden registrarse en varias tandas antes de despachar.
+                              </p>
+                          </div>
+                        </div>
+                      )}
+                      {activeMode === 'Selección de Café' && (
+                        <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Merma Detectada (Gramos)</label><input type="number" step="0.1" min="0" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.merma} onChange={e => setAdditionalInfo({...additionalInfo, merma: parseFloat(e.target.value)})} /></div>
+                      )}
+                      {activeMode === 'Armado de Bolsas Retail' && (
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato Bolsa</label><select className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.bagType} onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}>
+                            <option value="250g">250g</option><option value="500g">500g</option><option value="1kg">1kg</option>
+                          </select></div>
+                          <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Unidades</label><input type="number" min="1" step="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value) || 0)} /></div>
+                        </div>
+                      )}
+                      {activeMode === 'Despacho de Pedido' && (
+                        <div className="space-y-6">
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Costo de Envío</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-4 text-stone-400 font-bold dark:text-stone-500">$</span>
+                              <input 
+                                type="number" 
+                                min="0" 
+                                step="0.01"
+                                className="w-full pl-8 pr-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" 
+                                value={additionalInfo.shippingCost || ''} 
+                                onChange={e => setAdditionalInfo({...additionalInfo, shippingCost: parseFloat(e.target.value) || 0})}
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          <div className="bg-stone-50 p-6 border border-stone-200 flex items-start gap-4 dark:bg-stone-900 dark:border-stone-800">
+                            <Truck className="w-5 h-5 text-black mt-0.5 dark:text-white" />
+                            <p className="text-xs text-stone-600 font-medium leading-relaxed dark:text-stone-400">
+                              Confirma el envío del pedido seleccionado. Si ingresas un costo de envío, se generará automáticamente un registro en Gastos.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="pt-2 flex justify-end gap-3">
+                        <button 
+                          type="button" 
+                          onClick={resetForm}
+                          className="px-6 py-3 border border-stone-200 text-stone-500 font-bold uppercase tracking-[0.2em] text-xs hover:border-black hover:text-black dark:border-stone-700 dark:text-stone-400 dark:hover:border-white dark:hover:text-white"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          type="submit" 
+                          className="px-6 py-3 bg-black text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-stone-800 dark:bg-white dark:text-black dark:hover:bg-stone-200"
+                        >
+                          Guardar
+                        </button>
                       </div>
-                    )}
-                    
-                    {selectedOrderId && orders.find(o => o.id === selectedOrderId)?.type === 'Servicio de Tueste' && (
-                      <div className="flex items-center gap-3">
-                        <input
-                          id="mark-ready"
-                          type="checkbox"
-                          className="w-4 h-4 border-stone-300 dark:border-stone-700 dark:bg-stone-900"
-                          checked={additionalInfo.markOrderReady}
-                          onChange={e => setAdditionalInfo({ ...additionalInfo, markOrderReady: e.target.checked })}
-                        />
-                        <label htmlFor="mark-ready" className="text-xs font-bold text-stone-700 uppercase tracking-widest dark:text-stone-300">
-                          Marcar pedido listo para despacho
-                        </label>
-                      </div>
-                    )}
-                    
-                    <div className="bg-stone-50 p-6 border border-stone-200 flex gap-4 items-center dark:bg-stone-900 dark:border-stone-800">
-                        <CheckCircle className="w-5 h-5 text-black dark:text-white" />
-                        <p className="text-xs text-stone-600 font-medium leading-relaxed dark:text-stone-400">
-                          Al guardar, se descontará café del lote seleccionado y se actualizará el estado del pedido. 
-                          Los pedidos de venta se marcarán como Listo para Despacho automáticamente; los servicios de tueste pueden registrarse en varias tandas antes de despachar.
-                        </p>
-                    </div>
+                    </form>
                   </div>
-                )}
-                {activeMode === 'Selección de Café' && (
-                  <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Merma Detectada (Gramos)</label><input type="number" step="0.1" min="0" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.merma} onChange={e => setAdditionalInfo({...additionalInfo, merma: parseFloat(e.target.value)})} /></div>
-                )}
-                {activeMode === 'Armado de Bolsas Retail' && (
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato Bolsa</label><select className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.bagType} onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}>
-                      <option value="250g">250g</option><option value="500g">500g</option><option value="1kg">1kg</option>
-                    </select></div>
-                    <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Unidades</label><input type="number" min="1" step="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value) || 0)} /></div>
-                  </div>
-                )}
-                {activeMode === 'Despacho de Pedido' && (
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Costo de Envío</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-4 text-stone-400 font-bold dark:text-stone-500">$</span>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          step="0.01"
-                          className="w-full pl-8 pr-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" 
-                          value={additionalInfo.shippingCost || ''} 
-                          onChange={e => setAdditionalInfo({...additionalInfo, shippingCost: parseFloat(e.target.value) || 0})}
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-stone-50 p-6 border border-stone-200 flex items-start gap-4 dark:bg-stone-900 dark:border-stone-800">
-                      <Truck className="w-5 h-5 text-black mt-0.5 dark:text-white" />
-                      <p className="text-xs text-stone-600 font-medium leading-relaxed dark:text-stone-400">
-                        Confirma el envío del pedido seleccionado. Si ingresas un costo de envío, se generará automáticamente un registro en Gastos.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="pt-6"><button type="submit" className="w-full py-5 bg-black hover:bg-stone-800 text-white font-black uppercase tracking-[0.2em] transition-all text-xs border border-transparent hover:border-black dark:bg-stone-800 dark:hover:bg-stone-700 dark:border-stone-700">Guardar Actividad</button></div>
-              </form>
-            </div>
+                </div>
+              , document.body)}
+            </>
           )}
 
-          {!activeMode && (
-            <div className="bg-white border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
+          <div className="bg-white border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
               <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800">
                 <div className="flex items-center gap-3">
                   <Activity className="w-4 h-4 text-black dark:text-white" />
@@ -856,7 +884,6 @@ const ProductionView: React.FC<Props> = ({
                 </div>
               )}
             </div>
-          )}
         </div>
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1040,23 +1067,23 @@ const ProductionView: React.FC<Props> = ({
       )}
 
       {/* Modal for Packaging */}
-      {showProdModal && (
+      {showProdModal && createPortal(
         <div 
-          className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 dark:bg-black/80"
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowProdModal(false)}
         >
           <div 
-            className="bg-white border border-stone-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 dark:bg-stone-900 dark:border-stone-800 dark:text-white max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-stone-900 w-full max-w-lg border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-black p-8 text-white flex justify-between items-center dark:bg-stone-950 sticky top-0 z-10">
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
               <div className="space-y-1">
-                <h4 className="text-xl font-black tracking-tight uppercase">Nuevo Insumo</h4>
+                <h4 className="text-lg font-black tracking-tighter uppercase">Nuevo Insumo</h4>
                 <p className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">Registro de Materiales</p>
               </div>
-              <button onClick={() => setShowProdModal(false)} className="text-stone-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+              <button onClick={() => setShowProdModal(false)} className="text-white hover:text-stone-300 transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleSaveProdItem} className="p-8 space-y-6">
+            <form onSubmit={handleSaveProdItem} className="p-6 space-y-6 overflow-y-auto">
               <div className="space-y-3">
                 <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Nombre del Producto</label>
                 <input 
@@ -1130,7 +1157,7 @@ const ProductionView: React.FC<Props> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>, document.body
       )}
     </div>
     </>

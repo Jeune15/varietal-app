@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Database, Users, Shield, CheckCircle, AlertTriangle, RefreshCw, UploadCloud, Trash2, HardDrive, Moon, Sun, LogOut, Settings2 } from 'lucide-react';
 import { initSupabase, db, syncToCloud, getSupabase, pushToCloud, pullFromCloud, resetDatabase } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -95,23 +96,23 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkM
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[200] bg-white/90 dark:bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-stone-900 w-full max-w-2xl border-2 border-black dark:border-stone-700 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)] animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+  return createPortal(
+    <div className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
+      <div className="bg-white dark:bg-stone-900 w-full max-w-2xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="bg-black dark:bg-stone-950 text-white p-6 flex justify-between items-center shrink-0">
-          <div>
-            <h3 className="text-xl font-black uppercase tracking-tight">Configuración</h3>
+        <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
+          <div className="space-y-1">
+            <h3 className="text-xl font-black uppercase tracking-tight text-white">Configuración</h3>
             <p className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">Sistema & Usuarios</p>
           </div>
-          <button onClick={onClose} className="text-stone-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-white hover:text-stone-300 transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stone-200 dark:border-stone-800 overflow-x-auto scrollbar-hide">
+        <div className="flex border-b border-stone-200 dark:border-stone-800 overflow-x-auto scrollbar-hide shrink-0 bg-white dark:bg-stone-900">
           <button 
             onClick={() => setActiveTab('general')}
             className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'general' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
@@ -341,7 +342,8 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkM
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

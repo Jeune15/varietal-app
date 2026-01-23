@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { GreenCoffee } from '../types';
 import { db, syncToCloud } from '../db';
 import { useAuth } from '../contexts/AuthContext';
@@ -75,15 +76,15 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
     <>
     <div className="space-y-6 md:space-y-8 pb-48">
       {/* Header Responsivo */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+        <div className="space-y-2">
           <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Café Verde</h3>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mt-2 pl-1">Inventario &middot; Materia Prima</p>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Inventario &middot; Materia Prima</p>
         </div>
         {canEdit && (
           <button 
             onClick={() => setShowModal(true)} 
-            className="w-full sm:w-auto bg-black text-white px-8 py-4 flex items-center justify-center gap-3 transition-all hover:bg-stone-800 active:scale-95 font-bold text-xs uppercase tracking-widest border border-black"
+            className="w-full sm:w-auto px-6 py-3 bg-black dark:bg-stone-800 text-white dark:text-stone-200 border border-black dark:border-stone-700 hover:bg-white hover:text-black dark:hover:bg-stone-700 dark:hover:text-white font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             <Plus className="w-4 h-4" /> Nuevo Lote
           </button>
@@ -185,7 +186,7 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
 
       {/* Modal Optimizado - Architectural Style */}
       </div>
-      {showModal && (
+      {showModal && createPortal(
         <div 
           className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowModal(false)}
@@ -246,10 +247,11 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Edit Modal */}
-      {showEditModal && editingCoffee && (
+      {showEditModal && editingCoffee && createPortal(
         <div 
           className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setShowEditModal(false)}
@@ -258,15 +260,15 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
             className="bg-white dark:bg-stone-900 shadow-2xl w-full max-w-sm overflow-hidden border border-black dark:border-white animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-black dark:bg-stone-950 p-6 text-white flex justify-between items-center border-b border-stone-800">
-              <div>
-                <h4 className="text-lg font-black uppercase tracking-wider">Ajustar Stock</h4>
-                <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+            <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
+              <div className="space-y-1">
+                <h4 className="text-lg font-black tracking-tighter uppercase">Ajustar Stock</h4>
+                <p className="text-stone-400 dark:text-stone-500 text-[10px] font-bold uppercase tracking-[0.2em]">
                   {editingCoffee?.variety}
                 </p>
               </div>
-              <button onClick={() => setShowEditModal(false)} className="text-stone-500 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowEditModal(false)} className="text-white hover:text-stone-300 transition-colors">
+                <X className="w-6 h-6" />
               </button>
             </div>
             
@@ -295,7 +297,8 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
