@@ -53,6 +53,7 @@ const AppContent: React.FC = () => {
   const [cloudStatus, setCloudStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const [showSettings, setShowSettings] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'student' | null>(null);
   const [accessPassword, setAccessPassword] = useState('');
   const [accessError, setAccessError] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
@@ -114,8 +115,10 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = sessionStorage.getItem('varietal_access');
+    const storedRole = sessionStorage.getItem('varietal_role');
     if (stored === 'true') {
       setIsUnlocked(true);
+      setUserRole((storedRole as 'admin' | 'student') || 'admin');
     }
   }, []);
 
@@ -142,9 +145,19 @@ const AppContent: React.FC = () => {
   const handleAccess = () => {
     if (accessPassword === '10666234') {
       setIsUnlocked(true);
+      setUserRole('admin');
       setAccessError('');
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('varietal_access', 'true');
+        sessionStorage.setItem('varietal_role', 'admin');
+      }
+    } else if (accessPassword === 'alumnos.varietal') {
+      setIsUnlocked(true);
+      setUserRole('student');
+      setAccessError('');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('varietal_access', 'true');
+        sessionStorage.setItem('varietal_role', 'student');
       }
     } else {
       setAccessError('Contraseña incorrecta');
@@ -273,6 +286,7 @@ const AppContent: React.FC = () => {
                   roasts={roasts} 
                   orders={orders} 
                   onNavigate={(tabId) => setActiveTab(tabId)} 
+                  userRole={userRole}
                 />
               ) : activeTab === 'roasting' ? (
                 <RoastingView 
@@ -349,6 +363,7 @@ const AppContent: React.FC = () => {
                   roasts={roasts} 
                   orders={orders} 
                   onNavigate={(tabId) => setActiveTab(tabId)} 
+                  userRole={userRole}
                 />
               )}
             </div>

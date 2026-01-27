@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../db';
-import { CuppingForm, CuppingSession, RoastedStock } from '../types';
+import { CuppingForm, CuppingSession, RoastedStock, FreeCuppingSample, CuppingSessionType } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Coffee, User as UserIcon, ClipboardList, SlidersHorizontal, X } from 'lucide-react';
+import { Coffee, User as UserIcon, ClipboardList, SlidersHorizontal, X, ArrowLeft, ArrowRight, Check, Plus, Minus, Calendar } from 'lucide-react';
 
 interface Props {
   stocks: RoastedStock[];
@@ -35,46 +35,19 @@ const buildEmptyForm = (): CuppingForm => ({
 
 const descriptorOptions = {
   aromatic: [
-    'Floral',
-    'Afrutado',
-    'Bayas',
-    'Frutas deshidratadas',
-    'Cítricos',
-    'Verde/Vegeral',
-    'Ácido/Fermentado',
-    'Ácido',
-    'Fermentado',
-    'Otra',
-    'Químico',
-    'Humedad/Tierra',
-    'Madera'
+    'Floral', 'Afrutado', 'Bayas', 'Frutas deshidratadas', 'Cítricos',
+    'Verde/Vegeral', 'Ácido/Fermentado', 'Ácido', 'Fermentado', 'Otra',
+    'Químico', 'Humedad/Tierra', 'Madera'
   ],
   roast: [
-    'Tostado',
-    'Cereal',
-    'Quemado',
-    'Tabaco',
-    'Nueces/Cacao',
-    'Nueces',
-    'Cacao',
-    'Especias',
-    'Dulce',
-    'Vainilla',
-    'Azúcar morena'
+    'Tostado', 'Cereal', 'Quemado', 'Tabaco', 'Nueces/Cacao',
+    'Nueces', 'Cacao', 'Especias', 'Dulce', 'Vainilla', 'Azúcar morena'
   ],
   taste: [
-    'Salado',
-    'Amargo',
-    'Ácido',
-    'Umami',
-    'Dulce'
+    'Salado', 'Amargo', 'Ácido', 'Umami', 'Dulce'
   ],
   mouthfeel: [
-    'Áspero',
-    'Suave',
-    'Metálico',
-    'Aceitoso',
-    'Deja seca la boca'
+    'Áspero', 'Suave', 'Metálico', 'Aceitoso', 'Deja seca la boca'
   ]
 };
 
@@ -83,13 +56,23 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'form' | 'recent'>('form');
+  
+  // Flow State
+  const [viewStep, setViewStep] = useState<'type-selection' | 'setup-samples' | 'analysis'>('type-selection');
+  const [sessionType, setSessionType] = useState<CuppingSessionType | null>(null);
+  
+  // Internal Session State
   const [selectedStockId, setSelectedStockId] = useState('');
   const [tasterName, setTasterName] = useState('');
   const [objective, setObjective] = useState('');
-  const [form, setForm] = useState<CuppingForm>(() => buildEmptyForm());
+  const [internalForm, setInternalForm] = useState<CuppingForm>(() => buildEmptyForm());
+
+  // Free Session State
+  const [numSamples, setNumSamples] = useState(1);
+  const [freeSamples, setFreeSamples] = useState<FreeCuppingSample[]>([]);
+  const [currentSampleIndex, setCurrentSampleIndex] = useState(0);
 
   const cuppingSessions = useLiveQuery(() => db.cuppingSessions.orderBy('date').reverse().toArray(), []) || [];
-  const [selectedSessionForSummary, setSelectedSessionForSummary] = useState<CuppingSession | null>(null);
 
   const availableStocks = useMemo(
     () => stocks.filter(s => s.remainingQtyKg > 0),
@@ -101,48 +84,158 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
     [availableStocks, selectedStockId]
   );
 
-  const handleToggleDescriptor = (field: keyof CuppingForm, value: string) => {
-    setForm(prev => {
-      const current = prev[field] as string[];
-      const exists = current.includes(value);
-      const nextValues = exists ? current.filter(v => v !== value) : [...current, value];
-      return { ...prev, [field]: nextValues };
+  // Initialize free samples when numSamples changes or type is selected
+  const initFreeSamples = (count: number) => {
+    const newSamples: FreeCuppingSample[] = Array.from({ length: count }, (_, i) => ({
+      id: crypto.randomUUID(),
+      brand: '',
+      variety: '',
+      origin: '',
+      process: '',
+      roastType: '',
+      roastDate: '',
+      restDays: 0,
+      notes: '',
+      form: buildEmptyForm()
+    }));
+    setFreeSamples(newSamples);
+    setCurrentSampleIndex(0);
+  };
+
+  const handleStartSetup = (type: CuppingSessionType) => {
+    setSessionType(type);
+    if (type === 'internal') {
+      setViewStep('analysis'); // Internal goes straight to analysis/setup combined screen (legacy style)
+      setInternalForm(buildEmptyForm());
+    } else {
+      setNumSamples(1);
+      setViewStep('setup-samples');
+      initFreeSamples(1);
+    }
+  };
+
+  const calculateRestDays = (dateStr: string) => {
+    if (!dateStr) return 0;
+    const roast = new Date(dateStr);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - roast.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays;
+  };
+
+  const updateFreeSample = (index: number, field: keyof FreeCuppingSample, value: any) => {
+    setFreeSamples(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      
+      // Auto-calc rest days
+      if (field === 'roastDate') {
+        updated[index].restDays = calculateRestDays(value as string);
+      }
+      
+      return updated;
     });
   };
 
-  const handleIntensityChange = (field: keyof CuppingForm, value: string) => {
-    const parsed = Number(value);
-    setForm(prev => ({ ...prev, [field]: parsed }));
+  const updateFreeSampleForm = (index: number, field: keyof CuppingForm, value: any) => {
+    setFreeSamples(prev => {
+      const updated = [...prev];
+      const currentForm = updated[index].form;
+      
+      // Handle array toggles for descriptors
+      if (Array.isArray(currentForm[field]) && typeof value === 'string') {
+        const currentArr = currentForm[field] as string[];
+        const exists = currentArr.includes(value);
+        const nextValues = exists ? currentArr.filter(v => v !== value) : [...currentArr, value];
+        updated[index].form = { ...currentForm, [field]: nextValues };
+      } else {
+        // Direct assignment for other fields
+        updated[index].form = { ...currentForm, [field]: value };
+      }
+      
+      return updated;
+    });
   };
 
-  const handleTextChange = (field: keyof CuppingForm, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+  // Helper for internal form updates
+  const updateInternalForm = (field: keyof CuppingForm, value: any) => {
+    setInternalForm(prev => {
+      if (Array.isArray(prev[field]) && typeof value === 'string') {
+        const currentArr = prev[field] as string[];
+        const exists = currentArr.includes(value);
+        const nextValues = exists ? currentArr.filter(v => v !== value) : [...currentArr, value];
+        return { ...prev, [field]: nextValues };
+      } else {
+        return { ...prev, [field]: value };
+      }
+    });
   };
 
   const handleSaveSession = async () => {
     if (!canEdit) return;
-    if (!selectedStock || !tasterName.trim()) return;
 
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
-    const session: CuppingSession = {
-      id,
-      roastStockId: selectedStock.id,
-      roastId: selectedStock.roastId,
-      coffeeName: selectedStock.variety,
-      clientName: selectedStock.clientName,
-      tasterName: tasterName.trim(),
-      date: new Date().toISOString(),
-      objective: objective.trim() || undefined,
-      form
-    };
+    let session: CuppingSession;
+
+    if (sessionType === 'internal') {
+      if (!selectedStock || !tasterName.trim()) {
+        showToast('Faltan datos requeridos (Lote o Catador)', 'error');
+        return;
+      }
+      session = {
+        id,
+        sessionType: 'internal',
+        roastStockId: selectedStock.id,
+        roastId: selectedStock.roastId,
+        coffeeName: selectedStock.variety, // Legacy support
+        clientName: selectedStock.clientName, // Legacy support
+        tasterName: tasterName.trim(),
+        date: new Date().toISOString(),
+        objective: objective.trim() || undefined,
+        form: internalForm
+      };
+    } else {
+      // Free session validation
+      if (!tasterName.trim()) {
+        showToast('Falta nombre del catador', 'error');
+        return;
+      }
+      // Check if all samples have at least brand/variety
+      const invalidSample = freeSamples.find(s => !s.brand || !s.variety);
+      if (invalidSample) {
+        showToast('Complete la información de todas las muestras', 'error');
+        return;
+      }
+
+      session = {
+        id,
+        sessionType: 'free',
+        tasterName: tasterName.trim(),
+        date: new Date().toISOString(),
+        samples: freeSamples
+      };
+    }
 
     await db.cuppingSessions.put(session);
     await syncToCloud('cuppingSessions', session);
 
     showToast('Sesión de catación guardada', 'success');
+    
+    // Reset state
+    setActiveTab('recent');
+    setViewStep('type-selection');
+    setSessionType(null);
+    setInternalForm(buildEmptyForm());
+    setFreeSamples([]);
   };
 
-  const renderScale = (label: string, intensityField: keyof CuppingForm, notesField: keyof CuppingForm) => (
+  const renderScale = (
+    label: string, 
+    intensityField: keyof CuppingForm, 
+    notesField: keyof CuppingForm,
+    currentForm: CuppingForm,
+    onUpdate: (field: keyof CuppingForm, value: any) => void
+  ) => (
     <div className="border border-stone-200 dark:border-stone-800 p-4 space-y-4 bg-white dark:bg-stone-900">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -153,7 +246,7 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
           </div>
         </div>
         <span className="text-xs font-mono text-stone-500 dark:text-stone-400">
-          {Number((form[intensityField] as number) ?? 0).toFixed(2)} / 10
+          {Number((currentForm[intensityField] as number) ?? 0).toFixed(2)} / 10
         </span>
       </div>
       <input
@@ -161,13 +254,13 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
         min={0}
         max={10}
         step={0.25}
-        value={(form[intensityField] as number) ?? 0}
-        onChange={e => handleIntensityChange(intensityField, e.target.value)}
+        value={(currentForm[intensityField] as number) ?? 0}
+        onChange={e => onUpdate(intensityField, Number(e.target.value))}
         className="w-full accent-black dark:accent-white"
       />
       <textarea
-        value={(form[notesField] as string) ?? ''}
-        onChange={e => handleTextChange(notesField, e.target.value)}
+        value={(currentForm[notesField] as string) ?? ''}
+        onChange={e => onUpdate(notesField, e.target.value)}
         placeholder="Notas..."
         className="w-full mt-2 border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-black dark:text-white px-3 py-2 text-xs outline-none focus:border-black dark:focus:border-white resize-none h-16 placeholder:text-stone-400 dark:placeholder:text-stone-600"
       />
@@ -176,7 +269,9 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
 
   const renderDescriptors = (
     title: string,
-    fields: { label: string; field: keyof CuppingForm; options: string[] }[]
+    fields: { label: string; field: keyof CuppingForm; options: string[] }[],
+    currentForm: CuppingForm,
+    onUpdate: (field: keyof CuppingForm, value: any) => void
   ) => (
     <div className="border border-stone-200 dark:border-stone-800 p-4 space-y-4 bg-white dark:bg-stone-900">
       <div className="flex items-center gap-2">
@@ -191,12 +286,12 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
             </p>
             <div className="flex flex-wrap gap-2">
               {group.options.map(option => {
-                const selected = (form[group.field] as string[]).includes(option);
+                const selected = (currentForm[group.field] as string[]).includes(option);
                 return (
                   <button
                     key={option}
                     type="button"
-                    onClick={() => handleToggleDescriptor(group.field, option)}
+                    onClick={() => onUpdate(group.field, option)}
                     className={`px-2 py-1 border text-[10px] uppercase tracking-widest transition-colors ${
                       selected
                         ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
@@ -205,85 +300,6 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
                   >
                     {option}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderScaleSummary = (
-    sessionForm: CuppingForm,
-    label: string,
-    intensityField: keyof CuppingForm,
-    notesField: keyof CuppingForm
-  ) => {
-    const intensity = Number((sessionForm[intensityField] as number) ?? 0);
-    const notes = (sessionForm[notesField] as string) ?? '';
-    const clamped = Math.max(0, Math.min(10, intensity));
-    const percentage = (clamped / 10) * 100;
-
-    return (
-      <div className="border border-stone-200 p-4 space-y-4 bg-white">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-stone-500" />
-            <div className="flex flex-col">
-              <span className="text-xs font-black uppercase tracking-widest text-black">{label}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
-                Intensidad
-              </span>
-            </div>
-          </div>
-          <span className="text-xs font-mono text-stone-500">
-            {clamped.toFixed(2)} / 10
-          </span>
-        </div>
-        <div className="w-full h-1 bg-stone-100 overflow-hidden">
-          <div
-            className="h-full bg-black transition-all duration-500"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-        <div className="border border-stone-200 px-3 py-2 text-xs text-stone-700 bg-stone-50 min-h-[2.5rem]">
-          {notes || 'Sin notas registradas'}
-        </div>
-      </div>
-    );
-  };
-
-  const renderDescriptorsSummary = (
-    sessionForm: CuppingForm,
-    title: string,
-    fields: { label: string; field: keyof CuppingForm; options: string[] }[]
-  ) => (
-    <div className="border border-stone-200 p-4 space-y-4 bg-white">
-      <div className="flex items-center gap-2">
-        <ClipboardList className="w-4 h-4 text-stone-500" />
-        <span className="text-xs font-black uppercase tracking-widest text-black">{title}</span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {fields.map(group => (
-          <div key={group.label} className="space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {group.label}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {group.options.map(option => {
-                const selected = (sessionForm[group.field] as string[]).includes(option);
-                return (
-                  <span
-                    key={option}
-                    className={`px-2 py-1 border text-[10px] uppercase tracking-widest ${
-                      selected
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-stone-400 border-stone-200'
-                    }`}
-                  >
-                    {option}
-                  </span>
                 );
               })}
             </div>
@@ -303,27 +319,14 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
             Sistema descriptivo de evaluación sensorial
           </p>
         </div>
-        <div className="flex flex-col items-stretch gap-3 text-xs text-stone-600 dark:text-stone-400 sm:items-end w-full sm:w-auto">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <Coffee className="w-4 h-4" />
-              <span className="font-bold uppercase tracking-widest">
-                {selectedStock
-                  ? `${selectedStock.variety} (${selectedStock.clientName})`
-                  : 'Sin muestra seleccionada'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <UserIcon className="w-4 h-4" />
-              <span className="font-bold uppercase tracking-widest">
-                {tasterName || 'Sin catador asignado'}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-3">
+        <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setActiveTab('form')}
+              onClick={() => {
+                setActiveTab('form');
+                setViewStep('type-selection');
+                setSessionType(null);
+              }}
               className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all ${
                 activeTab === 'form'
                   ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
@@ -343,7 +346,6 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
             >
               Sesiones recientes
             </button>
-          </div>
         </div>
       </div>
 
@@ -353,102 +355,358 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
         </div>
       )}
 
-      {canEdit && activeTab === 'form' && (
-        <div className="grid grid-cols-1 gap-8">
-          <div className="space-y-6">
-            <div className="border border-stone-200 dark:border-stone-800 p-5 space-y-4 bg-white dark:bg-stone-900">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-                    Café tostado
-                  </label>
-                  <select
-                    value={selectedStockId}
-                    onChange={e => setSelectedStockId(e.target.value)}
-                    className="w-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-black dark:text-white px-3 py-2 text-sm font-medium outline-none focus:border-black dark:focus:border-white"
-                  >
-                    <option value="">Seleccionar lote</option>
-                    {availableStocks.map(stock => (
-                      <option key={stock.id} value={stock.id}>
-                        {stock.variety} ({stock.clientName}) – {stock.remainingQtyKg.toFixed(2)} Kg
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-                    Catador
-                  </label>
-                  <input
-                    type="text"
-                    value={tasterName}
-                    onChange={e => setTasterName(e.target.value)}
-                    className="w-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-black dark:text-white px-3 py-2 text-sm outline-none focus:border-black dark:focus:border-white"
-                    placeholder="Nombre de la persona que cata"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-                  Objetivo
-                </label>
-                <input
-                  type="text"
-                  value={objective}
-                  onChange={e => setObjective(e.target.value)}
-                  className="w-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-black dark:text-white px-3 py-2 text-sm outline-none focus:border-black dark:focus:border-white"
-                  placeholder="Ej. Evaluación de perfil para espresso"
+      {canEdit && activeTab === 'form' && viewStep === 'type-selection' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+           <button
+             onClick={() => handleStartSetup('internal')}
+             className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300"
+           >
+             <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
+               <Coffee className="w-8 h-8" />
+             </div>
+             <div className="text-center space-y-2">
+               <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Cata Interna</h3>
+               <p className="text-xs text-stone-500 dark:text-stone-400 font-medium max-w-[200px]">
+                 Evaluar café tostado del inventario actual
+               </p>
+             </div>
+           </button>
+
+           <div className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900">
+             <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-900 dark:text-white">
+               <ClipboardList className="w-8 h-8" />
+             </div>
+             <div className="text-center space-y-4 w-full">
+               <div className="space-y-2">
+                 <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Cata Libre</h3>
+                 <p className="text-xs text-stone-500 dark:text-stone-400 font-medium max-w-[200px] mx-auto">
+                   Evaluar muestras externas o experimentales
+                 </p>
+               </div>
+               <div className="flex items-center justify-center gap-4 pt-4 border-t border-stone-100 dark:border-stone-800 w-full max-w-[200px] mx-auto">
+                 <button 
+                    onClick={() => setNumSamples(Math.max(1, numSamples - 1))}
+                    className="w-8 h-8 flex items-center justify-center border border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 rounded-full"
+                 >
+                   <Minus className="w-4 h-4" />
+                 </button>
+                 <div className="text-center">
+                    <span className="block text-2xl font-black">{numSamples}</span>
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-stone-400">Muestras</span>
+                 </div>
+                 <button 
+                    onClick={() => setNumSamples(Math.min(20, numSamples + 1))}
+                    className="w-8 h-8 flex items-center justify-center border border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 rounded-full"
+                 >
+                   <Plus className="w-4 h-4" />
+                 </button>
+               </div>
+               <button
+                 onClick={() => {
+                   initFreeSamples(numSamples);
+                   setSessionType('free');
+                   setViewStep('setup-samples');
+                 }}
+                 className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-[0.2em] hover:opacity-80 transition-opacity"
+               >
+                 Comenzar
+               </button>
+             </div>
+           </div>
+        </div>
+      )}
+
+      {canEdit && activeTab === 'form' && viewStep === 'setup-samples' && sessionType === 'free' && (
+        <div className="max-w-3xl mx-auto animate-fade-in">
+          <div className="flex items-center gap-4 mb-8">
+            <button 
+              onClick={() => setViewStep('type-selection')}
+              className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex-1">
+               <h3 className="text-xl font-black uppercase tracking-tight">Configuración de Muestras</h3>
+               <p className="text-xs text-stone-500 font-bold uppercase tracking-widest">
+                 Muestra {currentSampleIndex + 1} de {numSamples}
+               </p>
+            </div>
+            <div className="flex gap-1">
+              {freeSamples.map((_, idx) => (
+                <div 
+                  key={idx}
+                  className={`h-1.5 w-8 rounded-full transition-colors ${
+                    idx === currentSampleIndex ? 'bg-black dark:bg-white' : 
+                    idx < currentSampleIndex ? 'bg-stone-300 dark:bg-stone-700' : 'bg-stone-100 dark:bg-stone-800'
+                  }`} 
                 />
-              </div>
+              ))}
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                {renderScale('Fragancia', 'fragranceIntensity', 'fragranceNotes')}
-                {renderScale('Aroma', 'aromaIntensity', 'aromaNotes')}
-              </div>
-              <div className="space-y-4">
-                {renderDescriptors('Calificadores Aromáticos', [
-                  { label: 'Familias aromáticas', field: 'fragranceDescriptors', options: descriptorOptions.aromatic },
-                  { label: 'Notas de tueste', field: 'aromaDescriptors', options: descriptorOptions.roast }
-                ])}
-              </div>
-            </div>
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Marca</label>
+                   <input 
+                      type="text"
+                      value={freeSamples[currentSampleIndex].brand}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'brand', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
+                      placeholder="Nombre de la marca"
+                      autoFocus
+                   />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Variedad</label>
+                   <input 
+                      type="text"
+                      value={freeSamples[currentSampleIndex].variety}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'variety', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
+                      placeholder="Ej. Geisha, Bourbon"
+                   />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Origen</label>
+                   <input 
+                      type="text"
+                      value={freeSamples[currentSampleIndex].origin}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'origin', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
+                      placeholder="Región, Finca..."
+                   />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Proceso</label>
+                   <input 
+                      type="text"
+                      value={freeSamples[currentSampleIndex].process}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'process', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
+                      placeholder="Ej. Lavado, Natural"
+                   />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Tipo de Tueste</label>
+                   <select
+                      value={freeSamples[currentSampleIndex].roastType}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'roastType', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
+                   >
+                      <option value="">Seleccionar...</option>
+                      <option value="Filtro">Filtro</option>
+                      <option value="Espresso">Espresso</option>
+                      <option value="Omni">Omni</option>
+                      <option value="Cata">Cata</option>
+                   </select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Fecha de Tostado</label>
+                   <input 
+                      type="date"
+                      value={freeSamples[currentSampleIndex].roastDate}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'roastDate', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
+                   />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Días de Reposo</label>
+                   <input 
+                      type="number"
+                      value={freeSamples[currentSampleIndex].restDays}
+                      readOnly
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-sm font-medium text-stone-500 outline-none"
+                   />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                   <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Anotaciones Extra</label>
+                   <textarea 
+                      value={freeSamples[currentSampleIndex].notes}
+                      onChange={(e) => updateFreeSample(currentSampleIndex, 'notes', e.target.value)}
+                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none resize-none h-20"
+                      placeholder="Cualquier detalle adicional..."
+                   />
+                </div>
+             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                {renderScale('Sabor', 'flavorIntensity', 'flavorNotes')}
-                {renderScale('Sabor residual', 'aftertasteIntensity', 'aftertasteNotes')}
-              </div>
-              <div className="space-y-4">
-                {renderDescriptors('Gustos predominantes', [
-                  { label: 'Gustos básicos', field: 'flavorDescriptors', options: descriptorOptions.taste },
-                  { label: 'Gustos en retrogusto', field: 'aftertasteDescriptors', options: descriptorOptions.taste }
-                ])}
-              </div>
-            </div>
+             <div className="flex justify-between pt-6 border-t border-stone-100 dark:border-stone-800">
+                <button
+                  onClick={() => setCurrentSampleIndex(Math.max(0, currentSampleIndex - 1))}
+                  disabled={currentSampleIndex === 0}
+                  className="px-6 py-2 text-xs font-bold uppercase tracking-widest disabled:opacity-30 hover:text-stone-600"
+                >
+                  Anterior
+                </button>
+                {currentSampleIndex < numSamples - 1 ? (
+                   <button
+                     onClick={() => {
+                        // Simple validation
+                        if (!freeSamples[currentSampleIndex].brand) {
+                           showToast('Ingrese al menos la marca', 'error');
+                           return;
+                        }
+                        setCurrentSampleIndex(currentSampleIndex + 1);
+                     }}
+                     className="px-6 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-bold uppercase tracking-widest hover:opacity-80"
+                   >
+                     Siguiente
+                   </button>
+                ) : (
+                   <button
+                     onClick={() => {
+                        if (!freeSamples[currentSampleIndex].brand) {
+                           showToast('Ingrese al menos la marca', 'error');
+                           return;
+                        }
+                        setViewStep('analysis');
+                        setCurrentSampleIndex(0); // Reset to first sample for analysis
+                     }}
+                     className="px-6 py-2 bg-brand text-white text-xs font-bold uppercase tracking-widest hover:opacity-90"
+                   >
+                     Ir al Análisis
+                   </button>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                {renderScale('Acidez', 'acidityIntensity', 'acidityNotes')}
-                {renderScale('Dulzor', 'sweetnessIntensity', 'sweetnessNotes')}
-              </div>
-              <div className="space-y-4">
-                {renderScale('Sensación en boca', 'mouthfeelIntensity', 'mouthfeelNotes')}
-                {renderDescriptors('Sensación en boca', [
-                  { label: 'Textura', field: 'mouthfeelDescriptors', options: descriptorOptions.mouthfeel }
-                ])}
-              </div>
-            </div>
+      {canEdit && activeTab === 'form' && viewStep === 'analysis' && (
+        <div className="grid grid-cols-1 gap-8 animate-fade-in">
+          {/* Header Info */}
+          <div className="bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 -mt-8 -mx-4 md:-mx-10 px-4 md:px-10 py-6 mb-2 sticky top-0 z-10 shadow-sm">
+             <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-4 items-center">
+                {sessionType === 'internal' ? (
+                   <div className="w-full">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="space-y-1">
+                         <label className="text-[9px] font-bold uppercase tracking-widest text-stone-500">Café</label>
+                         <select
+                           value={selectedStockId}
+                           onChange={e => setSelectedStockId(e.target.value)}
+                           className="w-full bg-transparent border-b border-stone-300 dark:border-stone-700 py-1 text-sm font-bold focus:border-black outline-none"
+                         >
+                           <option value="">Seleccionar lote...</option>
+                           {availableStocks.map(stock => (
+                             <option key={stock.id} value={stock.id}>
+                               {stock.variety} ({stock.clientName})
+                             </option>
+                           ))}
+                         </select>
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[9px] font-bold uppercase tracking-widest text-stone-500">Catador</label>
+                          <input
+                             type="text"
+                             value={tasterName}
+                             onChange={e => setTasterName(e.target.value)}
+                             placeholder="Nombre"
+                             className="w-full bg-transparent border-b border-stone-300 dark:border-stone-700 py-1 text-sm font-bold focus:border-black outline-none"
+                          />
+                       </div>
+                     </div>
+                   </div>
+                ) : (
+                   <div className="w-full flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                         <button 
+                            onClick={() => setCurrentSampleIndex(prev => Math.max(0, prev - 1))}
+                            disabled={currentSampleIndex === 0}
+                            className="p-2 border border-stone-200 dark:border-stone-700 rounded-full disabled:opacity-30 hover:bg-white dark:hover:bg-stone-800 transition-colors"
+                         >
+                            <ArrowLeft className="w-4 h-4" />
+                         </button>
+                         <div>
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-stone-500">Muestra {currentSampleIndex + 1} de {numSamples}</span>
+                            <h3 className="text-lg font-black uppercase tracking-tight leading-none mt-1">
+                               {freeSamples[currentSampleIndex].brand} - {freeSamples[currentSampleIndex].variety}
+                            </h3>
+                         </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                         <div className="text-right hidden sm:block">
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-stone-500">Catador</span>
+                            <input
+                               type="text"
+                               value={tasterName}
+                               onChange={e => setTasterName(e.target.value)}
+                               placeholder="Nombre"
+                               className="bg-transparent border-b border-stone-300 dark:border-stone-700 py-1 text-sm font-bold focus:border-black outline-none text-right w-32"
+                            />
+                         </div>
+                         <button 
+                            onClick={() => setCurrentSampleIndex(prev => Math.min(numSamples - 1, prev + 1))}
+                            disabled={currentSampleIndex === numSamples - 1}
+                            className="p-2 border border-stone-200 dark:border-stone-700 rounded-full disabled:opacity-30 hover:bg-white dark:hover:bg-stone-800 transition-colors"
+                         >
+                            <ArrowRight className="w-4 h-4" />
+                         </button>
+                      </div>
+                   </div>
+                )}
+             </div>
+          </div>
 
-            <div className="flex justify-end">
+          <div className="space-y-6">
+            {/* The Form */}
+            {(() => {
+               const currentForm = sessionType === 'internal' ? internalForm : freeSamples[currentSampleIndex].form;
+               const handleUpdate = sessionType === 'internal' 
+                  ? updateInternalForm 
+                  : (field: keyof CuppingForm, value: any) => updateFreeSampleForm(currentSampleIndex, field, value);
+
+               return (
+                 <div className="animate-fade-in" key={currentSampleIndex}>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        {renderScale('Fragancia', 'fragranceIntensity', 'fragranceNotes', currentForm, handleUpdate)}
+                        {renderScale('Aroma', 'aromaIntensity', 'aromaNotes', currentForm, handleUpdate)}
+                      </div>
+                      <div className="space-y-4">
+                        {renderDescriptors('Calificadores Aromáticos', [
+                          { label: 'Familias aromáticas', field: 'fragranceDescriptors', options: descriptorOptions.aromatic },
+                          { label: 'Notas de tueste', field: 'aromaDescriptors', options: descriptorOptions.roast }
+                        ], currentForm, handleUpdate)}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                      <div className="space-y-4">
+                        {renderScale('Sabor', 'flavorIntensity', 'flavorNotes', currentForm, handleUpdate)}
+                        {renderScale('Sabor residual', 'aftertasteIntensity', 'aftertasteNotes', currentForm, handleUpdate)}
+                      </div>
+                      <div className="space-y-4">
+                        {renderDescriptors('Gustos predominantes', [
+                          { label: 'Gustos básicos', field: 'flavorDescriptors', options: descriptorOptions.taste },
+                          { label: 'Gustos en retrogusto', field: 'aftertasteDescriptors', options: descriptorOptions.taste }
+                        ], currentForm, handleUpdate)}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                      <div className="space-y-4">
+                        {renderScale('Acidez', 'acidityIntensity', 'acidityNotes', currentForm, handleUpdate)}
+                        {renderScale('Dulzor', 'sweetnessIntensity', 'sweetnessNotes', currentForm, handleUpdate)}
+                      </div>
+                      <div className="space-y-4">
+                        {renderScale('Sensación en boca', 'mouthfeelIntensity', 'mouthfeelNotes', currentForm, handleUpdate)}
+                        {renderDescriptors('Sensación en boca', [
+                          { label: 'Textura', field: 'mouthfeelDescriptors', options: descriptorOptions.mouthfeel }
+                        ], currentForm, handleUpdate)}
+                      </div>
+                    </div>
+                 </div>
+               );
+            })()}
+
+            <div className="flex justify-end pt-8 border-t border-stone-200 dark:border-stone-800">
               <button
                 type="button"
                 onClick={handleSaveSession}
-                disabled={!selectedStock || !tasterName.trim()}
-                className="px-8 py-3 bg-black text-white text-xs font-black uppercase tracking-[0.25em] border border-black hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 bg-black text-white text-xs font-black uppercase tracking-[0.25em] border border-black hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-black dark:hover:bg-stone-200"
               >
-                Guardar sesión de cata
+                Guardar Sesión Completa
               </button>
             </div>
           </div>
@@ -456,11 +714,11 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
       )}
 
       {activeTab === 'recent' && (
-        <div className="border border-stone-200 bg-white">
-          <div className="p-6 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
+        <div className="border border-stone-200 bg-white dark:bg-stone-900 dark:border-stone-800">
+          <div className="p-6 border-b border-stone-200 bg-stone-50 dark:bg-stone-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-stone-500" />
-              <span className="text-xs font-black uppercase tracking-[0.25em] text-stone-600">
+              <span className="text-xs font-black uppercase tracking-[0.25em] text-stone-600 dark:text-stone-300">
                 Sesiones recientes
               </span>
             </div>
@@ -468,282 +726,50 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
               {cuppingSessions.length} sesiones
             </span>
           </div>
-          {/* Mobile Cards for Cupping Sessions */}
-          <div className="lg:hidden space-y-4">
+          {/* List of sessions */}
+          <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {cuppingSessions.length === 0 ? (
-              <div className="p-8 text-center text-stone-400 font-medium uppercase text-sm border border-dashed border-stone-300">
+              <div className="p-8 text-center text-stone-400 font-medium uppercase text-sm border-stone-300">
                 Aún no hay sesiones de catación registradas
               </div>
             ) : (
               cuppingSessions.map(session => (
-                <div key={session.id} className="bg-white border border-stone-200 p-4 shadow-sm space-y-3">
+                <div key={session.id} className="p-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-bold text-black text-sm">{session.coffeeName}</div>
-                      <div className="text-xs text-stone-500 font-medium">{session.clientName || 'Interno'}</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSessionForSummary(session)}
-                      className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.25em] border border-stone-200 text-stone-600 hover:border-black hover:text-black bg-white"
-                    >
-                      Ver
-                    </button>
-                  </div>
-                  
-                  <div className="bg-stone-50 p-3 rounded text-xs space-y-2 border border-stone-100">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="block text-stone-400 text-[10px] uppercase tracking-wider">Catador</span>
-                        <span className="font-medium text-stone-600">{session.tasterName}</span>
+                      {session.sessionType === 'free' ? (
+                        <div>
+                          <span className="inline-block px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-[9px] font-bold uppercase tracking-widest text-stone-500 mb-1">
+                             Cata Libre ({session.samples?.length || 0} muestras)
+                          </span>
+                          <div className="font-bold text-black dark:text-white text-sm">
+                             {session.samples?.[0]?.brand} - {session.samples?.[0]?.variety} 
+                             {session.samples && session.samples.length > 1 && ` + ${session.samples.length - 1} más`}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                           <span className="inline-block px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[9px] font-bold uppercase tracking-widest mb-1">
+                             Cata Interna
+                          </span>
+                          <div className="font-bold text-black dark:text-white text-sm">{session.coffeeName}</div>
+                          <div className="text-xs text-stone-500 font-medium">{session.clientName}</div>
+                        </div>
+                      )}
+                      <div className="text-[10px] text-stone-400 mt-1 flex items-center gap-2">
+                        <span>{new Date(session.date).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>{session.tasterName}</span>
                       </div>
-                      <div>
-                        <span className="block text-stone-400 text-[10px] uppercase tracking-wider">Fecha</span>
-                        <span className="font-mono text-stone-600">{session.date.split('T')[0]}</span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t border-stone-200">
-                      <span className="block text-stone-400 text-[10px] uppercase tracking-wider">Objetivo</span>
-                      <span className="font-medium text-stone-600">{session.objective || 'Sin objetivo declarado'}</span>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-white border-b border-stone-200">
-                <tr>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-stone-500 border-r border-stone-100">
-                    Café
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-stone-500 border-r border-stone-100">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-stone-500 border-r border-stone-100">
-                    Catador
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-stone-500 border-r border-stone-100">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-stone-500 border-r border-stone-100">
-                    Objetivo
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-stone-500 text-right">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {cuppingSessions.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-16 text-center text-stone-400 text-xs font-mono uppercase tracking-[0.25em]"
-                    >
-                      Aún no hay sesiones de catación registradas
-                    </td>
-                  </tr>
-                ) : (
-                  cuppingSessions.map(session => (
-                    <tr key={session.id} className="hover:bg-stone-50 transition-colors">
-                      <td className="px-6 py-4 border-r border-stone-100">
-                        <div className="font-bold text-sm tracking-tight text-black">
-                          {session.coffeeName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-stone-600 font-medium border-r border-stone-100">
-                        {session.clientName || 'Interno'}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-stone-600 font-medium border-r border-stone-100">
-                        {session.tasterName}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-stone-600 font-mono border-r border-stone-100">
-                        {session.date.split('T')[0]}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-stone-500 border-r border-stone-100">
-                        {session.objective || 'Sin objetivo declarado'}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedSessionForSummary(session)}
-                          className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border border-stone-200 text-stone-600 hover:border-black hover:text-black bg-white"
-                        >
-                          Ver ficha
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
-      </div>
-      {selectedSessionForSummary && createPortal(
-        <div
-          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={() => setSelectedSessionForSummary(null)}
-        >
-          <div
-            className="bg-white dark:bg-stone-900 w-full max-w-6xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-stone-800 flex items-center justify-between bg-black text-white dark:bg-stone-950 shrink-0 sticky top-0 z-10">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
-                  Ficha de catación
-                </p>
-                <h3 className="text-2xl font-black tracking-tight">
-                  {selectedSessionForSummary.coffeeName}
-                </h3>
-                <p className="text-[11px] text-stone-300 font-mono dark:text-stone-400">
-                  {selectedSessionForSummary.clientName || 'Cliente interno'} •{' '}
-                  {selectedSessionForSummary.date.split('T')[0]}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-stone-300 dark:text-stone-400">
-                  Catador: {selectedSessionForSummary.tasterName}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSessionForSummary(null)}
-                  className="text-white hover:text-stone-300 transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            <div className="p-8 space-y-8 bg-stone-50 dark:bg-stone-950 overflow-y-auto">
-              <div className="border border-stone-200 bg-white p-5 space-y-3 dark:bg-stone-900 dark:border-stone-800">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-                      Café
-                    </p>
-                    <p className="font-bold text-black dark:text-white">
-                      {selectedSessionForSummary.coffeeName}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-                      Cliente
-                    </p>
-                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                      {selectedSessionForSummary.clientName || 'Interno'}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-                      Objetivo
-                    </p>
-                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                      {selectedSessionForSummary.objective || 'Sin objetivo declarado'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Fragancia',
-                    'fragranceIntensity',
-                    'fragranceNotes'
-                  )}
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Aroma',
-                    'aromaIntensity',
-                    'aromaNotes'
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {renderDescriptorsSummary(selectedSessionForSummary.form, 'Calificadores Aromáticos', [
-                    {
-                      label: 'Familias aromáticas',
-                      field: 'fragranceDescriptors',
-                      options: descriptorOptions.aromatic
-                    },
-                    {
-                      label: 'Notas de tueste',
-                      field: 'aromaDescriptors',
-                      options: descriptorOptions.roast
-                    }
-                  ])}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Sabor',
-                    'flavorIntensity',
-                    'flavorNotes'
-                  )}
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Sabor residual',
-                    'aftertasteIntensity',
-                    'aftertasteNotes'
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {renderDescriptorsSummary(selectedSessionForSummary.form, 'Gustos predominantes', [
-                    {
-                      label: 'Gustos básicos',
-                      field: 'flavorDescriptors',
-                      options: descriptorOptions.taste
-                    },
-                    {
-                      label: 'Gustos en retrogusto',
-                      field: 'aftertasteDescriptors',
-                      options: descriptorOptions.taste
-                    }
-                  ])}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Acidez',
-                    'acidityIntensity',
-                    'acidityNotes'
-                  )}
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Dulzor',
-                    'sweetnessIntensity',
-                    'sweetnessNotes'
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {renderScaleSummary(
-                    selectedSessionForSummary.form,
-                    'Sensación en boca',
-                    'mouthfeelIntensity',
-                    'mouthfeelNotes'
-                  )}
-                  {renderDescriptorsSummary(selectedSessionForSummary.form, 'Sensación en boca', [
-                    {
-                      label: 'Textura',
-                      field: 'mouthfeelDescriptors',
-                      options: descriptorOptions.mouthfeel
-                    }
-                  ])}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+    </div>
     </>
   );
 };

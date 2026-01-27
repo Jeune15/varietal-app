@@ -23,9 +23,10 @@ interface Props {
   roasts: Roast[];
   orders: Order[];
   onNavigate?: (tabId: string) => void;
+  userRole?: 'admin' | 'student' | null;
 }
 
-const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) => {
+const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate, userRole }) => {
   const [showSyncConfig, setShowSyncConfig] = useState(false);
   const [syncForm, setSyncForm] = useState({
     url: localStorage.getItem('supabase_url') || '',
@@ -170,26 +171,28 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
           <div className="bg-black dark:bg-stone-800 text-white dark:text-stone-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest self-end">
             {today}
           </div>
-          <div className="hidden md:flex gap-2">
-            <button
-              onClick={() => onNavigate && onNavigate('orders')}
-              className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
-            >
-              Pedidos
-            </button>
-            <button
-              onClick={() => onNavigate && onNavigate('roasting')}
-              className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
-            >
-              Tostado
-            </button>
-            <button
-              onClick={() => onNavigate && onNavigate('invoicing')}
-              className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
-            >
-              Facturación
-            </button>
-          </div>
+          {userRole === 'admin' && (
+            <div className="hidden md:flex gap-2">
+              <button
+                onClick={() => onNavigate && onNavigate('orders')}
+                className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
+              >
+                Pedidos
+              </button>
+              <button
+                onClick={() => onNavigate && onNavigate('roasting')}
+                className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
+              >
+                Tostado
+              </button>
+              <button
+                onClick={() => onNavigate && onNavigate('invoicing')}
+                className="px-3 py-1 border border-stone-200 dark:border-stone-700 text-[10px] font-bold uppercase tracking-widest hover:border-black dark:hover:border-stone-500 hover:bg-black dark:hover:bg-stone-800 hover:text-white transition-colors"
+              >
+                Facturación
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -376,7 +379,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate }) =
                 </tbody>
               </table>
             </div>
-            {roastingQueue.length > roastingQueuePreview.length && (
+            {roastingQueue.length > roastingQueuePreview.length && userRole === 'admin' && (
               <div className="pt-3 mt-3 border-t border-stone-100 flex justify-end dark:border-stone-800">
                 <button
                   onClick={() => onNavigate && onNavigate('roasting')}

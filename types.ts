@@ -146,16 +146,38 @@ export interface CuppingForm {
   mouthfeelNotes: string;
 }
 
+export interface FreeCuppingSample {
+  id: string;
+  brand: string;
+  variety: string;
+  origin: string;
+  process: string;
+  roastType: string;
+  roastDate: string;
+  restDays: number;
+  notes: string;
+  form: CuppingForm;
+}
+
+export type CuppingSessionType = 'internal' | 'free';
+
 export interface CuppingSession {
   id: string;
-  roastStockId: string;
-  roastId?: string;
-  coffeeName: string;
-  clientName?: string;
-  tasterName: string;
   date: string;
-  objective?: string;
-  form: CuppingForm;
+  roastId?: string; // Optional for free cupping
+  roastStockId?: string; // Optional for free cupping
+  tasterName: string; // Used for both
+  objective?: string; // Used for internal
+  notes?: string;
+  form?: CuppingForm; // Used for internal (single sample)
+  
+  // Legacy / Internal fields
+  coffeeName?: string;
+  clientName?: string;
+  
+  // Free Cupping Fields
+  sessionType: CuppingSessionType;
+  samples?: FreeCuppingSample[];
 }
 
 export type UserRole = 'admin' | 'editor' | 'viewer';
