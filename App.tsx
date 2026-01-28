@@ -122,6 +122,12 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (userRole === 'student' && !['dashboard', 'cupping'].includes(activeTab)) {
+      setActiveTab('dashboard');
+    }
+  }, [userRole, activeTab]);
+
   const handleManualSync = async () => {
     setIsSyncing(true);
     await pullFromCloud();
@@ -259,6 +265,7 @@ const AppContent: React.FC = () => {
         darkMode={darkMode}
         toggleDarkMode={() => setDarkMode(!darkMode)}
         onLogout={handleLogout}
+        userRole={userRole}
       />
 
       {/* Mobile Drawer Overlay */}
@@ -288,20 +295,20 @@ const AppContent: React.FC = () => {
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                   userRole={userRole}
                 />
-              ) : activeTab === 'roasting' ? (
+              ) : activeTab === 'roasting' && userRole === 'admin' ? (
                 <RoastingView 
                   roasts={roasts} 
                   greenCoffees={greenCoffees} 
                   orders={orders} 
                 />
-              ) : activeTab === 'green-coffee' ? (
+              ) : activeTab === 'green-coffee' && userRole === 'admin' ? (
                 <GreenCoffeeView 
                   coffees={greenCoffees}
                   setCoffees={() => {}} 
                 />
-              ) : activeTab === 'orders' ? (
+              ) : activeTab === 'orders' && userRole === 'admin' ? (
                 <OrdersView orders={orders} />
-              ) : activeTab === 'stock' ? (
+              ) : activeTab === 'stock' && userRole === 'admin' ? (
                 <div className="space-y-8">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
                     <div>
@@ -351,7 +358,7 @@ const AppContent: React.FC = () => {
                 </div>
               ) : activeTab === 'cupping' ? (
                 <CuppingView stocks={roastedStocks} />
-              ) : activeTab === 'invoicing' ? (
+              ) : activeTab === 'invoicing' && userRole === 'admin' ? (
                 <InvoicingView 
                   orders={orders}
                   roasts={roasts}

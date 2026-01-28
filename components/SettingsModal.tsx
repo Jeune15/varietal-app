@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, Database, Users, Shield, CheckCircle, AlertTriangle, RefreshCw, UploadCloud, Trash2, HardDrive, Moon, Sun, LogOut, Settings2 } from 'lucide-react';
@@ -13,9 +12,10 @@ interface Props {
   darkMode: boolean;
   toggleDarkMode: () => void;
   onLogout: () => void;
+  userRole?: 'admin' | 'student' | null;
 }
 
-const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkMode, onLogout }) => {
+const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkMode, onLogout, userRole }) => {
   const { isAdmin, refreshSession, user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'general' | 'connection' | 'users' | 'system'>('general');
   
@@ -119,18 +119,22 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkM
           >
             <Settings2 className="w-4 h-4" /> General
           </button>
-          <button 
-            onClick={() => setActiveTab('connection')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'connection' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
-          >
-            <Database className="w-4 h-4" /> Conexión
-          </button>
-          <button 
-            onClick={() => setActiveTab('system')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'system' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
-          >
-            <HardDrive className="w-4 h-4" /> Sistema / Datos
-          </button>
+          {(userRole === 'admin' || !userRole) && (
+            <>
+              <button 
+                onClick={() => setActiveTab('connection')}
+                className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'connection' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
+              >
+                <Database className="w-4 h-4" /> Conexión
+              </button>
+              <button 
+                onClick={() => setActiveTab('system')}
+                className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors min-w-[120px] ${activeTab === 'system' ? 'bg-stone-100 dark:bg-stone-800 text-black dark:text-white' : 'text-stone-400 hover:text-black dark:hover:text-white'}`}
+              >
+                <HardDrive className="w-4 h-4" /> Sistema / Datos
+              </button>
+            </>
+          )}
           {isAdmin && (
             <button 
               onClick={() => setActiveTab('users')}
@@ -206,137 +210,92 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkM
                     className="w-full px-4 py-3 bg-white border border-stone-200 focus:border-black outline-none text-sm font-mono text-stone-600 transition-all" 
                     value={key}
                     onChange={e => setKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR..."
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   />
                 </div>
-              </div>
-
-              <div className="pt-4">
                 <button 
                   onClick={handleSaveConnection}
-                  className={`w-full py-4 font-black uppercase tracking-[0.2em] transition-all text-xs border flex items-center justify-center gap-2 ${
-                    connStatus === 'success' 
-                      ? 'bg-green-600 text-white border-green-600' 
-                      : 'bg-black text-white border-black hover:bg-stone-800'
+                  className={`w-full py-4 text-xs font-bold uppercase tracking-[0.2em] transition-all ${
+                    connStatus === 'success' ? 'bg-green-600 text-white border border-green-600' :
+                    connStatus === 'error' ? 'bg-red-600 text-white border border-red-600' :
+                    'bg-black text-white border border-black hover:bg-white hover:text-black'
                   }`}
                 >
-                  {connStatus === 'success' ? (
-                    <>
-                      <CheckCircle className="w-4 h-4" /> Conectado
-                    </>
-                  ) : (
-                    'Guardar y Conectar'
-                  )}
+                  {connStatus === 'success' ? 'Conectado' : 
+                   connStatus === 'error' ? 'Error de Conexión' : 
+                   'Guardar y Conectar'}
                 </button>
               </div>
+            </div>
+          )}
 
-              <div className="pt-8 mt-8 border-t border-stone-100">
-                <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <RefreshCw className="w-3 h-3" /> Acciones de Sincronización
-                </h4>
-                <button
-                    onClick={handleForceSync}
-                    disabled={isSyncing || !url || !key}
-                    className="w-full py-3 bg-white border border-stone-200 hover:border-black text-stone-600 hover:text-black transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <UploadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
-                    {syncMessage || 'Forzar Sincronización Completa (Subir y Bajar)'}
-                </button>
-                <p className="text-[10px] text-stone-400 mt-2 text-center leading-relaxed">
-                    Use esto si nota discrepancias entre dispositivos. <br/>
-                    <span className="text-amber-600 font-bold">Nota:</span> Si falla, es probable que deba actualizar el esquema de la base de datos en Supabase.
-                </p>
-              </div>
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+               <div className="bg-stone-50 border border-stone-200 p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider mb-2">Gestión de Usuarios</h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
+                    {profiles?.map(p => (
+                        <div key={p.id} className="flex items-center justify-between p-3 bg-white border border-stone-100 shadow-sm">
+                            <div>
+                                <p className="text-xs font-bold">{p.email}</p>
+                                <p className="text-[10px] text-stone-500 capitalize">{p.role}</p>
+                            </div>
+                            {p.id !== user?.id && (
+                                <select 
+                                    className="text-[10px] border border-stone-200 p-1 bg-stone-50 uppercase font-bold"
+                                    value={p.role}
+                                    onChange={(e) => handleUpdateUser(p, { role: e.target.value as UserRole })}
+                                >
+                                    <option value="viewer">Visualizador</option>
+                                    <option value="editor">Editor</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            )}
+                        </div>
+                    ))}
+                </div>
+               </div>
             </div>
           )}
 
           {activeTab === 'system' && (
             <div className="space-y-6">
-              <div className="bg-red-50 border border-red-200 p-4 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-red-600 font-medium leading-relaxed">
-                  Zona de peligro. Las acciones aquí son irreversibles y afectarán a todos los datos de la aplicación.
-                </p>
+              {/* Sync Controls */}
+              <div className="border border-stone-200 p-6">
+                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <UploadCloud className="w-4 h-4" /> Sincronización Manual
+                </h4>
+                <div className="space-y-4">
+                    <p className="text-[10px] text-stone-500 font-medium leading-relaxed">
+                        Fuerza una subida de todos los datos locales a la nube y luego descarga las actualizaciones. Útil si hay conflictos.
+                    </p>
+                    <button 
+                        onClick={handleForceSync}
+                        disabled={isSyncing}
+                        className="w-full py-3 bg-stone-100 border border-stone-200 text-stone-600 hover:bg-stone-200 hover:text-black transition-colors text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'Sincronizando...' : 'Forzar Sincronización Completa'}
+                    </button>
+                    {syncMessage && (
+                        <p className={`text-[10px] font-bold text-center ${syncMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
+                            {syncMessage}
+                        </p>
+                    )}
+                </div>
               </div>
 
-              <div className="border border-stone-200 p-6 bg-white">
-                <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Database className="w-3 h-3" /> Gestión de Datos
+              {/* Danger Zone */}
+              <div className="border border-red-100 bg-red-50/50 p-6">
+                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 text-red-600 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" /> Zona de Peligro
                 </h4>
-                
-                <p className="text-xs text-stone-500 mb-6 leading-relaxed">
-                  Si necesita reiniciar la aplicación por completo, puede eliminar todos los datos. 
-                  Esto borrará inventario, tuestes, pedidos y configuración local.
-                  Si está conectado a la nube, también se borrarán los datos remotos.
-                </p>
-
                 <button 
                   onClick={handleReset}
-                  className="w-full flex items-center justify-center gap-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 uppercase tracking-widest px-4 py-4 transition-colors"
+                  className="w-full py-3 bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Eliminar todos los datos
+                  <Trash2 className="w-4 h-4" /> Resetear Base de Datos
                 </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'users' && isAdmin && (
-            <div className="space-y-6">
-               <div className="bg-stone-50 border border-stone-200 p-4 flex items-start gap-3">
-                <Shield className="w-5 h-5 text-stone-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-stone-500 font-medium leading-relaxed">
-                  Gestione el acceso de los usuarios. Los usuarios "Inactivos" no podrán acceder a la aplicación aunque tengan contraseña.
-                </p>
-              </div>
-
-              <div className="border border-stone-200">
-                {profiles.length === 0 ? (
-                    <div className="p-8 text-center text-stone-400 text-xs uppercase tracking-widest">No hay usuarios registrados</div>
-                ) : (
-                    <table className="w-full text-left">
-                        <thead className="bg-stone-100 border-b border-stone-200">
-                            <tr>
-                                <th className="px-4 py-3 text-[9px] font-black text-black uppercase tracking-widest">Usuario</th>
-                                <th className="px-4 py-3 text-[9px] font-black text-black uppercase tracking-widest">Rol</th>
-                                <th className="px-4 py-3 text-[9px] font-black text-black uppercase tracking-widest text-right">Acceso</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100">
-                            {profiles.map(p => (
-                                <tr key={p.id} className="hover:bg-stone-50">
-                                    <td className="px-4 py-4">
-                                        <p className="text-xs font-bold text-black">{p.email}</p>
-                                        <p className="text-[9px] font-mono text-stone-400">{p.id.slice(0,8)}...</p>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <select 
-                                            value={p.role}
-                                            onChange={(e) => handleUpdateUser(p, { role: e.target.value as UserRole })}
-                                            className="bg-white border border-stone-200 text-[10px] font-bold uppercase tracking-wide px-2 py-1 outline-none focus:border-black"
-                                        >
-                                            <option value="viewer">Viewer</option>
-                                            <option value="editor">Editor</option>
-                                            <option value="admin">Admin</option>
-                                        </select>
-                                    </td>
-                                    <td className="px-4 py-4 text-right">
-                                        <button 
-                                            onClick={() => handleUpdateUser(p, { isActive: !p.isActive })}
-                                            className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest border ${
-                                                p.isActive 
-                                                    ? 'bg-black text-white border-black' 
-                                                    : 'bg-white text-stone-300 border-stone-200 hover:border-red-300 hover:text-red-400'
-                                            }`}
-                                        >
-                                            {p.isActive ? 'Activo' : 'Inactivo'}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
               </div>
             </div>
           )}
