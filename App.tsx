@@ -32,6 +32,7 @@ import DashboardView from './views/DashboardView';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import SettingsModal from './components/SettingsModal';
+import FullScreenMenu from './components/FullScreenMenu';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { BrandLogoFull } from './components/BrandLogo';
@@ -189,23 +190,30 @@ const AppContent: React.FC = () => {
 
   if (!isUnlocked) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-white dark:bg-stone-950">
-        <div className="w-full max-w-sm border-2 border-brand shadow-[8px_8px_0px_0px_rgba(205,133,102,1)] p-8 space-y-6 dark:bg-stone-900 dark:border-stone-800 dark:text-white">
+      <div className="flex h-[100dvh] items-center justify-center bg-stone-900 relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center z-0" 
+          style={{ backgroundImage: 'url(/inicio.jpg)' }}
+        />
+        <div className="absolute inset-0 bg-black/50 z-10 backdrop-blur-[2px]" />
+
+        <div className="w-full max-w-sm border border-white/20 shadow-2xl p-8 space-y-6 bg-white/10 backdrop-blur-md relative z-20 text-white">
           <div className="flex justify-center pb-4">
-             <BrandLogoFull className="h-16" color="#CD8566" />
+             <BrandLogoFull className="h-16 text-white" color="#FFFFFF" />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 mt-1 text-center dark:text-stone-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70 mt-1 text-center font-sans">
               Acceso restringido
             </p>
           </div>
           <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider mb-1 dark:text-stone-300">
+            <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-white/80 font-sans">
               Contraseña de acceso
             </label>
             <input
               type="password"
-              className="w-full px-4 py-3 border border-stone-300 focus:border-black outline-none text-sm dark:bg-stone-950 dark:border-stone-700 dark:focus:border-stone-500 dark:text-white"
+              className="w-full px-4 py-3 border border-white/20 bg-black/20 focus:border-white outline-none text-sm text-white placeholder-white/30 font-sans transition-colors"
               value={accessPassword}
               onChange={(e) => setAccessPassword(e.target.value)}
               onKeyDown={(e) => {
@@ -215,18 +223,18 @@ const AppContent: React.FC = () => {
               }}
             />
             {accessError && (
-              <p className="text-[11px] text-red-600 font-medium dark:text-red-400">
+              <p className="text-[11px] text-red-300 font-medium font-sans">
                 {accessError}
               </p>
             )}
           </div>
           <button
             onClick={handleAccess}
-            className="w-full py-3 bg-black text-white font-black uppercase tracking-[0.2em] text-xs border border-black hover:bg-white hover:text-black transition-colors dark:bg-stone-800 dark:border-stone-700 dark:hover:bg-stone-700 dark:hover:text-white"
+            className="w-full py-3 bg-white text-black font-black uppercase tracking-[0.2em] text-xs border border-white hover:bg-transparent hover:text-white transition-colors font-sans"
           >
             Entrar
           </button>
-          <p className="text-[10px] text-stone-400 leading-relaxed dark:text-stone-600">
+          <p className="text-[10px] text-white/50 leading-relaxed font-sans">
             La contraseña se recordará mientras esta ventana del navegador permanezca abierta.
           </p>
         </div>
@@ -268,13 +276,14 @@ const AppContent: React.FC = () => {
         userRole={userRole}
       />
 
-      {/* Mobile Drawer Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[140] lg:hidden transition-opacity duration-500 ease-in-out" 
-          onClick={() => setIsSidebarOpen(false)} 
-        />
-      )}
+      {/* Full Screen Menu Overlay */}
+      <FullScreenMenu 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        items={menuItems} 
+        onNavigate={handleSelectSection}
+        activeTab={activeTab}
+      />
 
       {/* Sidebar Removed as per user request */}
 
@@ -312,7 +321,7 @@ const AppContent: React.FC = () => {
                 <div className="space-y-8">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
                     <div>
-                      <h2 className="text-3xl font-black text-black dark:text-white uppercase tracking-tighter">Inventario</h2>
+                      <h2 className="text-4xl font-serif italic text-black dark:text-white tracking-tight">Inventario</h2>
                     </div>
                     <div className="flex gap-8">
                       {['green', 'roasted', 'utility'].map((tab) => (
@@ -378,33 +387,38 @@ const AppContent: React.FC = () => {
         </section>
       </main>
 
-      {/* Mobile Bottom Navigation - Visible on all screens now as per user request to replace sidebar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 z-[200] safe-area-pb">
-        <div className="flex items-center justify-around p-2">
-          {menuItems.map(item => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center justify-center gap-2 p-3 rounded-full transition-all duration-300 ${
-                  isActive ? 'bg-brand text-white px-5' : 'text-stone-400 hover:text-brand dark:text-stone-500 dark:hover:text-brand'
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {isActive && (
-                  <span className="text-xs font-bold uppercase tracking-wider whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+      {/* Aesthetic Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb transition-all duration-300">
+        <div className="flex items-center justify-between px-6 py-4">
+          
+          {/* Menu Trigger */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex items-center gap-2 group text-stone-900 dark:text-stone-100"
+          >
+            <div className="p-2 rounded-full bg-stone-100 dark:bg-stone-800 group-hover:bg-brand group-hover:text-white transition-colors">
+              <Menu className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-widest hidden md:block group-hover:text-brand transition-colors">Menú</span>
+          </button>
+
+          {/* Current Section Indicator */}
+          <div className="absolute left-1/2 -translate-x-1/2 text-center">
+            <span className="text-[10px] text-stone-400 uppercase tracking-[0.2em] block mb-0.5 font-sans">Sección Actual</span>
+            <span className="font-serif text-lg md:text-xl italic text-brand">
+              {menuItems.find(i => i.id === activeTab)?.label || 'Inicio'}
+            </span>
+          </div>
+
+          {/* Settings Trigger */}
           <button
             onClick={() => setShowSettings(true)}
-            className="flex items-center justify-center gap-2 p-3 rounded-full transition-all duration-300 text-stone-400 hover:text-brand dark:text-stone-500 dark:hover:text-brand"
+            className="flex items-center gap-2 group text-stone-900 dark:text-stone-100"
           >
-            <Settings2 className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-widest hidden md:block group-hover:text-brand transition-colors">Ajustes</span>
+            <div className="p-2 rounded-full bg-stone-100 dark:bg-stone-800 group-hover:bg-brand group-hover:text-white transition-colors">
+              <Settings2 className="w-5 h-5" />
+            </div>
           </button>
         </div>
       </nav>
