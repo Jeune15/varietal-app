@@ -33,6 +33,9 @@ import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import SettingsModal from './components/SettingsModal';
 import FullScreenMenu from './components/FullScreenMenu';
+import LandingPage from './views/LandingPage';
+import NavigationMenu from './components/NavigationMenu';
+import Loader from './components/Loader';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { BrandLogoFull } from './components/BrandLogo';
@@ -53,10 +56,13 @@ const AppContent: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const [showSettings, setShowSettings] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  
+  // Navigation State
+  const [viewState, setViewState] = useState<'landing' | 'app'>('landing');
   const [userRole, setUserRole] = useState<'admin' | 'student' | null>(null);
-  const [accessPassword, setAccessPassword] = useState('');
-  const [accessError, setAccessError] = useState('');
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Initial load
+
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('darkMode') === 'true';
@@ -85,6 +91,26 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Initial check for cloud status
     let unsubscribe: () => void;
+    
+    // Check session storage for existing auth
+    const storedAccess = sessionStorage.getItem('varietal_access');
+    const storedRole = sessionStorage.getItem('varietal_role');
+    
+    if (storedAccess === 'true' && storedRole) {
+      setUserRole(storedRole as 'admin' | 'student');
+      setViewState('app');
+      // If student, default to cupping immediately
+      if (storedRole === 'student') {
+        setActiveTab('cupping');
+      }
+    }
+
+    // Artificial delay for initial loader if not already logged in
+    if (!storedAccess) {
+      setTimeout(() => setIsLoading(false), 2000);
+    } else {
+      setIsLoading(false);
+    }
 
     if (loading) return;
 
@@ -111,21 +137,11 @@ const AppContent: React.FC = () => {
     return () => {
         if (unsubscribe) unsubscribe();
     };
-  }, [user, loading]); // Only re-check when user changes and auth is ready
+  }, [user, loading]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = sessionStorage.getItem('varietal_access');
-    const storedRole = sessionStorage.getItem('varietal_role');
-    if (stored === 'true') {
-      setIsUnlocked(true);
-      setUserRole((storedRole as 'admin' | 'student') || 'admin');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (userRole === 'student' && !['dashboard', 'cupping'].includes(activeTab)) {
-      setActiveTab('dashboard');
+    if (userRole === 'student' && !['cupping', 'modules', 'recipes'].includes(activeTab)) {
+      setActiveTab('cupping');
     }
   }, [userRole, activeTab]);
 
@@ -142,32 +158,46 @@ const AppContent: React.FC = () => {
           await supabase.auth.signOut();
         } catch (error) {
           console.error("Error al cerrar sesión:", error);
-        } finally {
-          // Forzar limpieza local si es necesario o recargar
-          window.location.reload();
         }
       }
+      // Clear session
+      sessionStorage.removeItem('varietal_access');
+      sessionStorage.removeItem('varietal_role');
+      window.location.reload();
   };
 
-  const handleAccess = () => {
-    if (accessPassword === '10666234') {
-      setIsUnlocked(true);
+  const handleAuthenticate = async (role: 'admin' | 'student', password: string): Promise<boolean> => {
+    // Simulate network delay for effect
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    if (role === 'admin' && password === '10666234') {
       setUserRole('admin');
-      setAccessError('');
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('varietal_access', 'true');
-        sessionStorage.setItem('varietal_role', 'admin');
-      }
-    } else if (accessPassword === 'alumnos.varietal') {
-      setIsUnlocked(true);
+      setActiveTab('dashboard');
+      sessionStorage.setItem('varietal_access', 'true');
+      sessionStorage.setItem('varietal_role', 'admin');
+      setIsLoading(true); // Trigger loader for transition
+      return true;
+    } 
+    
+    if (role === 'student' && password === 'alumnos.varietal') {
       setUserRole('student');
-      setAccessError('');
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('varietal_access', 'true');
-        sessionStorage.setItem('varietal_role', 'student');
-      }
+      setActiveTab('cupping');
+      sessionStorage.setItem('varietal_access', 'true');
+      sessionStorage.setItem('varietal_role', 'student');
+      setIsLoading(true); // Trigger loader for transition
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleLoaderComplete = () => {
+    if (userRole) {
+      setViewState('app');
+      setIsLoading(false);
+      setIsNavMenuOpen(false); // Close menu if open
     } else {
-      setAccessError('Contraseña incorrecta');
+      setIsLoading(false);
     }
   };
 
@@ -177,95 +207,164 @@ const AppContent: React.FC = () => {
     setIsDesktopSidebarOpen(false);
   };
 
-  if (loading) {
-      return (
-          <div className="flex h-screen items-center justify-center bg-white dark:bg-stone-950">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin dark:border-white"></div>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Cargando Varietal...</p>
-              </div>
-          </div>
-      );
+  // Filter menu items based on role
+  const menuItems = [
+    { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, roles: ['admin'] },
+    { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
+    { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
+    { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
+    // Cupping is for everyone, but handled differently in UI flow
+    { id: 'cupping', label: 'Catación', icon: BarChart3, roles: ['admin', 'student'] }, 
+    { id: 'invoicing', label: 'Facturación', icon: Receipt, roles: ['admin'] },
+  ].filter(item => !userRole || (item.roles.includes(userRole)));
+
+  // If loading (initial or transition)
+  if (isLoading) {
+    return <Loader onComplete={handleLoaderComplete} />;
   }
 
-  if (!isUnlocked) {
+  // Landing Page View
+  if (viewState === 'landing') {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-stone-900 relative overflow-hidden">
-        {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center z-0" 
-          style={{ backgroundImage: 'url(/inicio.jpg)' }}
+      <>
+        <LandingPage onMenuOpen={() => setIsNavMenuOpen(true)} />
+        <NavigationMenu 
+          isOpen={isNavMenuOpen} 
+          onClose={() => setIsNavMenuOpen(false)} 
+          onAuthenticate={handleAuthenticate}
         />
-        <div className="absolute inset-0 bg-black/50 z-10 backdrop-blur-[2px]" />
+      </>
+    );
+  }
 
-        <div className="w-full max-w-sm border border-white/20 shadow-2xl p-8 space-y-6 bg-white/10 backdrop-blur-md relative z-20 text-white">
-          <div className="flex justify-center pb-4">
-             <BrandLogoFull className="h-16 text-white" color="#FFFFFF" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70 mt-1 text-center font-sans">
-              Acceso restringido
-            </p>
-          </div>
-          <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-white/80 font-sans">
-              Contraseña de acceso
-            </label>
-            <input
-              type="password"
-              className="w-full px-4 py-3 border border-white/20 bg-black/20 focus:border-white outline-none text-sm text-white placeholder-white/30 font-sans transition-colors"
-              value={accessPassword}
-              onChange={(e) => setAccessPassword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAccess();
-                }
-              }}
-            />
-            {accessError && (
-              <p className="text-[11px] text-red-300 font-medium font-sans">
-                {accessError}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={handleAccess}
-            className="w-full py-3 bg-white text-black font-black uppercase tracking-[0.2em] text-xs border border-white hover:bg-transparent hover:text-white transition-colors font-sans"
-          >
-            Entrar
-          </button>
-          <p className="text-[10px] text-white/50 leading-relaxed font-sans">
-            La contraseña se recordará mientras esta ventana del navegador permanezca abierta.
-          </p>
+  // Student Specific View (Clean, minimal, just Cupping)
+  if (userRole === 'student') {
+    return (
+      <div className="min-h-[100dvh] bg-white dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 flex flex-col">
+        {/* Student Content Area */}
+        <div className="flex-1 overflow-y-auto pb-24">
+           <div className="max-w-7xl mx-auto p-4 md:p-8">
+             <div className="flex justify-end items-center mb-4">
+               <button 
+                 onClick={handleLogout}
+                 className="text-xs font-bold uppercase tracking-widest text-stone-400 hover:text-red-500 transition-colors"
+               >
+                 Salir
+               </button>
+             </div>
+             
+             {activeTab === 'cupping' && <CuppingView stocks={roastedStocks} mode="free" />}
+             
+             {activeTab === 'modules' && (
+               <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
+                 <div className="space-y-2 mb-8">
+                   <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
+                   <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                     Material educativo y recursos
+                   </p>
+                 </div>
+
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                   {['Módulo I', 'Módulo II', 'Módulo III', 'Módulo IV', 'Módulo V'].map((mod, i) => (
+                     <button key={i} className="group flex flex-col items-center justify-center gap-6 p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300">
+                       <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
+                         <Package className="w-6 h-6" />
+                       </div>
+                       <h3 className="text-lg font-black uppercase tracking-tight text-black dark:text-white">{mod}</h3>
+                     </button>
+                   ))}
+                 </div>
+
+                 <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
+                    <h3 className="text-xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Actividades</h3>
+                    <div className="border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center rounded-lg bg-stone-50 dark:bg-stone-900/50">
+                        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Próximamente</p>
+                    </div>
+                 </div>
+               </div>
+             )}
+             
+             {activeTab === 'recipes' && (
+               <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
+                 <div className="space-y-2 mb-8">
+                   <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Recetas</h3>
+                   <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                     Guías de preparación y métodos
+                   </p>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <button className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300">
+                       <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
+                         <Coffee className="w-8 h-8" />
+                       </div>
+                       <div className="text-center space-y-2">
+                         <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Espresso</h3>
+                         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Guías de extracción y calibración</p>
+                       </div>
+                    </button>
+                    
+                    <button className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300">
+                       <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
+                         <ClipboardList className="w-8 h-8" />
+                       </div>
+                       <div className="text-center space-y-2">
+                         <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Filtrados</h3>
+                         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">V60, Chemex, Aeropress y más</p>
+                       </div>
+                    </button>
+                 </div>
+
+                 <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
+                    <h3 className="text-xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Actividades</h3>
+                    <div className="border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center rounded-lg bg-stone-50 dark:bg-stone-900/50">
+                        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Próximamente</p>
+                    </div>
+                 </div>
+               </div>
+             )}
+           </div>
         </div>
+
+        {/* Student Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
+          <div className="flex items-center justify-around px-4 py-2">
+            {[
+              { id: 'cupping', label: 'Catación', icon: BarChart3 },
+              { id: 'modules', label: 'Módulos', icon: Package },
+              { id: 'recipes', label: 'Recetas', icon: ClipboardList },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex flex-col items-center gap-1 p-2 min-w-[3.5rem] rounded-xl transition-all duration-300 ${
+                    isActive 
+                      ? 'text-brand dark:text-brand-light' 
+                      : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                  }`}
+                >
+                  <Icon 
+                    className={`w-5 h-5 transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
+                    strokeWidth={isActive ? 2.5 : 2} 
+                  />
+                  <span className={`text-[9px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     );
   }
 
-  // Comentado para permitir acceso directo sin login
-  // if (!user) {
-  //     return <LoginView />;
-  // }
-
-  // if (profile && !profile.isActive) {
-  //   return (
-  //       <div className="flex h-screen items-center justify-center bg-stone-50 p-4">
-  //           {/* ... Contenido de cuenta inactiva ... */}
-  //       </div>
-  //   );
-  // }
-
-  const menuItems = [
-    { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
-    { id: 'stock', label: 'Stock', icon: Package },
-    { id: 'orders', label: 'Pedidos', icon: ClipboardList },
-    { id: 'roasting', label: 'Tostado', icon: Flame },
-    { id: 'cupping', label: 'Catación', icon: BarChart3 },
-    { id: 'invoicing', label: 'Facturación', icon: Receipt },
-  ];
-
+  // Admin / Full App View
   return (
-    <div className="flex h-[100dvh] bg-white dark:bg-stone-950 overflow-hidden font-sans text-stone-900 dark:text-stone-100 antialiased selection:bg-brand-light selection:text-white">
+    <div className="flex h-[100dvh] bg-white dark:bg-stone-900 overflow-hidden font-sans text-stone-900 dark:text-stone-100 antialiased selection:bg-brand-light selection:text-white">
       {/* Settings Modal */}
       <SettingsModal 
         isOpen={showSettings} 
@@ -276,7 +375,7 @@ const AppContent: React.FC = () => {
         userRole={userRole}
       />
 
-      {/* Full Screen Menu Overlay */}
+      {/* Full Screen Menu Overlay - Only for Admin in this context */}
       <FullScreenMenu 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
@@ -285,13 +384,9 @@ const AppContent: React.FC = () => {
         activeTab={activeTab}
       />
 
-      {/* Sidebar Removed as per user request */}
-
       {/* Main Container */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-stone-950">
         
-
-
         {/* Dynamic Content Area */}
         <section className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">
           <div className="p-4 md:p-8 lg:p-10 pb-32 max-w-7xl mx-auto">
@@ -304,24 +399,24 @@ const AppContent: React.FC = () => {
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                   userRole={userRole}
                 />
-              ) : activeTab === 'roasting' && userRole === 'admin' ? (
+              ) : activeTab === 'roasting' ? (
                 <RoastingView 
                   roasts={roasts} 
                   greenCoffees={greenCoffees} 
                   orders={orders} 
                 />
-              ) : activeTab === 'green-coffee' && userRole === 'admin' ? (
+              ) : activeTab === 'green-coffee' ? (
                 <GreenCoffeeView 
                   coffees={greenCoffees}
                   setCoffees={() => {}} 
                 />
-              ) : activeTab === 'orders' && userRole === 'admin' ? (
+              ) : activeTab === 'orders' ? (
                 <OrdersView orders={orders} />
-              ) : activeTab === 'stock' && userRole === 'admin' ? (
+              ) : activeTab === 'stock' ? (
                 <div className="space-y-8">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
                     <div>
-                      <h2 className="text-4xl font-serif italic text-black dark:text-white tracking-tight">Inventario</h2>
+                      <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Inventario</h2>
                     </div>
                     <div className="flex gap-8">
                       {['green', 'roasted', 'utility'].map((tab) => (
@@ -366,8 +461,9 @@ const AppContent: React.FC = () => {
                   </div>
                 </div>
               ) : activeTab === 'cupping' ? (
-                <CuppingView stocks={roastedStocks} />
-              ) : activeTab === 'invoicing' && userRole === 'admin' ? (
+                 // Should technically not be reachable by admin based on requirements, but kept as fallback
+                <CuppingView stocks={roastedStocks} mode="internal" />
+              ) : activeTab === 'invoicing' ? (
                 <InvoicingView 
                   orders={orders}
                   roasts={roasts}
@@ -387,38 +483,39 @@ const AppContent: React.FC = () => {
         </section>
       </main>
 
-      {/* Aesthetic Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb transition-all duration-300">
-        <div className="flex items-center justify-between px-6 py-4">
+      {/* Bottom Navigation (Mobile) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb lg:hidden">
+        <div className="flex items-center justify-between px-4 py-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelectSection(item.id)}
+                className={`flex flex-col items-center gap-1 p-2 min-w-[3.5rem] rounded-xl transition-all duration-300 ${
+                  isActive 
+                    ? 'text-brand dark:text-brand-light' 
+                    : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                }`}
+              >
+                <Icon 
+                  className={`w-5 h-5 transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
+                  strokeWidth={isActive ? 2.5 : 2} 
+                />
+                <span className={`text-[9px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
           
-          {/* Menu Trigger */}
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="flex items-center gap-2 group text-stone-900 dark:text-stone-100"
-          >
-            <div className="p-2 rounded-full bg-stone-100 dark:bg-stone-800 group-hover:bg-brand group-hover:text-white transition-colors">
-              <Menu className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-bold uppercase tracking-widest hidden md:block group-hover:text-brand transition-colors">Menú</span>
-          </button>
-
-          {/* Current Section Indicator */}
-          <div className="absolute left-1/2 -translate-x-1/2 text-center">
-            <span className="text-[10px] text-stone-400 uppercase tracking-[0.2em] block mb-0.5 font-sans">Sección Actual</span>
-            <span className="font-serif text-lg md:text-xl italic text-brand">
-              {menuItems.find(i => i.id === activeTab)?.label || 'Inicio'}
-            </span>
-          </div>
-
-          {/* Settings Trigger */}
           <button
             onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 group text-stone-900 dark:text-stone-100"
+            className="flex flex-col items-center gap-1 p-2 min-w-[3.5rem] text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
           >
-            <span className="text-xs font-bold uppercase tracking-widest hidden md:block group-hover:text-brand transition-colors">Ajustes</span>
-            <div className="p-2 rounded-full bg-stone-100 dark:bg-stone-800 group-hover:bg-brand group-hover:text-white transition-colors">
-              <Settings2 className="w-5 h-5" />
-            </div>
+            <Settings2 className="w-5 h-5" strokeWidth={2} />
+            <span className="text-[9px] font-bold uppercase tracking-widest opacity-0 hidden">Ajustes</span>
           </button>
         </div>
       </nav>

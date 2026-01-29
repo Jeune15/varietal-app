@@ -9,6 +9,7 @@ import { Coffee, User as UserIcon, ClipboardList, SlidersHorizontal, X, ArrowLef
 
 interface Props {
   stocks: RoastedStock[];
+  mode?: 'internal' | 'free' | 'all';
 }
 
 const buildEmptyForm = (): CuppingForm => ({
@@ -51,7 +52,7 @@ const descriptorOptions = {
   ]
 };
 
-const CuppingView: React.FC<Props> = ({ stocks }) => {
+const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
   const { canEdit } = useAuth();
   const { showToast } = useToast();
 
@@ -60,7 +61,7 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
   // Flow State
   const [viewStep, setViewStep] = useState<'type-selection' | 'setup-samples' | 'analysis'>('type-selection');
   const [sessionType, setSessionType] = useState<CuppingSessionType | null>(null);
-  
+
   // Internal Session State
   const [selectedStockId, setSelectedStockId] = useState('');
   const [tasterName, setTasterName] = useState('');
@@ -73,6 +74,16 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
   const [currentSampleIndex, setCurrentSampleIndex] = useState(0);
 
   const cuppingSessions = useLiveQuery(() => db.cuppingSessions.orderBy('date').reverse().toArray(), []) || [];
+  
+  const filteredSessions = useMemo(() => {
+    if (mode === 'all') return cuppingSessions;
+    return cuppingSessions.filter(s => {
+      // Legacy sessions (no sessionType) are considered internal
+      if (mode === 'internal') return s.sessionType === 'internal' || !s.sessionType;
+      if (mode === 'free') return s.sessionType === 'free';
+      return true;
+    });
+  }, [cuppingSessions, mode]);
 
   const availableStocks = useMemo(
     () => stocks.filter(s => s.remainingQtyKg > 0),
@@ -101,6 +112,23 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
     setFreeSamples(newSamples);
     setCurrentSampleIndex(0);
   };
+
+  // Initialize/Reset based on mode
+  useEffect(() => {
+    if (mode === 'internal') {
+      setSessionType('internal');
+      setViewStep('analysis');
+      setInternalForm(buildEmptyForm());
+    } else if (mode === 'free') {
+      setActiveTab('form');
+      setSessionType(null);
+      setViewStep('type-selection');
+      setNumSamples(1);
+    } else {
+      setSessionType(null);
+      setViewStep('type-selection');
+    }
+  }, [mode]);
 
   const handleStartSetup = (type: CuppingSessionType) => {
     setSessionType(type);
@@ -356,7 +384,8 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
       )}
 
       {canEdit && activeTab === 'form' && viewStep === 'type-selection' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className={`grid grid-cols-1 ${mode === 'all' ? 'md:grid-cols-2' : 'md:grid-cols-1 justify-center'} gap-8 max-w-4xl mx-auto`}>
+           {mode !== 'free' && (
            <button
              onClick={() => handleStartSetup('internal')}
              className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300"
@@ -371,8 +400,10 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
                </p>
              </div>
            </button>
+           )}
 
-           <div className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900">
+           {mode !== 'internal' && (
+           <div className={`group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 ${mode === 'free' ? 'max-w-md mx-auto w-full' : ''}`}>
              <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-900 dark:text-white">
                <ClipboardList className="w-8 h-8" />
              </div>
@@ -383,23 +414,36 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
                    Evaluar muestras externas o experimentales
                  </p>
                </div>
-               <div className="flex items-center justify-center gap-4 pt-4 border-t border-stone-100 dark:border-stone-800 w-full max-w-[200px] mx-auto">
-                 <button 
-                    onClick={() => setNumSamples(Math.max(1, numSamples - 1))}
-                    className="w-8 h-8 flex items-center justify-center border border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 rounded-full"
-                 >
-                   <Minus className="w-4 h-4" />
-                 </button>
-                 <div className="text-center">
-                    <span className="block text-2xl font-black">{numSamples}</span>
-                    <span className="text-[9px] uppercase font-bold tracking-widest text-stone-400">Muestras</span>
+               <div className="space-y-4 w-full max-w-[200px] mx-auto">
+                 <div className="flex items-center justify-center gap-4 pt-4 border-t border-stone-100 dark:border-stone-800">
+                   <button 
+                      onClick={() => setNumSamples(Math.max(1, numSamples - 1))}
+                      className="w-8 h-8 flex items-center justify-center border border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 rounded-full"
+                   >
+                     <Minus className="w-4 h-4" />
+                   </button>
+                   <div className="text-center">
+                      <span className="block text-2xl font-black">{numSamples}</span>
+                      <span className="text-[9px] uppercase font-bold tracking-widest text-stone-400">Muestras</span>
+                   </div>
+                   <button 
+                      onClick={() => setNumSamples(Math.min(20, numSamples + 1))}
+                      className="w-8 h-8 flex items-center justify-center border border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 rounded-full"
+                   >
+                     <Plus className="w-4 h-4" />
+                   </button>
                  </div>
-                 <button 
-                    onClick={() => setNumSamples(Math.min(20, numSamples + 1))}
-                    className="w-8 h-8 flex items-center justify-center border border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800 rounded-full"
-                 >
-                   <Plus className="w-4 h-4" />
-                 </button>
+                 
+                 <div className="space-y-1">
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-400 text-center">Catador/a</label>
+                    <input
+                       type="text"
+                       value={tasterName}
+                       onChange={e => setTasterName(e.target.value)}
+                       placeholder="Tu nombre"
+                       className="w-full bg-transparent border-b border-stone-300 dark:border-stone-700 py-1 text-sm font-bold focus:border-black outline-none text-center"
+                    />
+                 </div>
                </div>
                <button
                  onClick={() => {
@@ -413,6 +457,7 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
                </button>
              </div>
            </div>
+           )}
         </div>
       )}
 
@@ -723,45 +768,52 @@ const CuppingView: React.FC<Props> = ({ stocks }) => {
               </span>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-stone-400">
-              {cuppingSessions.length} sesiones
+              {filteredSessions.length} sesiones
             </span>
           </div>
           {/* List of sessions */}
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
-            {cuppingSessions.length === 0 ? (
+            {filteredSessions.length === 0 ? (
               <div className="p-8 text-center text-stone-400 font-medium uppercase text-sm border-stone-300">
                 Aún no hay sesiones de catación registradas
               </div>
             ) : (
-              cuppingSessions.map(session => (
+              filteredSessions.map(session => (
                 <div key={session.id} className="p-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      {/* Taster Name - Primary */}
+                      <div className="font-black text-sm uppercase tracking-tight text-black dark:text-white">
+                         {session.tasterName || 'Sin nombre'}
+                      </div>
+
+                      {/* Coffee Info */}
                       {session.sessionType === 'free' ? (
-                        <div>
-                          <span className="inline-block px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-[9px] font-bold uppercase tracking-widest text-stone-500 mb-1">
-                             Cata Libre ({session.samples?.length || 0} muestras)
-                          </span>
-                          <div className="font-bold text-black dark:text-white text-sm">
-                             {session.samples?.[0]?.brand} - {session.samples?.[0]?.variety} 
-                             {session.samples && session.samples.length > 1 && ` + ${session.samples.length - 1} más`}
-                          </div>
-                        </div>
+                           <div className="text-xs font-bold text-stone-600 dark:text-stone-300">
+                             {session.samples?.[0]?.brand} - {session.samples?.[0]?.variety}
+                             {session.samples && session.samples.length > 1 && <span className="text-stone-400"> +{session.samples.length - 1}</span>}
+                           </div>
                       ) : (
-                        <div>
-                           <span className="inline-block px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[9px] font-bold uppercase tracking-widest mb-1">
-                             Cata Interna
-                          </span>
-                          <div className="font-bold text-black dark:text-white text-sm">{session.coffeeName}</div>
-                          <div className="text-xs text-stone-500 font-medium">{session.clientName}</div>
-                        </div>
+                           <div className="text-xs font-bold text-stone-600 dark:text-stone-300">
+                             {session.coffeeName} <span className="text-stone-400 font-medium">({session.clientName})</span>
+                           </div>
                       )}
-                      <div className="text-[10px] text-stone-400 mt-1 flex items-center gap-2">
-                        <span>{new Date(session.date).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span>{session.tasterName}</span>
+
+                      {/* Date & Count */}
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400 flex items-center gap-2">
+                         <span>{new Date(session.date).toLocaleDateString()}</span>
+                         <span>•</span>
+                         <span>
+                           {session.sessionType === 'free' 
+                              ? `${session.samples?.length || 0} muestras`
+                              : 'Cata Interna'}
+                         </span>
                       </div>
                     </div>
+
+                    <button className="p-2 text-stone-300 hover:text-black dark:hover:text-white transition-colors">
+                       <ClipboardList className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
               ))
