@@ -29,7 +29,7 @@
                         // Keep 'full' for circular elements (badges, avatars)
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['CoFo Sans', 'Inter', 'sans-serif'],
                         serif: ['Cormorant Garamond', 'serif'],
                     },
                     colors: {
@@ -96,8 +96,39 @@
     </script>
 
     <style>
+        @font-face {
+            font-family: 'CoFo Sans';
+            src: url('/CoFoLight.otf') format('opentype');
+            font-weight: 300;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'CoFo Sans';
+            src: url('/CoFoRegular.otf') format('opentype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'CoFo Sans';
+            src: url('/CoFoItalic.otf') format('opentype');
+            font-weight: 400;
+            font-style: italic;
+        }
+        @font-face {
+            font-family: 'CoFo Sans';
+            src: url('/CoFoBold.otf') format('opentype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'CoFo Sans';
+            src: url('/CoFoBlack.otf') format('opentype');
+            font-weight: 900;
+            font-style: normal;
+        }
+
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'CoFo Sans', sans-serif; 
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             background-color: #FFFFFF;

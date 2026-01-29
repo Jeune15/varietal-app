@@ -1,0 +1,1041 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Book, 
+  FileText, 
+  PlayCircle, 
+  CheckCircle, 
+  ChevronRight, 
+  ArrowLeft, 
+  Clock, 
+  AlertCircle,
+  Link as LinkIcon,
+  BookOpen,
+  ArrowRight,
+  RefreshCw,
+  Award,
+  Image as ImageIcon,
+  ChevronDown,
+  ChevronLeft,
+  Trash2,
+  User,
+  Eye,
+  X
+} from 'lucide-react';
+
+// --- Types ---
+
+interface Topic {
+  id: string;
+  title: string;
+  content: string; // Can be HTML/Markdown or just plain text with definitions
+}
+
+interface Question {
+  id: string;
+  text: string;
+  options: string[];
+  correctAnswer: number; // index of correct option
+}
+
+interface Exam {
+  id: string;
+  title: string;
+  description: string;
+  questions: Question[];
+  passingScore: number; // percentage
+  durationMinutes: number;
+}
+
+interface Module {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  slides: string[]; // Paths to images
+  topics: Topic[];
+  exam: Exam;
+}
+
+interface HistoryRecord {
+  id: string;
+  date: string;
+  studentName: string;
+  examTitle: string;
+  score: number;
+  passed: boolean;
+  answers: number[];
+  questions: Question[];
+}
+
+// --- Helper to generate slide paths ---
+const generateSlides = (start: number, end: number, prefix: string) => {
+  const slides = [];
+  for (let i = start; i <= end; i++) {
+    slides.push(`${prefix}/${i}.jpg`);
+  }
+  return slides;
+};
+
+// --- Mock Data ---
+
+const MOCK_MODULES: Module[] = [
+  {
+    id: 'mod-1',
+    title: 'Módulo I',
+    subtitle: 'Introducción al Café',
+    description: 'Cambio del perfil del café durante la trazabilidad: Origen, Café Verde, Procesos, Tostado, Cata y Métodos de Extracción.',
+    slides: generateSlides(2, 32, '/modulo1'),
+    topics: [
+      {
+        id: 't1-1',
+        title: 'Origen',
+        content: 'Definiciones y palabras clave sobre el Origen del café (Terroir, Altitud, Latitud, Variedades) se agregarán próximamente.'
+      },
+      {
+        id: 't1-2',
+        title: 'Variedades',
+        content: 'Definiciones y palabras clave sobre Variedades (Arabica, Robusta, Borbón, Caturra, Geisha) se agregarán próximamente.'
+      },
+      {
+        id: 't1-3',
+        title: 'Proceso',
+        content: 'Definiciones y palabras clave sobre Procesos de Beneficio (Lavado, Natural, Honey, Fermentación) se agregarán próximamente.'
+      },
+      {
+        id: 't1-4',
+        title: 'Tueste',
+        content: 'Definiciones y palabras clave sobre Tueste (Curva de Tueste, Maillard, Crack, Desarrollo) se agregarán próximamente.'
+      },
+      {
+        id: 't1-5',
+        title: 'Cata',
+        content: 'Definiciones y palabras clave sobre Cata y Evaluación Sensorial (Fragancia, Aroma, Sabor, Postgusto, Acidez, Cuerpo) se agregarán próximamente.'
+      },
+      {
+        id: 't1-6',
+        title: 'Métodos de extracción',
+        content: 'Definiciones y palabras clave sobre Métodos de Extracción (V60, Chemex, Prensa Francesa, Aeropress) se agregarán próximamente.'
+      }
+    ],
+    exam: {
+      id: 'ex-1',
+      title: 'Examen Teórico Módulo I',
+      description: 'Evaluación integral sobre la trazabilidad del café, desde el origen y la botánica hasta el análisis sensorial.',
+      passingScore: 80,
+      durationMinutes: 20,
+      questions: [
+        {
+          id: 'q1-1',
+          text: '¿Por qué la altitud influye directamente en la calidad sensorial del café?',
+          options: ['Porque aumenta el tamaño del grano', 'Porque acelera la maduración del fruto', 'Porque ralentiza la maduración y favorece mayor complejidad de sabores', 'Porque reduce la acidez natural'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-2',
+          text: '¿Qué rango de altitud es más común para cafés arábica de especialidad?',
+          options: ['300–600 msnm', '600–900 msnm', '900–1,200 msnm', '1,200–2,000 msnm'],
+          correctAnswer: 3
+        },
+        {
+          id: 'q1-3',
+          text: 'El concepto de “terroir” en el café hace referencia a:',
+          options: ['El perfil de tueste', 'El método de extracción', 'Las condiciones ambientales y humanas del origen', 'El tipo de molienda'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-4',
+          text: '¿Cuál es una diferencia clave entre café Arábica y Robusta?',
+          options: ['El color del grano', 'El contenido de cafeína', 'El proceso utilizado', 'El nivel de tueste'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q1-5',
+          text: 'Bourbon, Typica y Caturra son:',
+          options: ['Especies de café', 'Métodos de proceso', 'Variedades botánicas de Arábica', 'Defectos del grano'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-6',
+          text: '¿Qué característica es común en la variedad Geisha?',
+          options: ['Amargor intenso y cuerpo alto', 'Perfil terroso y especiado', 'Notas florales, tipo té y alta complejidad aromática', 'Bajo nivel aromático'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-7',
+          text: '¿Cuál es una consecuencia común de una fermentación mal controlada en el café?',
+          options: ['Mayor dulzor y limpieza en taza', 'Desarrollo de sabores defectuosos como avinagrado o alcohólico', 'Reducción total de la acidez', 'Incremento de notas florales'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q1-8',
+          text: '¿Qué proceso de café suele generar mayor cuerpo y dulzor percibido?',
+          options: ['Lavado', 'Natural', 'Despulpado sin fermentación', 'Industrial'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q1-9',
+          text: '¿Qué caracteriza de forma general al proceso lavado?',
+          options: ['Mayor fermentación y cuerpo', 'Secado del café con toda la cereza', 'Eliminación del mucílago antes del secado, generando mayor limpieza en taza', 'Uso de miel durante el secado'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-10',
+          text: '¿Cuál es la función principal de la etapa de secado durante el tueste?',
+          options: ['Desarrollar aromas', 'Caramelizar azúcares', 'Eliminar la humedad del grano', 'Provocar el primer crack'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-11',
+          text: 'Durante la etapa de caramelización (reacciones de Maillard) en el tueste ocurre principalmente:',
+          options: ['Evaporación del agua residual', 'Formación de compuestos aromáticos y precursores de sabor', 'Liberación intensa de CO₂', 'Carbonización inmediata del grano'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q1-12',
+          text: '¿Qué efecto suele tener un tiempo de desarrollo excesivo después del primer crack?',
+          options: ['Mayor acidez', 'Mayor claridad', 'Sabores planos y amargos', 'Incremento de notas florales'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-13',
+          text: '¿Cuál es el propósito de usar una molienda gruesa y uniforme en la cata?',
+          options: ['Aumentar la extracción', 'Intensificar el aroma', 'Garantizar consistencia entre muestras', 'Reducir el tiempo de preparación'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-14',
+          text: '¿Cuál de los siguientes defectos del café verde es inaceptable encontrar en un café tostado según estándares de calidad?',
+          options: ['Grano quebrado', 'Grano inmaduro', 'Moho', 'Diferencia de tamaño'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-15',
+          text: '¿Cuál de los siguientes NO se considera un atributo positivo en una cata SCA?',
+          options: ['Dulzor', 'Balance', 'Astringencia intensa', 'Limpieza de taza'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-16',
+          text: '¿Qué método de preparación corresponde a una extracción por presión?',
+          options: ['Prensa francesa', 'V60', 'Espresso', 'Cold brew'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-17',
+          text: '¿Qué método de preparación se basa en la inmersión total del café en agua?',
+          options: ['V60', 'Chemex', 'Prensa francesa', 'Kalita Wave'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-18',
+          text: '¿Qué molienda es más adecuada para métodos de filtrado manual?',
+          options: ['Muy fina', 'Fina', 'Media a media-gruesa', 'Muy gruesa'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-19',
+          text: '¿Cuál de las siguientes es una nota caramelizada según la rueda de sabores SCA?',
+          options: ['Jazmín', 'Limón', 'Caramelo', 'Hierba fresca'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q1-20',
+          text: '¿Qué ratio café–agua se utiliza comúnmente en la cata (cupping) según SCA?',
+          options: ['1:10', '1:14', '1:18', '1:20'],
+          correctAnswer: 2
+        }
+      ]
+    }
+  },
+  {
+    id: 'mod-2',
+    title: 'Módulo II',
+    subtitle: 'Espresso y Barismo',
+    description: 'Principios de extracción, espresso, correcto uso de equipos, flujo de trabajo, variables y calibración.',
+    slides: generateSlides(33, 57, '/modulo2'),
+    topics: [
+      {
+        id: 't2-1',
+        title: 'Principios del Espresso',
+        content: 'El espresso es una bebida concentrada preparada forzando agua caliente a alta presión a través de café finamente molido.'
+      },
+      {
+        id: 't2-2',
+        title: 'Variables de Extracción',
+        content: 'Las variables críticas son: Dosis (cantidad de café seco), Ratio (relación café/agua), Tiempo de extracción, Temperatura del agua y Molienda.'
+      },
+      {
+        id: 't2-3',
+        title: 'Maquinaria y Molino',
+        content: 'Componentes principales de la máquina de espresso y la importancia de una molienda consistente.'
+      },
+      {
+        id: 't2-4',
+        title: 'Técnica de Barista',
+        content: 'Pasos para una correcta preparación: Purga, Secado, Molienda, Nivelación, Compactación (Tamping) y Extracción.'
+      },
+      {
+        id: 't2-5',
+        title: 'Bebidas con Leche',
+        content: 'Técnicas de texturización de leche para Cappuccino, Latte y Flat White.'
+      }
+    ],
+    exam: {
+      id: 'ex-2',
+      title: 'Examen Teórico Módulo II',
+      description: 'Evaluación técnica profunda sobre extracción de espresso, calibración, texturización y mantenimiento.',
+      passingScore: 80,
+      durationMinutes: 20,
+      questions: [
+        {
+          id: 'q2-1',
+          text: '¿Cuál es la definición técnica de "Ratio" en la preparación de espresso?',
+          options: ['La relación entre café molido (dosis) y peso final de la bebida líquida', 'La relación entre agua y leche', 'La presión de la bomba vs la caldera', 'El tiempo de extracción vs la temperatura'],
+          correctAnswer: 0
+        },
+        {
+          id: 'q2-2',
+          text: 'Si un espresso sabe agrio, salado y carece de cuerpo, ¿qué diagnóstico es el más probable?',
+          options: ['Sobre-extracción', 'Sub-extracción', 'Extracción ideal', 'Café quemado'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q2-3',
+          text: 'Para corregir una Sub-extracción (flujo muy rápido), ¿qué ajuste debemos hacer en el molino?',
+          options: ['Engrosar la molienda (hacerla más gruesa)', 'Afinar la molienda (hacerla más fina)', 'Mantener la molienda igual', 'Reducir la dosis drásticamente'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q2-4',
+          text: '¿Qué es el "Channeling" o canalización?',
+          options: ['Un método de vertido', 'El paso uniforme del agua por la pastilla', 'El paso del agua por caminos de menor resistencia, causando extracción desigual', 'El drenaje de la bandeja'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q2-5',
+          text: '¿Cuál es la temperatura ideal aproximada para la leche texturizada (cremada)?',
+          options: ['40°C - 50°C', '60°C - 65°C', '80°C - 90°C', '100°C (Ebullición)'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q2-6',
+          text: '¿Qué fase de la texturización de leche es responsable de crear la microespuma?',
+          options: ['La fase de estiramiento (introducción de aire) al inicio', 'La fase de calentamiento final', 'El vertido en la taza', 'El reposo de la leche'],
+          correctAnswer: 0
+        },
+        {
+          id: 'q2-7',
+          text: '¿Por qué es importante purgar la lanza de vapor antes y después de usarla?',
+          options: ['Para gastar vapor', 'Para eliminar condensación (agua) y residuos de leche', 'Para calentar la cocina', 'No es importante'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q2-8',
+          text: 'En una receta de espresso de 1:2 con 18g de dosis, ¿cuánto debería pesar el líquido final?',
+          options: ['18g', '30g', '36g', '60g'],
+          correctAnswer: 2
+        },
+        {
+          id: 'q2-9',
+          text: '¿Qué componente de la máquina es responsable de limitar la presión máxima de extracción (usualmente a 9 bares)?',
+          options: ['La caldera', 'La válvula OPV (Over Pressure Valve)', 'El portafiltro', 'La ducha'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q2-10',
+          text: '¿Cuál es el propósito del "Backflush" o retrolavado con detergente ciego?',
+          options: ['Limpiar los conductos internos del grupo y la válvula de tres vías', 'Limpiar la caldera de vapor', 'Descalcificar toda la máquina', 'Limpiar la bandeja de goteo'],
+          correctAnswer: 0
+        }
+      ]
+    }
+  }
+];
+
+// --- Components ---
+
+// --- Components ---
+
+const Slideshow: React.FC<{ slides: string[] }> = ({ slides }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  if (!slides || slides.length === 0) return null;
+
+  return (
+    <div className="mb-8 group relative rounded-xl overflow-hidden shadow-lg bg-stone-100 dark:bg-stone-900 aspect-video">
+      <div className="absolute inset-0 flex items-center justify-center bg-stone-200 dark:bg-stone-800">
+          <img 
+            src={slides[currentIndex]} 
+            alt={`Slide ${currentIndex + 1}`} 
+            className="w-full h-full object-contain"
+          />
+      </div>
+      
+      {/* Navigation Arrows */}
+      <button 
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100 duration-300"
+      >
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+      
+      <button 
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100 duration-300"
+      >
+        <ChevronRight className="w-6 h-6" />
+      </button>
+
+      {/* Counter */}
+      <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-black/50 text-white text-xs font-medium backdrop-blur-sm">
+        {currentIndex + 1} / {slides.length}
+      </div>
+    </div>
+  );
+};
+
+const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
+  const [openTopicId, setOpenTopicId] = useState<string | null>(null);
+
+  const toggleTopic = (id: string) => {
+    setOpenTopicId(prev => prev === id ? null : id);
+  };
+
+  return (
+    <div className="space-y-4">
+      {topics.map((topic) => (
+        <div 
+          key={topic.id} 
+          className="bg-white dark:bg-stone-800 rounded-lg shadow-sm overflow-hidden border border-stone-100 dark:border-stone-700 transition-all duration-300"
+        >
+          <button
+            onClick={() => toggleTopic(topic.id)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${openTopicId === topic.id ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-stone-100 text-stone-500 dark:bg-stone-700 dark:text-stone-400'}`}>
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-lg text-stone-800 dark:text-stone-100">
+                {topic.title}
+              </span>
+            </div>
+            <ChevronDown 
+              className={`w-5 h-5 text-stone-400 transition-transform duration-500 ${openTopicId === topic.id ? 'rotate-180' : ''}`} 
+            />
+          </button>
+          
+          <div 
+            className={`transition-all duration-700 ease-in-out overflow-hidden ${openTopicId === topic.id ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}
+          >
+            <div className="p-4 pt-0 border-t border-stone-100 dark:border-stone-700/50">
+              <div className="mt-4 p-4 bg-stone-50 dark:bg-stone-900/50 rounded-lg border border-stone-100 dark:border-stone-700/50">
+                <p className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+                  {topic.content}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const HistoryDetailModal: React.FC<{ record: HistoryRecord; onClose: () => void }> = ({ record, onClose }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white dark:bg-stone-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-stone-800">
+        <div className="sticky top-0 bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 p-6 flex items-center justify-between z-10">
+          <div>
+            <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">{record.examTitle}</h3>
+            <p className="text-sm text-stone-500">Alumno: {record.studentName}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors">
+            <X className="w-5 h-5 text-stone-500 dark:text-stone-400" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-8">
+           <div className={`p-4 rounded-lg flex items-center justify-between ${record.passed ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'}`}>
+              <div className="flex items-center gap-3">
+                 {record.passed ? <Award className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                 <div>
+                    <p className="font-bold text-lg">{record.passed ? 'Aprobado' : 'No Aprobado'}</p>
+                    <p className="text-xs opacity-80">{new Date(record.date).toLocaleDateString()} - {new Date(record.date).toLocaleTimeString()}</p>
+                 </div>
+              </div>
+              <p className="text-3xl font-black">{record.score.toFixed(0)}%</p>
+           </div>
+
+           <div className="space-y-6">
+              <h4 className="font-bold text-stone-900 dark:text-stone-100 uppercase tracking-widest text-xs border-b border-stone-100 dark:border-stone-800 pb-2">Revisión de Respuestas</h4>
+              {record.questions.map((q, idx) => {
+                const userAnswer = record.answers[idx];
+                const isCorrect = userAnswer === q.correctAnswer;
+                return (
+                  <div key={idx} className={`p-4 rounded-lg border ${isCorrect ? 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/50' : 'border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10'}`}>
+                     <p className="font-bold text-sm text-stone-800 dark:text-stone-200 mb-3">{idx + 1}. {q.text}</p>
+                     <div className="space-y-2">
+                        {q.options.map((opt, optIdx) => (
+                           <div key={optIdx} className={`text-xs px-3 py-2 rounded flex items-center justify-between ${
+                              optIdx === q.correctAnswer 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 font-bold'
+                                : optIdx === userAnswer 
+                                   ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' 
+                                   : 'text-stone-500 dark:text-stone-500'
+                           }`}>
+                              <span>{opt}</span>
+                              {optIdx === q.correctAnswer && <CheckCircle className="w-4 h-4" />}
+                              {optIdx === userAnswer && optIdx !== q.correctAnswer && <X className="w-4 h-4" />}
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+                )
+              })}
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryRecord[]; onDeleteHistory: (id: string) => void }> = ({ onSelect, history, onDeleteHistory }) => {
+  const [selectedHistory, setSelectedHistory] = useState<HistoryRecord | null>(null);
+
+  return (
+    <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
+      <div className="space-y-2 mb-8">
+        <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+          Material educativo y recursos
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {MOCK_MODULES.map((mod) => (
+          <button 
+            key={mod.id} 
+            onClick={() => onSelect(mod)}
+            className="group flex flex-col items-start justify-between gap-6 p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  {mod.topics.length + (mod.slides?.length || 0)} Recursos
+                </span>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">{mod.title}</h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">{mod.subtitle}</p>
+              </div>
+              
+              <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-3 font-medium">
+                {mod.description}
+              </p>
+            </div>
+
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+               <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Ver Módulo</span>
+               <ArrowRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
+        <h3 className="text-xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Actividades</h3>
+        
+        {history.length === 0 ? (
+            <div className="border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center rounded-lg bg-stone-50 dark:bg-stone-900/50">
+                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Sin actividad reciente</p>
+            </div>
+        ) : (
+            <div className="overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-800">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+                        <tr>
+                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Fecha</th>
+                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Alumno</th>
+                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Examen</th>
+                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-center">Nota</th>
+                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900">
+                        {history.map((record) => (
+                            <tr key={record.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
+                                <td className="px-6 py-4 text-stone-600 dark:text-stone-400 whitespace-nowrap">
+                                    {new Date(record.date).toLocaleDateString()}
+                                </td>
+                                <td className="px-6 py-4 font-medium text-stone-900 dark:text-stone-100">
+                                    {record.studentName}
+                                </td>
+                                <td className="px-6 py-4 text-stone-600 dark:text-stone-400">
+                                    {record.examTitle}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className={`px-2 py-1 rounded text-xs font-bold ${record.passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                        {record.score.toFixed(0)}%
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <button 
+                                            onClick={() => setSelectedHistory(record)}
+                                            className="p-2 text-stone-400 hover:text-black dark:hover:text-white transition-colors"
+                                            title="Ver detalles"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => onDeleteHistory(record.id)}
+                                            className="p-2 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        )}
+      </div>
+
+      {selectedHistory && (
+        <HistoryDetailModal record={selectedHistory} onClose={() => setSelectedHistory(null)} />
+      )}
+    </div>
+  );
+};
+
+const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => void; onCancel: () => void }> = ({ exam, onComplete, onCancel }) => {
+  const [studentName, setStudentName] = useState('');
+  const [isStarted, setIsStarted] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<number[]>(new Array(exam.questions.length).fill(-1));
+  const [isFinished, setIsFinished] = useState(false);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(exam.durationMinutes * 60);
+
+  // Update timeLeft if exam duration changes and exam hasn't started
+  useEffect(() => {
+    if (!isStarted) {
+      setTimeLeft(exam.durationMinutes * 60);
+    }
+  }, [exam.durationMinutes, isStarted]);
+
+  useEffect(() => {
+    if (!isStarted || isFinished) return;
+
+    if (timeLeft <= 0) {
+      handleSubmit();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, isStarted, isFinished]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleStart = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (studentName.trim()) {
+      setIsStarted(true);
+    }
+  };
+
+  const handleAnswer = (optionIndex: number) => {
+    const newAnswers = [...answers];
+    newAnswers[currentQuestionIndex] = optionIndex;
+    setAnswers(newAnswers);
+  };
+
+  const calculateScore = () => {
+    let correct = 0;
+    answers.forEach((ans, idx) => {
+      if (ans === exam.questions[idx].correctAnswer) correct++;
+    });
+    return (correct / exam.questions.length) * 100;
+  };
+
+  const handleSubmit = () => {
+    const finalScore = calculateScore();
+    setScore(finalScore);
+    setIsFinished(true);
+  };
+
+  const handleFinalize = () => {
+    const record: HistoryRecord = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      studentName,
+      examTitle: exam.title,
+      score,
+      passed: score >= exam.passingScore,
+      answers,
+      questions: exam.questions
+    };
+    onComplete(record);
+  };
+
+  if (!isStarted) {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 animate-fade-in">
+        <div className="bg-white dark:bg-stone-900 rounded-xl p-8 border border-stone-200 dark:border-stone-800 shadow-lg">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-stone-100 dark:bg-stone-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="w-8 h-8 text-stone-500" />
+            </div>
+            <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">Datos del Alumno</h3>
+            <p className="text-sm text-stone-500 mt-2">Ingresa tu nombre para comenzar el examen</p>
+          </div>
+          
+          <form onSubmit={handleStart} className="space-y-6">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-stone-500 mb-2">
+                Nombre Completo
+              </label>
+              <input
+                type="text"
+                required
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
+                placeholder="Ej. Juan Pérez"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 px-4 py-3 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!studentName.trim()}
+                className="flex-1 px-4 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Comenzar ({exam.durationMinutes} min)
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (isFinished) {
+    const passed = score >= exam.passingScore;
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4 animate-fade-in text-center space-y-8">
+        <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+           {passed ? <Award className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
+        </div>
+        
+        <div className="space-y-2">
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">
+                {passed ? '¡Aprobado!' : 'No Aprobado'}
+            </h2>
+            <p className="text-lg font-medium text-stone-600 dark:text-stone-400">
+                Calificación: <span className={`font-bold ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{score.toFixed(0)}%</span>
+            </p>
+            <p className="text-sm text-stone-500">
+                Alumno: {studentName}
+            </p>
+        </div>
+
+        <div className="flex justify-center gap-4 pt-8">
+            {!passed && (
+                <button 
+                    onClick={() => {
+                        setIsFinished(false);
+                        setIsStarted(false);
+                        setCurrentQuestionIndex(0);
+                        setAnswers(new Array(exam.questions.length).fill(-1));
+                        setTimeLeft(exam.durationMinutes * 60);
+                    }}
+                    className="px-6 py-3 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-2"
+                >
+                    <RefreshCw className="w-4 h-4" /> Reintentar
+                </button>
+            )}
+            <button 
+                onClick={handleFinalize}
+                className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+            >
+                Guardar y Salir
+            </button>
+        </div>
+      </div>
+    );
+  }
+
+  const question = exam.questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === exam.questions.length - 1;
+  const hasAnswered = answers[currentQuestionIndex] !== -1;
+
+  return (
+    <div className="max-w-3xl mx-auto py-8 animate-fade-in">
+        {/* Progress Bar */}
+        <div className="w-full h-1 bg-stone-100 dark:bg-stone-800 mb-8 rounded-full overflow-hidden">
+            <div 
+                className="h-full bg-black dark:bg-white transition-all duration-300"
+                style={{ width: `${((currentQuestionIndex + 1) / exam.questions.length) * 100}%` }}
+            />
+        </div>
+
+        <div className="flex justify-between items-center mb-8">
+            <span className="text-xs font-bold uppercase tracking-widest text-stone-400">
+                Pregunta {currentQuestionIndex + 1} de {exam.questions.length}
+            </span>
+            <span className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${timeLeft < 60 ? 'text-red-500 animate-pulse' : 'text-stone-400'}`}>
+                <Clock className="w-4 h-4" />
+                Tiempo restante: {formatTime(timeLeft)}
+            </span>
+        </div>
+
+        <div className="space-y-8 mb-12">
+            <h3 className="text-2xl md:text-3xl font-bold text-black dark:text-white leading-tight">
+                {question.text}
+            </h3>
+
+            <div className="space-y-3">
+                {question.options.map((option, idx) => (
+                    <button
+                        key={idx}
+                        onClick={() => handleAnswer(idx)}
+                        className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 ${
+                            answers[currentQuestionIndex] === idx
+                                ? 'border-black dark:border-white bg-stone-50 dark:bg-stone-900'
+                                : 'border-stone-100 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
+                        }`}
+                    >
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            answers[currentQuestionIndex] === idx
+                                ? 'border-black dark:border-white'
+                                : 'border-stone-300 dark:border-stone-600'
+                        }`}>
+                            {answers[currentQuestionIndex] === idx && (
+                                <div className="w-3 h-3 rounded-full bg-black dark:bg-white" />
+                            )}
+                        </div>
+                        <span className="font-medium text-stone-700 dark:text-stone-300">{option}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-8 border-t border-stone-100 dark:border-stone-800">
+            <button
+                onClick={onCancel}
+                className="text-xs font-bold uppercase tracking-widest text-stone-400 hover:text-red-500"
+            >
+                Cancelar Examen
+            </button>
+
+            <div className="flex gap-4">
+                <button
+                    disabled={currentQuestionIndex === 0}
+                    onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
+                    className="px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white"
+                >
+                    Anterior
+                </button>
+                
+                {isLastQuestion ? (
+                    <button
+                        disabled={!hasAnswered}
+                        onClick={handleSubmit}
+                        className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Terminar
+                    </button>
+                ) : (
+                    <button
+                        disabled={!hasAnswered}
+                        onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                        className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Siguiente
+                    </button>
+                )}
+            </div>
+        </div>
+    </div>
+  );
+};
+
+const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplete: (record: HistoryRecord) => void }> = ({ module, onBack, onExamComplete }) => {
+  const [activeTab, setActiveTab] = useState<'materials' | 'exam'>('materials');
+  const [showExam, setShowExam] = useState(false);
+
+  if (showExam) {
+    return <ExamView exam={module.exam} onComplete={onExamComplete} onCancel={() => setShowExam(false)} />;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto pb-24">
+      {/* Header */}
+      <div className="mb-8">
+        <button 
+          onClick={onBack}
+          className="flex items-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Volver a Módulos
+        </button>
+        <h2 className="text-3xl font-black text-stone-900 dark:text-stone-100 font-serif mb-2">{module.title}</h2>
+        <p className="text-xl text-stone-600 dark:text-stone-400 mb-4">{module.subtitle}</p>
+        <p className="text-stone-500 dark:text-stone-500 leading-relaxed">{module.description}</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-stone-200 dark:border-stone-800 mb-8">
+        <button
+          onClick={() => setActiveTab('materials')}
+          className={`pb-4 px-4 font-bold text-sm tracking-wider uppercase transition-colors relative ${
+            activeTab === 'materials' 
+              ? 'text-stone-900 dark:text-stone-100 border-b-2 border-stone-900 dark:border-stone-100' 
+              : 'text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400'
+          }`}
+        >
+          Material de Estudio
+        </button>
+        <button
+          onClick={() => setActiveTab('exam')}
+          className={`pb-4 px-4 font-bold text-sm tracking-wider uppercase transition-colors relative ${
+            activeTab === 'exam' 
+              ? 'text-stone-900 dark:text-stone-100 border-b-2 border-stone-900 dark:border-stone-100' 
+              : 'text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400'
+          }`}
+        >
+          Examen y Certificación
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {activeTab === 'materials' ? (
+          <div className="space-y-8">
+            {/* Slideshow Section */}
+            {module.slides && module.slides.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <ImageIcon className="w-5 h-5 text-purple-500" />
+                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">Diapositivas del Módulo</h3>
+                </div>
+                <Slideshow slides={module.slides} />
+              </section>
+            )}
+
+            {/* Topics Accordion Section */}
+            {module.topics && module.topics.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Book className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">Temario Detallado</h3>
+                </div>
+                <TopicAccordion topics={module.topics} />
+              </section>
+            )}
+            
+            {/* Fallback for empty content */}
+            {(!module.slides?.length && !module.topics?.length) && (
+               <div className="text-center py-12 bg-stone-50 dark:bg-stone-900/50 rounded-lg border border-dashed border-stone-300 dark:border-stone-700">
+                 <p className="text-stone-500 dark:text-stone-400">El material de este módulo estará disponible pronto.</p>
+               </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-stone-900 rounded-xl p-8 border border-stone-200 dark:border-stone-800 shadow-sm text-center">
+             <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Award className="w-10 h-10 text-stone-400 dark:text-stone-500" />
+             </div>
+             <h3 className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-2">{module.exam.title}</h3>
+             <p className="text-stone-600 dark:text-stone-400 max-w-lg mx-auto mb-8">{module.exam.description}</p>
+             
+             <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-8 text-left">
+                <div className="bg-stone-50 dark:bg-stone-800 p-4 rounded-lg">
+                   <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 mb-1 text-sm font-medium uppercase tracking-wider">
+                      <Clock className="w-4 h-4" /> Duración
+                   </div>
+                   <p className="text-lg font-bold text-stone-900 dark:text-stone-100">{module.exam.durationMinutes} min</p>
+                </div>
+                <div className="bg-stone-50 dark:bg-stone-800 p-4 rounded-lg">
+                   <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 mb-1 text-sm font-medium uppercase tracking-wider">
+                      <CheckCircle className="w-4 h-4" /> Aprobar
+                   </div>
+                   <p className="text-lg font-bold text-stone-900 dark:text-stone-100">{module.exam.passingScore}%</p>
+                </div>
+             </div>
+
+             <button 
+                onClick={() => setShowExam(true)}
+                className="inline-flex items-center px-8 py-4 bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 rounded-lg font-bold tracking-wide transition-all hover:scale-105 active:scale-95 shadow-lg"
+             >
+                <PlayCircle className="w-5 h-5 mr-2" />
+                Comenzar Examen
+             </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ModulesView: React.FC = () => {
+  const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const [history, setHistory] = useState<HistoryRecord[]>(() => {
+    const saved = localStorage.getItem('examHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('examHistory', JSON.stringify(history));
+  }, [history]);
+
+  const handleExamComplete = (record: HistoryRecord) => {
+    setHistory(prev => [record, ...prev]);
+    setSelectedModule(null);
+  };
+
+  const handleDeleteHistory = (id: string) => {
+    setHistory(prev => prev.filter(h => h.id !== id));
+  };
+
+  if (selectedModule) {
+    return <ModuleDetail module={selectedModule} onBack={() => setSelectedModule(null)} onExamComplete={handleExamComplete} />;
+  }
+
+  return <ModuleList onSelect={setSelectedModule} history={history} onDeleteHistory={handleDeleteHistory} />;
+};
+
+export default ModulesView;

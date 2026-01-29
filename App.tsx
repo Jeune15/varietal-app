@@ -31,6 +31,7 @@ import InvoicingView from './views/InvoicingView';
 import DashboardView from './views/DashboardView';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
+import ModulesView from './views/ModulesView';
 import SettingsModal from './components/SettingsModal';
 import FullScreenMenu from './components/FullScreenMenu';
 import LandingPage from './views/LandingPage';
@@ -62,6 +63,7 @@ const AppContent: React.FC = () => {
   const [userRole, setUserRole] = useState<'admin' | 'student' | null>(null);
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Initial load
+  const [imagesLoaded, setImagesLoaded] = useState(false); // Track image loading
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -89,6 +91,14 @@ const AppContent: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Preload critical images
+    const img = new Image();
+    img.src = '/inicio%202.jpg';
+    img.onload = () => setImagesLoaded(true);
+    img.onerror = () => setImagesLoaded(true); // Proceed even if error
+  }, []);
+
+  useEffect(() => {
     // Initial check for cloud status
     let unsubscribe: () => void;
     
@@ -103,13 +113,13 @@ const AppContent: React.FC = () => {
       if (storedRole === 'student') {
         setActiveTab('cupping');
       }
-    }
-
-    // Artificial delay for initial loader if not already logged in
-    if (!storedAccess) {
-      setTimeout(() => setIsLoading(false), 2000);
-    } else {
       setIsLoading(false);
+    } else {
+        // Only wait for image if we are showing landing page
+        if (imagesLoaded) {
+             // Artificial delay to ensure loader is seen at least briefly or for smooth transition
+             setTimeout(() => setIsLoading(false), 2000);
+        }
     }
 
     if (loading) return;
@@ -137,7 +147,7 @@ const AppContent: React.FC = () => {
     return () => {
         if (unsubscribe) unsubscribe();
     };
-  }, [user, loading]);
+  }, [user, loading, imagesLoaded]);
 
   useEffect(() => {
     if (userRole === 'student' && !['cupping', 'modules', 'recipes'].includes(activeTab)) {
@@ -255,34 +265,7 @@ const AppContent: React.FC = () => {
              
              {activeTab === 'cupping' && <CuppingView stocks={roastedStocks} mode="free" />}
              
-             {activeTab === 'modules' && (
-               <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
-                 <div className="space-y-2 mb-8">
-                   <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
-                   <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
-                     Material educativo y recursos
-                   </p>
-                 </div>
-
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {['Módulo I', 'Módulo II', 'Módulo III', 'Módulo IV', 'Módulo V'].map((mod, i) => (
-                     <button key={i} className="group flex flex-col items-center justify-center gap-6 p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300">
-                       <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
-                         <Package className="w-6 h-6" />
-                       </div>
-                       <h3 className="text-lg font-black uppercase tracking-tight text-black dark:text-white">{mod}</h3>
-                     </button>
-                   ))}
-                 </div>
-
-                 <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
-                    <h3 className="text-xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Actividades</h3>
-                    <div className="border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center rounded-lg bg-stone-50 dark:bg-stone-900/50">
-                        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Próximamente</p>
-                    </div>
-                 </div>
-               </div>
-             )}
+             {activeTab === 'modules' && <ModulesView />}
              
              {activeTab === 'recipes' && (
                <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
