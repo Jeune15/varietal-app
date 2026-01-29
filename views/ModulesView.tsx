@@ -89,32 +89,173 @@ const MOCK_MODULES: Module[] = [
       {
         id: 't1-1',
         title: 'Origen',
-        content: 'Definiciones y palabras clave sobre el Origen del café (Terroir, Altitud, Latitud, Variedades) se agregarán próximamente.'
+        content: `• Etiopía
+País africano reconocido como el lugar de origen del café, donde se descubrió la planta de manera natural.
+
+• Yemen
+Primer país en cultivar café comercialmente y exportarlo al mundo.
+
+• Leyenda de Kaldi
+Relato tradicional sobre un pastor etíope que notó los efectos estimulantes del café en sus cabras.`
       },
       {
         id: 't1-2',
         title: 'Variedades',
-        content: 'Definiciones y palabras clave sobre Variedades (Arabica, Robusta, Borbón, Caturra, Geisha) se agregarán próximamente.'
+        content: `• Arábica
+Especie de café de alta calidad, sabores complejos y menor cafeína.
+
+• Canephora (Robusta)
+Especie con mayor cafeína, sabor intenso y amargo.
+
+• Altitud
+Altura sobre el nivel del mar donde se cultiva el café; influye en su calidad.
+
+• Perfil de sabor
+Conjunto de características sensoriales que definen un café.
+
+• Variedades
+Tipos específicos dentro de una especie (ej. Bourbon, Typica).
+
+• Resistencia a enfermedades
+Capacidad de una planta de café para soportar plagas y climas adversos.
+
+• Calidad del grano
+Nivel de excelencia determinado por su origen, variedad y tratamiento.`
       },
       {
         id: 't1-3',
         title: 'Proceso',
-        content: 'Definiciones y palabras clave sobre Procesos de Beneficio (Lavado, Natural, Honey, Fermentación) se agregarán próximamente.'
+        content: `• Proceso lavado
+Método donde se retira la pulpa con agua, generando cafés limpios y brillantes.
+
+• Proceso natural
+Secado del grano con la pulpa intacta, aportando sabores frutales intensos.
+
+• Proceso honey
+Proceso intermedio donde parte del mucílago permanece en el grano.
+
+• Cosecha
+Recolección del fruto maduro del café.
+
+• Despulpado
+Eliminación de la cáscara externa del fruto.
+
+• Fermentación
+Etapa donde se descomponen azúcares para desarrollar sabor.
+
+• Secado
+Reducción de la humedad del grano para su conservación.
+
+• Trillado
+Eliminación de la cáscara seca del grano.
+
+• Grano verde
+Estado del café antes del tueste.
+
+• Influencia del proceso en el sabor
+Relación directa entre el proceso y el perfil final del café.`
       },
       {
         id: 't1-4',
         title: 'Tueste',
-        content: 'Definiciones y palabras clave sobre Tueste (Curva de Tueste, Maillard, Crack, Desarrollo) se agregarán próximamente.'
+        content: `• Perfil claro
+Resalta acidez y sabores originales del café.
+
+• Perfil medio
+Equilibrio entre acidez, cuerpo y dulzor.
+
+• Perfil oscuro
+Sabores intensos, amargos y ahumados.
+
+• Secado
+Etapa del tueste donde se retira la humedad del grano.
+
+• Reacción de Maillard
+Proceso químico que genera aromas y sabores complejos.
+
+• Primer crack
+Sonido que indica el inicio del desarrollo del grano.
+
+• Segundo crack
+Indica un tueste más oscuro y aceitoso.
+
+• Desarrollo del tueste
+Tiempo posterior al primer crack donde se define el sabor.
+
+• Control de temperatura
+Factor clave para un tueste uniforme.
+
+• Perfil de tueste
+Plan de tiempo y temperatura aplicado al grano.
+
+• Influencia del tueste en el sabor
+Impacto directo del tueste en aroma y gusto final.`
       },
       {
         id: 't1-5',
         title: 'Cata',
-        content: 'Definiciones y palabras clave sobre Cata y Evaluación Sensorial (Fragancia, Aroma, Sabor, Postgusto, Acidez, Cuerpo) se agregarán próximamente.'
+        content: `• Cupping
+Método estandarizado de cata de café.
+
+• Fragancia
+Aroma del café molido en seco.
+
+• Aroma
+Olor del café al entrar en contacto con el agua.
+
+• Sabor
+Percepción general del gusto del café.
+
+• Postgusto
+Sensación que permanece después de beber.
+
+• Acidez
+Sensación brillante y fresca en el café, no relacionada con el pH.
+
+• Cuerpo
+Sensación de peso o textura del café en la boca.
+
+• Dulzor
+Sabor agradable generado por azúcares presentes en el grano.
+
+• Balance
+Armonía entre los atributos del café.
+
+• Defectos
+Sabores indeseados en el café.
+
+• Rueda de sabores
+Herramienta para identificar notas sensoriales.
+
+• Puntaje de cata
+Evaluación numérica de la calidad del café.
+
+• Evaluación sensorial
+Análisis de las características del café mediante los sentidos.`
       },
       {
         id: 't1-6',
         title: 'Métodos de extracción',
-        content: 'Definiciones y palabras clave sobre Métodos de Extracción (V60, Chemex, Prensa Francesa, Aeropress) se agregarán próximamente.'
+        content: `• Extracción
+Proceso de disolver compuestos del café con agua.
+
+• Extracción por presión
+Uso de presión para obtener café concentrado (espresso).
+
+• Extracción por inmersión
+Contacto prolongado entre café y agua (prensa francesa).
+
+• Extracción por goteo
+Paso del agua por gravedad a través del café.
+
+• Tiempo de extracción
+Duración del contacto agua-café.
+
+• Molienda
+Grado de tamaño del café molido.
+
+• Relación café-agua
+Proporción usada para preparar café.`
       }
     ],
     exam: {
@@ -1003,7 +1144,7 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Book className="w-5 h-5 text-amber-500" />
-                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">Temario Detallado</h3>
+                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">Palabras clave</h3>
                 </div>
                 <TopicAccordion topics={module.topics} />
               </section>
