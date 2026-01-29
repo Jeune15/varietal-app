@@ -382,14 +382,14 @@ const Slideshow: React.FC<{ slides: string[] }> = ({ slides }) => {
       {/* Navigation Arrows */}
       <button 
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100 duration-300"
+        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-300"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
       
       <button 
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100 duration-300"
+        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-300"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
@@ -434,7 +434,7 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
           </button>
           
           <div 
-            className={`transition-all duration-700 ease-in-out overflow-hidden ${openTopicId === topic.id ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}
+            className={`transition-all duration-700 ease-in-out overflow-hidden ${openTopicId === topic.id ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
           >
             <div className="p-4 pt-0 border-t border-stone-100 dark:border-stone-700/50">
               <div className="mt-4 p-4 bg-stone-50 dark:bg-stone-900/50 rounded-lg border border-stone-100 dark:border-stone-700/50">
@@ -515,7 +515,7 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
       <div className="space-y-2 mb-8">
-        <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
+        <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
         <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
           Material educativo y recursos
         </p>
@@ -526,7 +526,7 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
           <button 
             key={mod.id} 
             onClick={() => onSelect(mod)}
-            className="group flex flex-col items-start justify-between gap-6 p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
+            className="group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
           >
             <div className="w-full space-y-4">
               <div className="flex justify-between items-start">
@@ -564,57 +564,99 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
                 <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Sin actividad reciente</p>
             </div>
         ) : (
-            <div className="overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-800">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
-                        <tr>
-                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Fecha</th>
-                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Alumno</th>
-                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Examen</th>
-                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-center">Nota</th>
-                            <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900">
-                        {history.map((record) => (
-                            <tr key={record.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
-                                <td className="px-6 py-4 text-stone-600 dark:text-stone-400 whitespace-nowrap">
-                                    {new Date(record.date).toLocaleDateString()}
-                                </td>
-                                <td className="px-6 py-4 font-medium text-stone-900 dark:text-stone-100">
-                                    {record.studentName}
-                                </td>
-                                <td className="px-6 py-4 text-stone-600 dark:text-stone-400">
-                                    {record.examTitle}
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold ${record.passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                        {record.score.toFixed(0)}%
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <button 
-                                            onClick={() => setSelectedHistory(record)}
-                                            className="p-2 text-stone-400 hover:text-black dark:hover:text-white transition-colors"
-                                            title="Ver detalles"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            onClick={() => onDeleteHistory(record.id)}
-                                            className="p-2 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                            title="Eliminar"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
+            <>
+                {/* Desktop View: Table */}
+                <div className="hidden lg:block overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-800">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+                            <tr>
+                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Fecha</th>
+                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Alumno</th>
+                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Examen</th>
+                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-center">Nota</th>
+                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-right">Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900">
+                            {history.map((record) => (
+                                <tr key={record.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
+                                    <td className="px-6 py-4 text-stone-600 dark:text-stone-400 whitespace-nowrap">
+                                        {new Date(record.date).toLocaleDateString()}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-stone-900 dark:text-stone-100">
+                                        {record.studentName}
+                                    </td>
+                                    <td className="px-6 py-4 text-stone-600 dark:text-stone-400">
+                                        {record.examTitle}
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${record.passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                            {record.score.toFixed(0)}%
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                onClick={() => setSelectedHistory(record)}
+                                                className="p-2 text-stone-400 hover:text-black dark:hover:text-white transition-colors"
+                                                title="Ver detalles"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => onDeleteHistory(record.id)}
+                                                className="p-2 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile View: Cards */}
+                <div className="lg:hidden space-y-4">
+                    {history.map((record) => (
+                        <div key={record.id} className="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 p-4 space-y-4">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">
+                                        {new Date(record.date).toLocaleDateString()}
+                                    </p>
+                                    <h4 className="font-bold text-stone-900 dark:text-stone-100">
+                                        {record.examTitle}
+                                    </h4>
+                                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                                        {record.studentName}
+                                    </p>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${record.passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                    {record.score.toFixed(0)}%
+                                </span>
+                            </div>
+                            
+                            <div className="flex justify-end gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
+                                <button 
+                                    onClick={() => setSelectedHistory(record)}
+                                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-stone-500 hover:text-black dark:hover:text-white"
+                                >
+                                    <Eye className="w-3 h-3" /> Ver Detalles
+                                </button>
+                                <button 
+                                    onClick={() => onDeleteHistory(record.id)}
+                                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-700"
+                                >
+                                    <Trash2 className="w-3 h-3" /> Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </>
         )}
       </div>
 
@@ -853,7 +895,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
             </div>
         </div>
 
-        <div className="flex justify-between items-center pt-8 border-t border-stone-100 dark:border-stone-800">
+        <div className="flex flex-col-reverse md:flex-row justify-between items-center gap-6 pt-8 border-t border-stone-100 dark:border-stone-800">
             <button
                 onClick={onCancel}
                 className="text-xs font-bold uppercase tracking-widest text-stone-400 hover:text-red-500"
@@ -861,11 +903,11 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
                 Cancelar Examen
             </button>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 w-full md:w-auto">
                 <button
                     disabled={currentQuestionIndex === 0}
                     onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
-                    className="px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white"
+                    className="flex-1 md:flex-none px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white text-center"
                 >
                     Anterior
                 </button>
@@ -874,7 +916,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
                     <button
                         disabled={!hasAnswered}
                         onClick={handleSubmit}
-                        className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 md:flex-none px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center"
                     >
                         Terminar
                     </button>
@@ -882,7 +924,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
                     <button
                         disabled={!hasAnswered}
                         onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-                        className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 md:flex-none px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center"
                     >
                         Siguiente
                     </button>
@@ -912,8 +954,8 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
           <ArrowLeft className="w-4 h-4 mr-1" />
           Volver a Módulos
         </button>
-        <h2 className="text-3xl font-black text-stone-900 dark:text-stone-100 font-serif mb-2">{module.title}</h2>
-        <p className="text-xl text-stone-600 dark:text-stone-400 mb-4">{module.subtitle}</p>
+        <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-stone-100 font-serif mb-2">{module.title}</h2>
+        <p className="text-lg md:text-xl text-stone-600 dark:text-stone-400 mb-4">{module.subtitle}</p>
         <p className="text-stone-500 dark:text-stone-500 leading-relaxed">{module.description}</p>
       </div>
 
@@ -921,7 +963,7 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
       <div className="flex border-b border-stone-200 dark:border-stone-800 mb-8">
         <button
           onClick={() => setActiveTab('materials')}
-          className={`pb-4 px-4 font-bold text-sm tracking-wider uppercase transition-colors relative ${
+          className={`flex-1 text-center pb-4 px-2 md:px-4 font-bold text-xs md:text-sm tracking-wider uppercase transition-colors relative ${
             activeTab === 'materials' 
               ? 'text-stone-900 dark:text-stone-100 border-b-2 border-stone-900 dark:border-stone-100' 
               : 'text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400'
@@ -931,7 +973,7 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
         </button>
         <button
           onClick={() => setActiveTab('exam')}
-          className={`pb-4 px-4 font-bold text-sm tracking-wider uppercase transition-colors relative ${
+          className={`flex-1 text-center pb-4 px-2 md:px-4 font-bold text-xs md:text-sm tracking-wider uppercase transition-colors relative ${
             activeTab === 'exam' 
               ? 'text-stone-900 dark:text-stone-100 border-b-2 border-stone-900 dark:border-stone-100' 
               : 'text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400'

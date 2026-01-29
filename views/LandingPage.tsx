@@ -11,30 +11,38 @@ const LandingPage: React.FC<Props> = ({ onMenuOpen }) => {
     <div className="fixed inset-0 z-0 bg-black overflow-hidden">
       {/* Central Frame with Image and Content */}
       <div className="absolute inset-8 md:inset-12 lg:inset-16 overflow-hidden bg-stone-900">
-        {/* Background Image */}
+        {/* Background Image - Mobile */}
         <div 
-          className="absolute inset-0 bg-cover bg-center animate-fade-in"
+          className="absolute inset-0 bg-cover bg-center animate-fade-in md:hidden"
+          style={{ backgroundImage: "url('/iniciomovil.jpg')" }}
+        />
+        
+        {/* Background Image - Desktop */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center animate-fade-in hidden md:block"
           style={{ backgroundImage: "url('/inicio%202.jpg')" }}
         />
         
         {/* Overlay */}
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-black/40 md:bg-black/50 backdrop-blur-[1px]">
+           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
+        </div>
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col justify-end items-start p-6 md:p-10">
           
           {/* Bottom Left: Main Text */}
-          <div className="relative text-left space-y-0">
-            <div className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-[0.1em] drop-shadow-lg leading-[0.9]">
+          <div className="relative text-left space-y-0 max-w-full">
+            <div className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-widest md:tracking-[0.1em] drop-shadow-lg leading-none md:leading-[0.9]">
               VARIETAL
             </div>
-            <div className="text-4xl md:text-6xl lg:text-7xl font-black text-white/90 uppercase tracking-[0.1em] drop-shadow-lg leading-[0.9]">
+            <div className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white/90 uppercase tracking-widest md:tracking-[0.1em] drop-shadow-lg leading-none md:leading-[0.9] break-words hyphens-auto">
               Desarrolladores
             </div>
-            <div className="text-4xl md:text-6xl lg:text-7xl font-black text-white/90 uppercase tracking-[0.1em] drop-shadow-lg leading-[0.9]">
+            <div className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white/90 uppercase tracking-widest md:tracking-[0.1em] drop-shadow-lg leading-none md:leading-[0.9]">
               De Café
             </div>
-            <p className="text-sm md:text-base font-serif italic text-white/80 tracking-[0.3em] mt-6 ml-1">
+            <p className="text-xs md:text-base font-serif italic text-white/80 tracking-[0.2em] md:tracking-[0.3em] mt-4 md:mt-6 ml-1">
               since 2022
             </p>
           </div>

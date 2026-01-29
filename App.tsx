@@ -92,10 +92,22 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     // Preload critical images
-    const img = new Image();
-    img.src = '/inicio%202.jpg';
-    img.onload = () => setImagesLoaded(true);
-    img.onerror = () => setImagesLoaded(true); // Proceed even if error
+    const images = ['/inicio%202.jpg', '/iniciomovil.jpg'];
+    let loadedCount = 0;
+
+    const handleLoad = () => {
+      loadedCount++;
+      if (loadedCount === images.length) {
+        setImagesLoaded(true);
+      }
+    };
+
+    images.forEach(src => {
+      const img = new Image();
+      img.src = src;
+      img.onload = handleLoad;
+      img.onerror = handleLoad;
+    });
   }, []);
 
   useEffect(() => {
@@ -270,7 +282,7 @@ const AppContent: React.FC = () => {
              {activeTab === 'recipes' && (
                <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
                  <div className="space-y-2 mb-8">
-                   <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Recetas</h3>
+                   <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Recetas</h3>
                    <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
                      Guías de preparación y métodos
                    </p>
@@ -399,9 +411,9 @@ const AppContent: React.FC = () => {
                 <div className="space-y-8">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
                     <div>
-                      <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Inventario</h2>
+                      <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Inventario</h2>
                     </div>
-                    <div className="flex gap-8">
+                    <div className="flex gap-4 md:gap-8">
                       {['green', 'roasted', 'utility'].map((tab) => (
                         <button
                           key={tab}
