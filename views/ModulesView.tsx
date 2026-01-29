@@ -84,7 +84,7 @@ const MOCK_MODULES: Module[] = [
     title: 'Módulo I',
     subtitle: 'Introducción al Café',
     description: 'Cambio del perfil del café durante la trazabilidad: Origen, Café Verde, Procesos, Tostado, Cata y Métodos de Extracción.',
-    slides: generateSlides(2, 32, '/modulo1'),
+    slides: generateSlides(2, 32, '/Modulo1'),
     topics: [
       {
         id: 't1-1',
@@ -252,7 +252,7 @@ const MOCK_MODULES: Module[] = [
     title: 'Módulo II',
     subtitle: 'Espresso y Barismo',
     description: 'Principios de extracción, espresso, correcto uso de equipos, flujo de trabajo, variables y calibración.',
-    slides: generateSlides(33, 57, '/modulo2'),
+    slides: generateSlides(33, 57, '/Modulo2'),
     topics: [
       {
         id: 't2-1',
