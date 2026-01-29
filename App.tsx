@@ -92,7 +92,12 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     // Preload critical images
-    const images = ['/inicio-2.webp', '/iniciomovil.webp'];
+    const images = [
+      '/inicio-2.webp', 
+      '/iniciomovil.webp',
+      '/equipo.webp',
+      '/alumnos.webp'
+    ];
     let loadedCount = 0;
 
     const handleLoad = () => {
