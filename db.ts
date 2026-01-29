@@ -86,7 +86,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   expenses: ['id', 'reason', 'amount', 'documentType', 'documentId', 'date', 'status', 'relatedOrderId'],
   productionInventory: ['id', 'name', 'type', 'quantity', 'minThreshold', 'format'],
   profiles: ['id', 'email', 'role', 'isActive'],
-  cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form']
+  cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form', 'notes', 'sessionType', 'samples']
 };
 
 function sanitizeRecord(table: string, record: any) {
