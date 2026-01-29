@@ -88,7 +88,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
             {/* Background Image */}
             <div 
               className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-              style={{ backgroundImage: 'url(/equipo.jpg)' }}
+              style={{ backgroundImage: 'url(/equipo.webp)' }}
             />
             <div className={`absolute inset-0 transition-colors duration-1000 ${activeOption === 'admin' ? 'bg-black/70' : activeOption === 'student' ? 'bg-black/60' : 'bg-black/40 group-hover:bg-black/50'}`} />
 

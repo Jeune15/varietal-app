@@ -42,7 +42,7 @@ const FullScreenMenu: React.FC<FullScreenMenuProps> = ({ isOpen, onClose, items,
         {/* Default Background (always visible as base) */}
         <div 
           className="absolute inset-0 bg-cover bg-center transition-opacity duration-700 opacity-40"
-          style={{ backgroundImage: 'url(/inicio.jpg)' }}
+          style={{ backgroundImage: 'url(/inicio-2.webp)' }}
         />
         
         {/* Overlay Gradient */}

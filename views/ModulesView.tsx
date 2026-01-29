@@ -21,6 +21,7 @@ import {
   Eye,
   X
 } from 'lucide-react';
+import { ActivityHistory, HistoryRecord, Question } from '../components/ActivityHistory';
 
 // --- Types ---
 
@@ -28,13 +29,6 @@ interface Topic {
   id: string;
   title: string;
   content: string; // Can be HTML/Markdown or just plain text with definitions
-}
-
-interface Question {
-  id: string;
-  text: string;
-  options: string[];
-  correctAnswer: number; // index of correct option
 }
 
 interface Exam {
@@ -54,17 +48,6 @@ interface Module {
   slides: string[]; // Paths to images
   topics: Topic[];
   exam: Exam;
-}
-
-interface HistoryRecord {
-  id: string;
-  date: string;
-  studentName: string;
-  examTitle: string;
-  score: number;
-  passed: boolean;
-  answers: number[];
-  questions: Question[];
 }
 
 // --- Helper to generate slide paths ---
@@ -550,6 +533,48 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
     setOpenTopicId(prev => prev === id ? null : id);
   };
 
+  const renderContent = (content: string) => {
+    const blocks = content.split('\n\n');
+    const hasBullets = blocks.some(b => b.trim().startsWith('•'));
+  
+    if (hasBullets) {
+      return (
+        <ul className="space-y-3 list-none">
+          {blocks.map((block, i) => {
+            const lines = block.split('\n');
+            const titleLine = lines.find(l => l.trim().startsWith('•'));
+            
+            if (titleLine) {
+              const title = titleLine.replace('•', '').trim();
+              const desc = lines.filter(l => l !== titleLine).join(' ').trim();
+              return (
+                <li key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+                  <strong className="font-bold text-stone-900 dark:text-stone-100">{title}:</strong> {desc}
+                </li>
+              );
+            }
+            return (
+               <li key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+                 {block}
+               </li>
+            );
+          })}
+        </ul>
+      );
+    }
+  
+    // Fallback for simple paragraphs
+    return (
+      <div className="space-y-4">
+        {blocks.map((block, i) => (
+          <p key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+            {block}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {topics.map((topic) => (
@@ -579,9 +604,7 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
           >
             <div className="p-4 pt-0 border-t border-stone-100 dark:border-stone-700/50">
               <div className="mt-4 p-4 bg-stone-50 dark:bg-stone-900/50 rounded-lg border border-stone-100 dark:border-stone-700/50">
-                <p className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
-                  {topic.content}
-                </p>
+                {renderContent(topic.content)}
               </div>
             </div>
           </div>
@@ -591,68 +614,7 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
   );
 };
 
-const HistoryDetailModal: React.FC<{ record: HistoryRecord; onClose: () => void }> = ({ record, onClose }) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-stone-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-stone-800">
-        <div className="sticky top-0 bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 p-6 flex items-center justify-between z-10">
-          <div>
-            <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">{record.examTitle}</h3>
-            <p className="text-sm text-stone-500">Alumno: {record.studentName}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors">
-            <X className="w-5 h-5 text-stone-500 dark:text-stone-400" />
-          </button>
-        </div>
-        
-        <div className="p-6 space-y-8">
-           <div className={`p-4 rounded-lg flex items-center justify-between ${record.passed ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'}`}>
-              <div className="flex items-center gap-3">
-                 {record.passed ? <Award className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
-                 <div>
-                    <p className="font-bold text-lg">{record.passed ? 'Aprobado' : 'No Aprobado'}</p>
-                    <p className="text-xs opacity-80">{new Date(record.date).toLocaleDateString()} - {new Date(record.date).toLocaleTimeString()}</p>
-                 </div>
-              </div>
-              <p className="text-3xl font-black">{record.score.toFixed(0)}%</p>
-           </div>
-
-           <div className="space-y-6">
-              <h4 className="font-bold text-stone-900 dark:text-stone-100 uppercase tracking-widest text-xs border-b border-stone-100 dark:border-stone-800 pb-2">Revisión de Respuestas</h4>
-              {record.questions.map((q, idx) => {
-                const userAnswer = record.answers[idx];
-                const isCorrect = userAnswer === q.correctAnswer;
-                return (
-                  <div key={idx} className={`p-4 rounded-lg border ${isCorrect ? 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/50' : 'border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10'}`}>
-                     <p className="font-bold text-sm text-stone-800 dark:text-stone-200 mb-3">{idx + 1}. {q.text}</p>
-                     <div className="space-y-2">
-                        {q.options.map((opt, optIdx) => (
-                           <div key={optIdx} className={`text-xs px-3 py-2 rounded flex items-center justify-between ${
-                              optIdx === q.correctAnswer 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 font-bold'
-                                : optIdx === userAnswer 
-                                   ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' 
-                                   : 'text-stone-500 dark:text-stone-500'
-                           }`}>
-                              <span>{opt}</span>
-                              {optIdx === q.correctAnswer && <CheckCircle className="w-4 h-4" />}
-                              {optIdx === userAnswer && optIdx !== q.correctAnswer && <X className="w-4 h-4" />}
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-                )
-              })}
-           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryRecord[]; onDeleteHistory: (id: string) => void }> = ({ onSelect, history, onDeleteHistory }) => {
-  const [selectedHistory, setSelectedHistory] = useState<HistoryRecord | null>(null);
-
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
       <div className="space-y-2 mb-8">
@@ -700,110 +662,8 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
       <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
         <h3 className="text-xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Actividades</h3>
         
-        {history.length === 0 ? (
-            <div className="border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center rounded-lg bg-stone-50 dark:bg-stone-900/50">
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Sin actividad reciente</p>
-            </div>
-        ) : (
-            <>
-                {/* Desktop View: Table */}
-                <div className="hidden lg:block overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-800">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
-                            <tr>
-                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Fecha</th>
-                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Alumno</th>
-                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs">Examen</th>
-                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-center">Nota</th>
-                                <th className="px-6 py-4 font-bold text-stone-500 uppercase tracking-widest text-xs text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900">
-                            {history.map((record) => (
-                                <tr key={record.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
-                                    <td className="px-6 py-4 text-stone-600 dark:text-stone-400 whitespace-nowrap">
-                                        {new Date(record.date).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-stone-900 dark:text-stone-100">
-                                        {record.studentName}
-                                    </td>
-                                    <td className="px-6 py-4 text-stone-600 dark:text-stone-400">
-                                        {record.examTitle}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${record.passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                            {record.score.toFixed(0)}%
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button 
-                                                onClick={() => setSelectedHistory(record)}
-                                                className="p-2 text-stone-400 hover:text-black dark:hover:text-white transition-colors"
-                                                title="Ver detalles"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => onDeleteHistory(record.id)}
-                                                className="p-2 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                                title="Eliminar"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Mobile View: Cards */}
-                <div className="lg:hidden space-y-4">
-                    {history.map((record) => (
-                        <div key={record.id} className="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-800 p-4 space-y-4">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">
-                                        {new Date(record.date).toLocaleDateString()}
-                                    </p>
-                                    <h4 className="font-bold text-stone-900 dark:text-stone-100">
-                                        {record.examTitle}
-                                    </h4>
-                                    <p className="text-sm text-stone-600 dark:text-stone-400">
-                                        {record.studentName}
-                                    </p>
-                                </div>
-                                <span className={`px-2 py-1 rounded text-xs font-bold ${record.passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                    {record.score.toFixed(0)}%
-                                </span>
-                            </div>
-                            
-                            <div className="flex justify-end gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
-                                <button 
-                                    onClick={() => setSelectedHistory(record)}
-                                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-stone-500 hover:text-black dark:hover:text-white"
-                                >
-                                    <Eye className="w-3 h-3" /> Ver Detalles
-                                </button>
-                                <button 
-                                    onClick={() => onDeleteHistory(record.id)}
-                                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-700"
-                                >
-                                    <Trash2 className="w-3 h-3" /> Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </>
-        )}
+        <ActivityHistory history={history} onDelete={onDeleteHistory} />
       </div>
-
-      {selectedHistory && (
-        <HistoryDetailModal record={selectedHistory} onClose={() => setSelectedHistory(null)} />
-      )}
     </div>
   );
 };

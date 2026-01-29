@@ -14,13 +14,13 @@ const LandingPage: React.FC<Props> = ({ onMenuOpen }) => {
         {/* Background Image - Mobile */}
         <div 
           className="absolute inset-0 bg-cover bg-center animate-fade-in md:hidden"
-          style={{ backgroundImage: "url('/iniciomovil.jpg')" }}
+          style={{ backgroundImage: "url('/iniciomovil.webp')" }}
         />
         
         {/* Background Image - Desktop */}
         <div 
           className="absolute inset-0 bg-cover bg-center animate-fade-in hidden md:block"
-          style={{ backgroundImage: "url('/inicio%202.jpg')" }}
+          style={{ backgroundImage: "url('/inicio-2.webp')" }}
         />
         
         {/* Overlay */}
