@@ -18,7 +18,7 @@ type VarietalDB = Dexie & {
 
 const db = new Dexie('VarietalDB') as VarietalDB;
 
-db.version(4).stores({
+db.version(5).stores({
   greenCoffees: 'id, clientName, variety',
   roasts: 'id, clientName, greenCoffeeId',
   orders: 'id, clientName, status',

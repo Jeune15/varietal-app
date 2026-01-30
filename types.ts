@@ -106,7 +106,8 @@ export type ProductionActivityType =
   | 'Selección de Café' 
   | 'Armado de Bolsas Retail' 
   | 'Despacho de Pedido'
-  | 'SYSTEM_RESET';
+  | 'SYSTEM_RESET'
+  | 'Examen';
 
 export interface ProductionActivity {
   id: string;
@@ -187,4 +188,22 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   isActive: boolean;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+export interface ExamResult {
+  id: string;
+  date: string;
+  studentName: string;
+  examTitle: string;
+  score: number;
+  passed: boolean;
+  answers: number[];
+  questions: Question[];
 }

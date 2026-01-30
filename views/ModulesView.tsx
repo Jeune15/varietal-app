@@ -21,6 +21,8 @@ import {
   Eye,
   X
 } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
 import { ActivityHistory, HistoryRecord, Question } from '../components/ActivityHistory';
 
 // --- Types ---
@@ -1056,22 +1058,66 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
 
 const ModulesView: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
-  const [history, setHistory] = useState<HistoryRecord[]>(() => {
-    const saved = localStorage.getItem('examHistory');
-    return saved ? JSON.parse(saved) : [];
-  });
+  
+  const historyQuery = useLiveQuery(() => 
+    db.history.where('type').equals('Examen').reverse().sortBy('date')
+  ) || [];
 
+  const history = historyQuery.map(h => h.details as HistoryRecord);
+
+  // Migrate local storage history to database
   useEffect(() => {
-    localStorage.setItem('examHistory', JSON.stringify(history));
-  }, [history]);
+    const migrateHistory = async () => {
+      const localHistory = localStorage.getItem('examHistory');
+      if (localHistory) {
+        try {
+          const parsed: HistoryRecord[] = JSON.parse(localHistory);
+          if (parsed.length > 0) {
+            await db.transaction('rw', db.history, async () => {
+              for (const record of parsed) {
+                // Check if exists to avoid duplicates (though ID should be unique)
+                const exists = await db.history.get(record.id);
+                if (!exists) {
+                  await db.history.add({
+                    id: record.id,
+                    type: 'Examen',
+                    date: record.date,
+                    details: record
+                  });
+                }
+              }
+            });
+            console.log('Migrated exam history to database');
+          }
+          localStorage.removeItem('examHistory');
+        } catch (error) {
+          console.error('Failed to migrate history:', error);
+        }
+      }
+    };
+    migrateHistory();
+  }, []);
 
-  const handleExamComplete = (record: HistoryRecord) => {
-    setHistory(prev => [record, ...prev]);
-    setSelectedModule(null);
+  const handleExamComplete = async (record: HistoryRecord) => {
+    try {
+      await db.history.add({
+        id: record.id,
+        type: 'Examen',
+        date: record.date,
+        details: record
+      });
+      setSelectedModule(null);
+    } catch (error) {
+      console.error('Failed to save exam result:', error);
+    }
   };
 
-  const handleDeleteHistory = (id: string) => {
-    setHistory(prev => prev.filter(h => h.id !== id));
+  const handleDeleteHistory = async (id: string) => {
+    try {
+      await db.history.delete(id);
+    } catch (error) {
+      console.error('Failed to delete history:', error);
+    }
   };
 
   if (selectedModule) {

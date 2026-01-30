@@ -7,24 +7,9 @@ import {
   X, 
   CheckCircle 
 } from 'lucide-react';
+import { ExamResult as HistoryRecord, Question } from '../types';
 
-export interface Question {
-  id: string;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-}
-
-export interface HistoryRecord {
-  id: string;
-  date: string;
-  studentName: string;
-  examTitle: string;
-  score: number;
-  passed: boolean;
-  answers: number[];
-  questions: Question[];
-}
+export { type HistoryRecord, type Question };
 
 export const HistoryDetailModal: React.FC<{ record: HistoryRecord; onClose: () => void }> = ({ record, onClose }) => {
   return (
