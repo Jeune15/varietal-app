@@ -22,7 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { db, syncToCloud } from '../db';
 import { ActivityHistory, HistoryRecord, Question } from '../components/ActivityHistory';
 
 // --- Types ---
@@ -1073,21 +1073,30 @@ const ModulesView: React.FC = () => {
         try {
           const parsed: HistoryRecord[] = JSON.parse(localHistory);
           if (parsed.length > 0) {
+            const newRecords: any[] = [];
+            
             await db.transaction('rw', db.history, async () => {
               for (const record of parsed) {
                 // Check if exists to avoid duplicates (though ID should be unique)
                 const exists = await db.history.get(record.id);
                 if (!exists) {
-                  await db.history.add({
+                  const newEntry = {
                     id: record.id,
-                    type: 'Examen',
+                    type: 'Examen' as const,
                     date: record.date,
                     details: record
-                  });
+                  };
+                  await db.history.add(newEntry);
+                  newRecords.push(newEntry);
                 }
               }
             });
-            console.log('Migrated exam history to database');
+            
+            if (newRecords.length > 0) {
+              console.log('Migrated exam history to database', newRecords.length);
+              // Force sync to cloud immediately after migration
+              await syncToCloud('history', newRecords);
+            }
           }
           localStorage.removeItem('examHistory');
         } catch (error) {
@@ -1100,12 +1109,20 @@ const ModulesView: React.FC = () => {
 
   const handleExamComplete = async (record: HistoryRecord) => {
     try {
-      await db.history.add({
+      const newEntry = {
         id: record.id,
-        type: 'Examen',
+        type: 'Examen' as const,
         date: record.date,
         details: record
-      });
+      };
+      
+      await db.history.add(newEntry);
+      
+      // Sync to cloud immediately
+      syncToCloud('history', newEntry).catch(err => 
+        console.error('Background sync failed:', err)
+      );
+      
       setSelectedModule(null);
     } catch (error) {
       console.error('Failed to save exam result:', error);
