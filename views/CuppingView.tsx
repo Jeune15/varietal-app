@@ -6,6 +6,7 @@ import { CuppingForm, CuppingSession, RoastedStock, FreeCuppingSample, CuppingSe
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Coffee, User as UserIcon, ClipboardList, SlidersHorizontal, X, ArrowLeft, ArrowRight, Check, Plus, Minus, Calendar } from 'lucide-react';
+import { SessionDetailModal } from '../components/CuppingSessionDetail';
 
 interface Props {
   stocks: RoastedStock[];
@@ -72,6 +73,8 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
   const [numSamples, setNumSamples] = useState(1);
   const [freeSamples, setFreeSamples] = useState<FreeCuppingSample[]>([]);
   const [currentSampleIndex, setCurrentSampleIndex] = useState(0);
+
+  const [selectedSession, setSelectedSession] = useState<CuppingSession | null>(null);
 
   const cuppingSessions = useLiveQuery(() => db.cuppingSessions.orderBy('date').reverse().toArray(), []) || [];
   
@@ -811,7 +814,10 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
                       </div>
                     </div>
 
-                    <button className="p-2 text-stone-300 hover:text-black dark:hover:text-white transition-colors">
+                    <button 
+                      onClick={() => setSelectedSession(session)}
+                      className="p-2 text-stone-300 hover:text-black dark:hover:text-white transition-colors"
+                    >
                        <ClipboardList className="w-5 h-5" />
                     </button>
                   </div>
@@ -820,6 +826,11 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
             )}
           </div>
         </div>
+      )}
+
+      {selectedSession && createPortal(
+        <SessionDetailModal session={selectedSession} onClose={() => setSelectedSession(null)} />,
+        document.body
       )}
     </div>
     </>
