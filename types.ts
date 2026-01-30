@@ -206,4 +206,5 @@ export interface ExamResult {
   passed: boolean;
   answers: number[];
   questions: Question[];
+  deleted?: boolean;
 }

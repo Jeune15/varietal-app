@@ -1063,7 +1063,9 @@ const ModulesView: React.FC = () => {
     db.history.where('type').equals('Examen').reverse().sortBy('date')
   ) || [];
 
-  const history = historyQuery.map(h => h.details as HistoryRecord);
+  const history = historyQuery
+    .map(h => h.details as HistoryRecord)
+    .filter(h => !h.deleted);
 
   // Migrate local storage history to database
   useEffect(() => {
@@ -1131,7 +1133,19 @@ const ModulesView: React.FC = () => {
 
   const handleDeleteHistory = async (id: string) => {
     try {
-      await db.history.delete(id);
+      const record = await db.history.get(id);
+      if (record && record.details) {
+        // Soft delete: update the record with deleted=true
+        const updatedDetails = { ...record.details, deleted: true };
+        const updatedRecord = { ...record, details: updatedDetails };
+        
+        // Update local DB
+        await db.history.put(updatedRecord);
+        
+        // Sync to cloud
+        await syncToCloud('history', updatedRecord);
+        console.log('Exam history soft-deleted and synced:', id);
+      }
     } catch (error) {
       console.error('Failed to delete history:', error);
     }
