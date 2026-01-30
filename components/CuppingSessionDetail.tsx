@@ -12,18 +12,21 @@ const ScoreDisplay: React.FC<{
   value: number; 
   notes?: string; 
   descriptors?: string[];
-}> = ({ label, value, notes, descriptors }) => (
+}> = ({ label, value, notes, descriptors }) => {
+  const safeValue = typeof value === 'number' ? value : 0;
+  
+  return (
   <div className="bg-stone-50 dark:bg-stone-800 p-3 rounded-lg space-y-2">
     <div className="flex justify-between items-center">
       <span className="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">{label}</span>
-      <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{value.toFixed(2)}</span>
+      <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{safeValue.toFixed(2)}</span>
     </div>
     
     {/* Bar indicator */}
     <div className="h-1.5 w-full bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
       <div 
         className="h-full bg-stone-900 dark:bg-stone-100" 
-        style={{ width: `${(value / 10) * 100}%` }}
+        style={{ width: `${(safeValue / 10) * 100}%` }}
       />
     </div>
 
@@ -43,9 +46,11 @@ const ScoreDisplay: React.FC<{
       </p>
     )}
   </div>
-);
+  );
+};
 
-const FormDetail: React.FC<{ form: CuppingForm }> = ({ form }) => {
+const FormDetail: React.FC<{ form?: CuppingForm }> = ({ form }) => {
+  if (!form) return null;
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -114,7 +119,7 @@ const SampleCard: React.FC<{ sample: FreeCuppingSample; index: number }> = ({ sa
 
 export const SessionDetailModal: React.FC<Props> = ({ session, onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="bg-white dark:bg-stone-950 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-stone-200 dark:border-stone-800 flex justify-between items-start bg-white dark:bg-stone-900">

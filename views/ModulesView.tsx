@@ -678,6 +678,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(exam.durationMinutes * 60);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Update timeLeft if exam duration changes and exam hasn't started
   useEffect(() => {
@@ -748,193 +749,259 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
     onComplete(record);
   };
 
-  if (!isStarted) {
-    return (
-      <div className="max-w-md mx-auto py-12 px-4 animate-fade-in">
-        <div className="bg-white dark:bg-stone-900 rounded-xl p-8 border border-stone-200 dark:border-stone-800 shadow-lg">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-stone-100 dark:bg-stone-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-stone-500" />
-            </div>
-            <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">Datos del Alumno</h3>
-            <p className="text-sm text-stone-500 mt-2">Ingresa tu nombre para comenzar el examen</p>
-          </div>
-          
-          <form onSubmit={handleStart} className="space-y-6">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-stone-500 mb-2">
-                Nombre Completo
-              </label>
-              <input
-                type="text"
-                required
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
-                placeholder="Ej. Juan Pérez"
-              />
-            </div>
+  const handleExitRequest = () => {
+    if (isStarted && !isFinished) {
+      setShowExitConfirm(true);
+    } else {
+      onCancel();
+    }
+  };
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="flex-1 px-4 py-3 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+  // Portal Content for Full Screen Focus Mode
+  const renderContent = () => {
+    if (!isStarted) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-stone-950 overflow-y-auto flex items-center justify-center p-4 animate-fade-in">
+           <div className="absolute top-4 right-4">
+              <button 
+                 onClick={onCancel}
+                 className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
               >
-                Cancelar
+                 <X className="w-6 h-6 text-stone-500" />
               </button>
-              <button
-                type="submit"
-                disabled={!studentName.trim()}
-                className="flex-1 px-4 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Comenzar ({exam.durationMinutes} min)
-              </button>
+           </div>
+           <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-xl p-8 border border-stone-200 dark:border-stone-800 shadow-lg">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-stone-100 dark:bg-stone-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-8 h-8 text-stone-500" />
+              </div>
+              <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">Datos del Alumno</h3>
+              <p className="text-sm text-stone-500 mt-2">Ingresa tu nombre para comenzar el examen</p>
             </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
+            
+            <form onSubmit={handleStart} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-stone-500 mb-2">
+                  Nombre Completo
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
+                  placeholder="Ej. Juan Pérez"
+                />
+              </div>
 
-  if (isFinished) {
-    const passed = score >= exam.passingScore;
-    return (
-      <div className="max-w-2xl mx-auto py-12 px-4 animate-fade-in text-center space-y-8">
-        <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-           {passed ? <Award className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
-        </div>
-        
-        <div className="space-y-2">
-            <h2 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">
-                {passed ? '¡Aprobado!' : 'No Aprobado'}
-            </h2>
-            <p className="text-lg font-medium text-stone-600 dark:text-stone-400">
-                Calificación: <span className={`font-bold ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{score.toFixed(0)}%</span>
-            </p>
-            <p className="text-sm text-stone-500">
-                Alumno: {studentName}
-            </p>
-        </div>
-
-        <div className="flex justify-center gap-4 pt-8">
-            {!passed && (
-                <button 
-                    onClick={() => {
-                        setIsFinished(false);
-                        setIsStarted(false);
-                        setCurrentQuestionIndex(0);
-                        setAnswers(new Array(exam.questions.length).fill(-1));
-                        setTimeLeft(exam.durationMinutes * 60);
-                    }}
-                    className="px-6 py-3 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-2"
-                >
-                    <RefreshCw className="w-4 h-4" /> Reintentar
-                </button>
-            )}
-            <button 
-                onClick={handleFinalize}
-                className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
-            >
-                Guardar y Salir
-            </button>
-        </div>
-      </div>
-    );
-  }
-
-  const question = exam.questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === exam.questions.length - 1;
-  const hasAnswered = answers[currentQuestionIndex] !== -1;
-
-  return (
-    <div className="max-w-3xl mx-auto py-8 animate-fade-in">
-        {/* Progress Bar */}
-        <div className="w-full h-1 bg-stone-100 dark:bg-stone-800 mb-8 rounded-full overflow-hidden">
-            <div 
-                className="h-full bg-black dark:bg-white transition-all duration-300"
-                style={{ width: `${((currentQuestionIndex + 1) / exam.questions.length) * 100}%` }}
-            />
-        </div>
-
-        <div className="flex justify-between items-center mb-8">
-            <span className="text-xs font-bold uppercase tracking-widest text-stone-400">
-                Pregunta {currentQuestionIndex + 1} de {exam.questions.length}
-            </span>
-            <span className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${timeLeft < 60 ? 'text-red-500 animate-pulse' : 'text-stone-400'}`}>
-                <Clock className="w-4 h-4" />
-                Tiempo restante: {formatTime(timeLeft)}
-            </span>
-        </div>
-
-        <div className="space-y-8 mb-12">
-            <h3 className="text-2xl md:text-3xl font-bold text-black dark:text-white leading-tight">
-                {question.text}
-            </h3>
-
-            <div className="space-y-3">
-                {question.options.map((option, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => handleAnswer(idx)}
-                        className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 ${
-                            answers[currentQuestionIndex] === idx
-                                ? 'border-black dark:border-white bg-stone-50 dark:bg-stone-900'
-                                : 'border-stone-100 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
-                        }`}
-                    >
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            answers[currentQuestionIndex] === idx
-                                ? 'border-black dark:border-white'
-                                : 'border-stone-300 dark:border-stone-600'
-                        }`}>
-                            {answers[currentQuestionIndex] === idx && (
-                                <div className="w-3 h-3 rounded-full bg-black dark:bg-white" />
-                            )}
-                        </div>
-                        <span className="font-medium text-stone-700 dark:text-stone-300">{option}</span>
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        <div className="flex flex-col-reverse md:flex-row justify-between items-center gap-6 pt-8 border-t border-stone-100 dark:border-stone-800">
-            <button
-                onClick={onCancel}
-                className="text-xs font-bold uppercase tracking-widest text-stone-400 hover:text-red-500"
-            >
-                Cancelar Examen
-            </button>
-
-            <div className="flex gap-4 w-full md:w-auto">
+              <div className="flex gap-3">
                 <button
-                    disabled={currentQuestionIndex === 0}
-                    onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
-                    className="flex-1 md:flex-none px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white text-center"
+                  type="button"
+                  onClick={onCancel}
+                  className="flex-1 px-4 py-3 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                 >
-                    Anterior
+                  Cancelar
                 </button>
-                
-                {isLastQuestion ? (
-                    <button
-                        disabled={!hasAnswered}
-                        onClick={handleSubmit}
-                        className="flex-1 md:flex-none px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                <button
+                  type="submit"
+                  disabled={!studentName.trim()}
+                  className="flex-1 px-4 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Comenzar ({exam.durationMinutes} min)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    if (isFinished) {
+      const passed = score >= exam.passingScore;
+      return (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-stone-950 overflow-y-auto animate-fade-in flex flex-col items-center justify-center p-4">
+          <div className="max-w-2xl w-full text-center space-y-8">
+            <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+               {passed ? <Award className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
+            </div>
+            
+            <div className="space-y-2">
+                <h2 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">
+                    {passed ? '¡Aprobado!' : 'No Aprobado'}
+                </h2>
+                <p className="text-lg font-medium text-stone-600 dark:text-stone-400">
+                    Calificación: <span className={`font-bold ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{score.toFixed(0)}%</span>
+                </p>
+                <p className="text-sm text-stone-500">
+                    Alumno: {studentName}
+                </p>
+            </div>
+
+            <div className="flex justify-center gap-4 pt-8">
+                {!passed && (
+                    <button 
+                        onClick={() => {
+                            setIsFinished(false);
+                            setIsStarted(false);
+                            setCurrentQuestionIndex(0);
+                            setAnswers(new Array(exam.questions.length).fill(-1));
+                            setTimeLeft(exam.durationMinutes * 60);
+                        }}
+                        className="px-6 py-3 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-2"
                     >
-                        Terminar
-                    </button>
-                ) : (
-                    <button
-                        disabled={!hasAnswered}
-                        onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-                        className="flex-1 md:flex-none px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center"
-                    >
-                        Siguiente
+                        <RefreshCw className="w-4 h-4" /> Reintentar
                     </button>
                 )}
+                <button 
+                    onClick={handleFinalize}
+                    className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+                >
+                    Guardar y Salir
+                </button>
             </div>
+          </div>
         </div>
-    </div>
+      );
+    }
+
+    const question = exam.questions[currentQuestionIndex];
+    const isLastQuestion = currentQuestionIndex === exam.questions.length - 1;
+    const hasAnswered = answers[currentQuestionIndex] !== -1;
+
+    return (
+      <div className="fixed inset-0 z-[100] bg-white dark:bg-stone-950 overflow-y-auto animate-fade-in">
+        <div className="max-w-3xl mx-auto py-8 px-4 min-h-screen flex flex-col">
+          {/* Header with Exit Button */}
+          <div className="flex justify-between items-center mb-8">
+             <div className="flex items-center gap-2 text-stone-400">
+                <Clock className="w-4 h-4" />
+                <span className={`text-xs font-bold uppercase tracking-widest ${timeLeft < 60 ? 'text-red-500 animate-pulse' : ''}`}>
+                  {formatTime(timeLeft)}
+                </span>
+             </div>
+             <button 
+                onClick={handleExitRequest}
+                className="text-stone-400 hover:text-red-500 transition-colors flex items-center gap-1"
+             >
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Salir</span>
+                <X className="w-5 h-5" />
+             </button>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full h-1 bg-stone-100 dark:bg-stone-800 mb-8 rounded-full overflow-hidden">
+              <div 
+                  className="h-full bg-black dark:bg-white transition-all duration-300"
+                  style={{ width: `${((currentQuestionIndex + 1) / exam.questions.length) * 100}%` }}
+              />
+          </div>
+
+          <div className="flex-1 flex flex-col justify-center pb-20">
+             <div className="mb-8">
+                <span className="text-xs font-bold uppercase tracking-widest text-stone-400">
+                    Pregunta {currentQuestionIndex + 1} de {exam.questions.length}
+                </span>
+             </div>
+
+             <div className="space-y-8 mb-12">
+                <h3 className="text-2xl md:text-4xl font-bold text-black dark:text-white leading-tight">
+                    {question.text}
+                </h3>
+
+                <div className="space-y-3">
+                    {question.options.map((option, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => handleAnswer(idx)}
+                            className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 ${
+                                answers[currentQuestionIndex] === idx
+                                    ? 'border-black dark:border-white bg-stone-50 dark:bg-stone-900'
+                                    : 'border-stone-100 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
+                            }`}
+                        >
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                answers[currentQuestionIndex] === idx
+                                    ? 'border-black dark:border-white'
+                                    : 'border-stone-300 dark:border-stone-600'
+                            }`}>
+                                {answers[currentQuestionIndex] === idx && (
+                                    <div className="w-3 h-3 rounded-full bg-black dark:bg-white" />
+                                )}
+                            </div>
+                            <span className="font-medium text-lg text-stone-700 dark:text-stone-300">{option}</span>
+                        </button>
+                    ))}
+                </div>
+             </div>
+          </div>
+
+          <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-t border-stone-100 dark:border-stone-800 p-4 z-10">
+              <div className="max-w-3xl mx-auto flex justify-between items-center gap-4">
+                  <button
+                      disabled={currentQuestionIndex === 0}
+                      onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
+                      className="px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white transition-colors"
+                  >
+                      Anterior
+                  </button>
+                  
+                  {isLastQuestion ? (
+                      <button
+                          disabled={!hasAnswered}
+                          onClick={handleSubmit}
+                          className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                          Terminar Examen
+                      </button>
+                  ) : (
+                      <button
+                          disabled={!hasAnswered}
+                          onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                          className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                          Siguiente
+                      </button>
+                  )}
+              </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return createPortal(
+    <>
+      {renderContent()}
+      
+      {/* Confirmation Modal */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-stone-900 rounded-xl shadow-2xl p-6 max-w-sm w-full border border-stone-200 dark:border-stone-800 transform scale-100 transition-all">
+            <h3 className="text-xl font-black uppercase tracking-tight mb-2 text-black dark:text-white">
+              ¿Salir del examen?
+            </h3>
+            <p className="text-sm text-stone-600 dark:text-stone-400 mb-6 font-medium">
+              Si sales ahora, se perderá todo el progreso y tendrás que comenzar de nuevo.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="flex-1 px-4 py-3 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+              >
+                Continuar Examen
+              </button>
+              <button
+                onClick={onCancel}
+                className="flex-1 px-4 py-3 bg-red-600 text-white font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>,
+    document.body
   );
 };
 

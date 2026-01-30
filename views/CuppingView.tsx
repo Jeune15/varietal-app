@@ -116,6 +116,31 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
     setCurrentSampleIndex(0);
   };
 
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const requestNavigation = (action: () => void) => {
+    // Only confirm if we are in a session (setup or analysis) and data might be lost
+    // For simplicity, if we are in 'analysis' or 'setup-samples', we confirm.
+    if (viewStep === 'analysis' || viewStep === 'setup-samples') {
+      setPendingAction(() => action);
+      setShowExitConfirm(true);
+    } else {
+      action();
+    }
+  };
+
+  const confirmExit = () => {
+    if (pendingAction) pendingAction();
+    setShowExitConfirm(false);
+    setPendingAction(null);
+  };
+
+  const cancelExit = () => {
+    setShowExitConfirm(false);
+    setPendingAction(null);
+  };
+
   // Initialize/Reset based on mode
   useEffect(() => {
     if (mode === 'internal') {
@@ -353,11 +378,11 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
         <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => {
+              onClick={() => requestNavigation(() => {
                 setActiveTab('form');
                 setViewStep('type-selection');
                 setSessionType(null);
-              }}
+              })}
               className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all ${
                 activeTab === 'form'
                   ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
@@ -368,7 +393,7 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('recent')}
+              onClick={() => requestNavigation(() => setActiveTab('recent'))}
               className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all ${
                 activeTab === 'recent'
                   ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
@@ -468,7 +493,7 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
         <div className="max-w-3xl mx-auto animate-fade-in">
           <div className="flex items-center gap-4 mb-8">
             <button 
-              onClick={() => setViewStep('type-selection')}
+              onClick={() => requestNavigation(() => setViewStep('type-selection'))}
               className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -782,7 +807,11 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
               </div>
             ) : (
               filteredSessions.map(session => (
-                <div key={session.id} className="p-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
+                <div 
+                  key={session.id} 
+                  onClick={() => setSelectedSession(session)}
+                  className="p-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors cursor-pointer group"
+                >
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
                       {/* Taster Name - Primary */}
@@ -830,6 +859,35 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
 
       {selectedSession && createPortal(
         <SessionDetailModal session={selectedSession} onClose={() => setSelectedSession(null)} />,
+        document.body
+      )}
+
+      {/* Confirmation Modal */}
+      {showExitConfirm && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-stone-900 rounded-xl shadow-2xl p-6 max-w-sm w-full border border-stone-200 dark:border-stone-800 transform scale-100 transition-all">
+            <h3 className="text-xl font-black uppercase tracking-tight mb-2 text-black dark:text-white">
+              ¿Estás seguro?
+            </h3>
+            <p className="text-sm text-stone-600 dark:text-stone-400 mb-6 font-medium">
+              Si sales ahora, podrías perder el progreso de la sesión actual.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={cancelExit}
+                className="flex-1 px-4 py-3 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 px-4 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
     </div>
