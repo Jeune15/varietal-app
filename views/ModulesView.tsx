@@ -378,7 +378,7 @@ Proporción usada para preparar café.`
     title: 'Módulo II',
     subtitle: 'Espresso y Barismo',
     description: 'Principios de extracción, espresso, correcto uso de equipos, flujo de trabajo, variables y calibración.',
-    slides: generateSlides(33, 57, '/Modulo2'),
+    slides: generateSlides(33, 50, '/Modulo2'),
     topics: [
       {
         id: 't2-1',
@@ -484,6 +484,12 @@ Proporción usada para preparar café.`
 
 const Slideshow: React.FC<{ slides: string[] }> = ({ slides }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imgError, setImgError] = useState(false);
+
+  // Reset error state when slide changes
+  useEffect(() => {
+    setImgError(false);
+  }, [currentIndex]);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % slides.length);
@@ -498,11 +504,20 @@ const Slideshow: React.FC<{ slides: string[] }> = ({ slides }) => {
   return (
     <div className="mb-8 group relative rounded-xl overflow-hidden shadow-lg bg-stone-100 dark:bg-stone-900 aspect-video">
       <div className="absolute inset-0 flex items-center justify-center bg-stone-200 dark:bg-stone-800">
-          <img 
-            src={slides[currentIndex]} 
-            alt={`Slide ${currentIndex + 1}`} 
-            className="w-full h-full object-contain"
-          />
+          {imgError ? (
+            <div className="flex flex-col items-center justify-center text-stone-400 p-8 text-center">
+               <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
+               <p className="text-sm font-bold uppercase tracking-widest">Imagen no disponible</p>
+               <p className="text-xs mt-1">Slide {currentIndex + 1}</p>
+            </div>
+          ) : (
+            <img 
+              src={slides[currentIndex]} 
+              alt={`Slide ${currentIndex + 1}`} 
+              className="w-full h-full object-contain"
+              onError={() => setImgError(true)}
+            />
+          )}
       </div>
       
       {/* Navigation Arrows */}
