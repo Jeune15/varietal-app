@@ -627,38 +627,54 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {MOCK_MODULES.map((mod) => (
-          <button 
-            key={mod.id} 
-            onClick={() => onSelect(mod)}
-            className="group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
-          >
-            <div className="w-full space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
-                  {mod.topics.length + (mod.slides?.length || 0)} Recursos
-                </span>
-              </div>
-              
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">{mod.title}</h3>
-                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">{mod.subtitle}</p>
-              </div>
-              
-              <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-3 font-medium">
-                {mod.description}
-              </p>
-            </div>
+        {MOCK_MODULES.map((mod) => {
+          const isCompleted = history.some(h => h.examTitle === mod.exam.title && h.passed);
 
-            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
-               <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Ver Módulo</span>
-               <ArrowRight className="w-4 h-4 text-black dark:text-white" />
-            </div>
-          </button>
-        ))}
+          return (
+            <button 
+              key={mod.id} 
+              onClick={() => onSelect(mod)}
+              className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
+            >
+              {isCompleted && (
+                <div className="absolute top-6 right-6 text-green-500 dark:text-green-400 animate-in fade-in zoom-in duration-300">
+                  <CheckCircle className="w-6 h-6 fill-green-50 dark:fill-green-900/30" />
+                </div>
+              )}
+
+              <div className="w-full space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                    isCompleted 
+                      ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' 
+                      : 'bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black'
+                  }`}>
+                    {isCompleted ? <CheckCircle className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                    {mod.topics.length + (mod.slides?.length || 0)} Recursos
+                  </span>
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">{mod.title}</h3>
+                  <p className="text-xs font-bold uppercase tracking-wider text-stone-500">{mod.subtitle}</p>
+                </div>
+                
+                <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-3 font-medium">
+                  {mod.description}
+                </p>
+              </div>
+
+              <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+                 <span className={`text-xs font-bold uppercase tracking-widest ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-black dark:text-white'}`}>
+                    {isCompleted ? 'Módulo Completado' : 'Ver Módulo'}
+                 </span>
+                 <ArrowRight className={`w-4 h-4 ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-black dark:text-white'}`} />
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
