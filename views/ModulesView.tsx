@@ -636,12 +636,6 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
               onClick={() => onSelect(mod)}
               className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
             >
-              {isCompleted && (
-                <div className="absolute top-6 right-6 text-green-500 dark:text-green-400 animate-in fade-in zoom-in duration-300">
-                  <CheckCircle className="w-6 h-6 fill-green-50 dark:fill-green-900/30" />
-                </div>
-              )}
-
               <div className="w-full space-y-4">
                 <div className="flex justify-between items-start">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
