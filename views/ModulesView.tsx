@@ -781,7 +781,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
   const renderContent = () => {
     if (!isStarted) {
       return (
-        <div className="fixed inset-0 z-[100] bg-white dark:bg-stone-950 overflow-y-auto flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[500] bg-white dark:bg-stone-950 overflow-y-auto flex items-center justify-center p-4 animate-fade-in">
            <div className="absolute top-4 right-4">
               <button 
                  onClick={onCancel}
@@ -839,7 +839,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
     if (isFinished) {
       const passed = score >= exam.passingScore;
       return (
-        <div className="fixed inset-0 z-[100] bg-white dark:bg-stone-950 overflow-y-auto animate-fade-in flex flex-col items-center justify-center p-4">
+        <div className="fixed inset-0 z-[500] bg-white dark:bg-stone-950 overflow-y-auto animate-fade-in flex flex-col items-center justify-center p-4">
           <div className="max-w-2xl w-full text-center space-y-8">
             <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
                {passed ? <Award className="w-12 h-12" /> : <AlertCircle className="w-12 h-12" />}
@@ -889,7 +889,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
     const hasAnswered = answers[currentQuestionIndex] !== -1;
 
     return (
-      <div className="fixed inset-0 z-[100] bg-white dark:bg-stone-950 overflow-y-auto animate-fade-in">
+      <div className="fixed inset-0 z-[500] bg-white dark:bg-stone-950 overflow-y-auto animate-fade-in">
         <div className="max-w-3xl mx-auto py-8 px-4 min-h-screen flex flex-col">
           {/* Header with Exit Button */}
           <div className="flex justify-between items-center mb-8">
@@ -1002,7 +1002,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
       
       {/* Confirmation Modal */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-stone-900 rounded-xl shadow-2xl p-6 max-w-sm w-full border border-stone-200 dark:border-stone-800 transform scale-100 transition-all">
             <h3 className="text-xl font-black uppercase tracking-tight mb-2 text-black dark:text-white">
               ¿Salir del examen?
