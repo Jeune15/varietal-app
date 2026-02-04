@@ -955,33 +955,40 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
              </div>
           </div>
 
-          <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-t border-stone-100 dark:border-stone-800 p-4 z-10">
-              <div className="max-w-3xl mx-auto flex justify-between items-center gap-4">
-                  <button
-                      disabled={currentQuestionIndex === 0}
-                      onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
-                      className="px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white transition-colors"
-                  >
-                      Anterior
-                  </button>
-                  
-                  {isLastQuestion ? (
-                      <button
-                          disabled={!hasAnswered}
-                          onClick={handleSubmit}
-                          className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                          Terminar Examen
-                      </button>
-                  ) : (
-                      <button
-                          disabled={!hasAnswered}
-                          onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-                          className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                          Siguiente
-                      </button>
+          <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-t border-stone-100 dark:border-stone-800 p-4 pb-6 md:pb-4 z-50">
+              <div className="max-w-3xl mx-auto flex flex-col gap-2">
+                  {!hasAnswered && (
+                      <p className="text-center text-xs font-bold text-amber-600 dark:text-amber-500 animate-pulse uppercase tracking-widest">
+                          Selecciona una respuesta para continuar
+                      </p>
                   )}
+                  <div className="flex justify-between items-center gap-4">
+                      <button
+                          disabled={currentQuestionIndex === 0}
+                          onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
+                          className="px-6 py-3 text-stone-500 font-bold uppercase tracking-widest text-xs disabled:opacity-30 hover:text-black dark:hover:text-white transition-colors"
+                      >
+                          Anterior
+                      </button>
+                      
+                      {isLastQuestion ? (
+                          <button
+                              disabled={!hasAnswered}
+                              onClick={handleSubmit}
+                              className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                          >
+                              Terminar Examen
+                          </button>
+                      ) : (
+                          <button
+                              disabled={!hasAnswered}
+                              onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                              className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-xs rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                          >
+                              Siguiente
+                          </button>
+                      )}
+                  </div>
               </div>
           </div>
         </div>
