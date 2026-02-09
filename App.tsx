@@ -32,6 +32,7 @@ import DashboardView from './views/DashboardView';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import ModulesView from './views/ModulesView';
+import { RecipesView } from './views/RecipesView';
 import SettingsModal from './components/SettingsModal';
 import FullScreenMenu from './components/FullScreenMenu';
 import LandingPage from './views/LandingPage';
@@ -284,45 +285,7 @@ const AppContent: React.FC = () => {
              
              {activeTab === 'modules' && <ModulesView />}
              
-             {activeTab === 'recipes' && (
-               <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
-                 <div className="space-y-2 mb-8">
-                   <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Recetas</h3>
-                   <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
-                     Guías de preparación y métodos
-                   </p>
-                 </div>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                    <button className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300">
-                       <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
-                         <Coffee className="w-8 h-8" />
-                       </div>
-                       <div className="text-center space-y-2">
-                         <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Espresso</h3>
-                         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Guías de extracción y calibración</p>
-                       </div>
-                    </button>
-                    
-                    <button className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300">
-                       <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
-                         <ClipboardList className="w-8 h-8" />
-                       </div>
-                       <div className="text-center space-y-2">
-                         <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Filtrados</h3>
-                         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">V60, Chemex, Aeropress y más</p>
-                       </div>
-                    </button>
-                 </div>
-
-                 <div className="space-y-4 pt-8 border-t border-stone-100 dark:border-stone-800">
-                    <h3 className="text-xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Actividades</h3>
-                    <div className="border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center rounded-lg bg-stone-50 dark:bg-stone-900/50">
-                        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Próximamente</p>
-                    </div>
-                 </div>
-               </div>
-             )}
+             {activeTab === 'recipes' && <RecipesView />}
            </div>
         </div>
 

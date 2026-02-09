@@ -101,13 +101,45 @@ export interface RetailBagStock {
   roastId?: string;
 }
 
+export interface SensoryAnalysis {
+  crema: string;
+  acidity: { quality: 'positive' | 'negative' | null; description: string };
+  sweetness: { present: boolean | null; intensity: string };
+  bitterness: { quality: 'positive' | 'negative' | null; description: string };
+  body: string;
+  aftertaste: { duration: 'quick' | 'semi-prolonged' | 'prolonged' | null; description: string };
+}
+
+export interface EspressoShot {
+  id: string;
+  recipeName: string;
+  grindSetting: string;
+  doseIn: number;
+  yieldOut: number;
+  timeSeconds: number;
+  extraction: number; // 0-100 slider value
+  tasteBalance: string[]; // Multi-select ['sour', 'bitter', 'balanced', etc.]
+  sensory: SensoryAnalysis;
+  notes?: string;
+}
+
+export interface EspressoSession {
+  id: string;
+  date: string;
+  baristaName: string;
+  coffeeName: string;
+  shots: EspressoShot[];
+  notes?: string;
+}
+
 export type ProductionActivityType = 
   | 'Armado de Pedido' 
   | 'Selección de Café' 
   | 'Armado de Bolsas Retail' 
   | 'Despacho de Pedido'
   | 'SYSTEM_RESET'
-  | 'Examen';
+  | 'Examen'
+  | 'Calibración';
 
 export interface ProductionActivity {
   id: string;

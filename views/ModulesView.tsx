@@ -916,7 +916,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
               />
           </div>
 
-          <div className="flex-1 flex flex-col justify-center pb-40 md:pb-32">
+          <div className="flex-1 flex flex-col pb-40 md:pb-32">
              <div className="mb-8">
                 <span className="text-xs font-bold uppercase tracking-widest text-stone-400">
                     Pregunta {currentQuestionIndex + 1} de {exam.questions.length}
@@ -955,7 +955,7 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
              </div>
           </div>
 
-          <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-t border-stone-100 dark:border-stone-800 p-4 pb-8 md:pb-4 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-t border-stone-100 dark:border-stone-800 p-4 pb-8 md:pb-4 safe-area-pb z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
               <div className="max-w-3xl mx-auto flex flex-col gap-2">
                   {!hasAnswered && (
                       <p className="text-center text-xs font-bold text-amber-600 dark:text-amber-500 animate-pulse uppercase tracking-widest">
