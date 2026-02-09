@@ -130,6 +130,7 @@ export interface EspressoSession {
   coffeeName: string;
   shots: EspressoShot[];
   notes?: string;
+  deleted?: boolean;
 }
 
 export type ProductionActivityType = 
