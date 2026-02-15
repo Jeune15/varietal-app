@@ -1,7 +1,7 @@
 
 import { Dexie, type EntityTable } from 'dexie';
 import { createClient } from '@supabase/supabase-js';
-import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession } from './types';
+import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe } from './types';
 
 type VarietalDB = Dexie & {
   greenCoffees: EntityTable<GreenCoffee, 'id'>;
@@ -15,11 +15,13 @@ type VarietalDB = Dexie & {
   profiles: EntityTable<UserProfile, 'id'>;
   cuppingSessions: EntityTable<CuppingSession, 'id'>;
   espressoSessions: EntityTable<EspressoSession, 'id'>;
+  filterSessions: EntityTable<FilterSession, 'id'>;
+  filterRecipes: EntityTable<FilterRecipe, 'id'>;
 };
 
 const db = new Dexie('VarietalDB') as VarietalDB;
 
-db.version(6).stores({
+db.version(8).stores({
   greenCoffees: 'id, clientName, variety',
   roasts: 'id, clientName, greenCoffeeId',
   orders: 'id, clientName, status',
@@ -30,7 +32,9 @@ db.version(6).stores({
   productionInventory: 'id, name, type, format',
   profiles: 'id, email, role',
   cuppingSessions: 'id, roastStockId, tasterName, date',
-  espressoSessions: 'id, date, coffeeName'
+  espressoSessions: 'id, date, coffeeName',
+  filterSessions: 'id, date, coffeeName, method',
+  filterRecipes: 'id, method, coffeeName'
 });
 
 export { db };
@@ -89,7 +93,30 @@ const tableColumnWhitelist: Record<string, string[]> = {
   productionInventory: ['id', 'name', 'type', 'quantity', 'minThreshold', 'format'],
   profiles: ['id', 'email', 'role', 'isActive'],
   cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form', 'notes', 'sessionType', 'samples'],
-    espressoSessions: ['id', 'date', 'baristaName', 'coffeeName', 'shots', 'notes']
+  espressoSessions: ['id', 'date', 'baristaName', 'coffeeName', 'shots', 'notes'],
+  filterSessions: ['id', 'date', 'brewerName', 'coffeeName', 'method', 'pours', 'notes'],
+  filterRecipes: [
+    'id',
+    'createdAt',
+    'updatedAt',
+    'name',
+    'method',
+    'coffeeName',
+    'doseGrams',
+    'waterTempCelsius',
+    'grindSize',
+    'grinderClicks',
+    'totalWaterMl',
+    'ratio',
+    'totalTimeSeconds',
+    'pressureBars',
+    'filterType',
+    'phases',
+    'tasting',
+    'methodSpecific',
+    'notes',
+    'deleted'
+  ]
   };
   
   function sanitizeRecord(table: string, record: any) {
@@ -156,7 +183,7 @@ export async function pullFromCloud() {
       if (!lastProcessed || new Date(lastReset.date) > new Date(lastProcessed)) {
         console.warn('GLOBAL RESET SIGNAL DETECTED. Wiping local database...');
         
-        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions], async () => {
+        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions], async () => {
           await db.greenCoffees.clear();
           await db.roasts.clear();
           await db.orders.clear();
@@ -167,6 +194,8 @@ export async function pullFromCloud() {
           await db.productionInventory.clear();
           await db.profiles.clear();
           await db.cuppingSessions.clear();
+          await db.espressoSessions.clear();
+          await db.filterSessions.clear();
         });
         
         localStorage.setItem('varietal_last_reset_processed', lastReset.date);
@@ -177,17 +206,26 @@ export async function pullFromCloud() {
     console.error('Error checking for reset signal:', err);
   }
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions'];
   let success = true;
 
   for (const table of tables) {
     try {
-      // console.log(`Attempting to pull ${table}...`);
       const { data, error } = await supabase.from(table).select('*');
       
       if (error) {
-        console.error(`Supabase error pulling ${table}:`, error);
-        success = false;
+        const message = (error as any)?.message || '';
+        const code = (error as any)?.code;
+        const isNetworkError = typeof message === 'string' && message.includes('Failed to fetch');
+
+        if (isNetworkError) {
+          console.warn(`Supabase network error pulling ${table}:`, message);
+        } else if (code === '42P01') {
+          console.warn(`Supabase table "${table}" does not exist. Skipping sync for this table.`);
+        } else {
+          console.error(`Supabase error pulling ${table}:`, error);
+          success = false;
+        }
         continue;
       }
 
@@ -207,7 +245,7 @@ export async function pullFromCloud() {
 
 export async function pushToCloud(): Promise<{ success: boolean; message?: string }> {
   if (!supabase) return { success: false, message: 'No hay conexión con Supabase' };
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes'];
   let success = true;
   let errorMessage = '';
 
@@ -249,6 +287,7 @@ export async function exportDatabaseToJson() {
     profiles: await db.profiles.toArray(),
     cuppingSessions: await db.cuppingSessions.toArray(),
     espressoSessions: await db.espressoSessions.toArray(),
+    filterSessions: await db.filterSessions.toArray(),
     exportDate: new Date().toISOString()
   };
   return JSON.stringify(data, null, 2);
@@ -257,7 +296,7 @@ export async function exportDatabaseToJson() {
 export async function importDatabaseFromJson(jsonString: string) {
   try {
     const data = JSON.parse(jsonString);
-    await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions], async () => {
+    await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -269,6 +308,7 @@ export async function importDatabaseFromJson(jsonString: string) {
       await db.profiles.clear();
       await db.cuppingSessions.clear();
       await db.espressoSessions.clear();
+      await db.filterSessions.clear();
       
       if (data.greenCoffees) await db.greenCoffees.bulkAdd(data.greenCoffees);
       if (data.roasts) await db.roasts.bulkAdd(data.roasts);
@@ -281,6 +321,7 @@ export async function importDatabaseFromJson(jsonString: string) {
       if (data.profiles) await db.profiles.bulkAdd(data.profiles);
       if (data.cuppingSessions) await db.cuppingSessions.bulkAdd(data.cuppingSessions);
       if (data.espressoSessions) await db.espressoSessions.bulkAdd(data.espressoSessions);
+      if (data.filterSessions) await db.filterSessions.bulkAdd(data.filterSessions);
     });
     return true;
   } catch (error) {
@@ -292,7 +333,7 @@ export async function importDatabaseFromJson(jsonString: string) {
 export function subscribeToChanges() {
   if (!supabase) return () => {};
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions'];
 
   const channel = supabase.channel('db-changes')
     .on(
@@ -328,9 +369,9 @@ export function subscribeToChanges() {
 }
 
 export async function resetDatabase(excludeUserId?: string) {
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions'];
   
-  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions], async () => {
+  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -342,6 +383,7 @@ export async function resetDatabase(excludeUserId?: string) {
       await db.profiles.clear();
       await db.cuppingSessions.clear();
       await db.espressoSessions.clear();
+      await db.filterSessions.clear();
   });
 
   // Clear Cloud DB if connected

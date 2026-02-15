@@ -38,7 +38,7 @@ const buildEmptyForm = (): CuppingForm => ({
 const descriptorOptions = {
   aromatic: [
     'Floral', 'Afrutado', 'Bayas', 'Frutas deshidratadas', 'Cítricos',
-    'Verde/Vegeral', 'Ácido/Fermentado', 'Ácido', 'Fermentado', 'Otra',
+    'Verde/Vegetal', 'Ácido/Fermentado', 'Ácido', 'Fermentado', 'Otra',
     'Químico', 'Humedad/Tierra', 'Madera'
   ],
   roast: [

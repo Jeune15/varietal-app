@@ -133,6 +133,72 @@ export interface EspressoSession {
   deleted?: boolean;
 }
 
+export type BrewMethod = 'V60' | 'Chemex' | 'French Press' | 'Aeropress' | 'Espresso' | 'Otro';
+
+export type GrindSize =
+  | 'extra-fine'
+  | 'fine'
+  | 'medium'
+  | 'coarse'
+  | 'extra-coarse';
+
+export interface FilterPour {
+  id: string;
+  order: number;
+  timeSeconds: number;
+  volumeMl: number;
+}
+
+export interface FilterSession {
+  id: string;
+  date: string;
+  brewerName: string;
+  coffeeName: string;
+  method: string;
+  pours: FilterPour[];
+  notes?: string;
+  deleted?: boolean;
+}
+
+export interface FilterRecipePhase {
+  id: string;
+  order: number;
+  startTimeSeconds: number;
+  endTimeSeconds: number;
+  volumeMl: number;
+  pourType: 'continuous' | 'pulsed' | 'circular' | 'direct';
+}
+
+export interface FilterTastingNotes {
+  flavor: string;
+  aroma: string;
+  body: string;
+  acidity: string;
+}
+
+export interface FilterRecipe {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  method: BrewMethod;
+  coffeeName: string;
+  doseGrams: number;
+  waterTempCelsius: number;
+  grindSize: GrindSize;
+  grinderClicks: number | null;
+  totalWaterMl: number;
+  ratio: string;
+  totalTimeSeconds: number;
+  pressureBars: number | null;
+  filterType: string;
+  phases: FilterRecipePhase[];
+  tasting: FilterTastingNotes;
+  methodSpecific: Record<string, string>;
+  notes?: string;
+  deleted?: boolean;
+}
+
 export type ProductionActivityType = 
   | 'Armado de Pedido' 
   | 'Selección de Café' 
