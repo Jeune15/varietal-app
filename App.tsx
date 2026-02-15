@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Coffee, 
   Flame, 
@@ -11,6 +11,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   BarChart3,
   User,
   Cloud,
@@ -65,6 +66,10 @@ const AppContent: React.FC = () => {
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Initial load
   const [imagesLoaded, setImagesLoaded] = useState(false); // Track image loading
+  const adminContentRef = useRef<HTMLElement | null>(null);
+  const [showAdminScrollTop, setShowAdminScrollTop] = useState(false);
+  const studentContentRef = useRef<HTMLDivElement | null>(null);
+  const [showStudentScrollTop, setShowStudentScrollTop] = useState(false);
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -90,6 +95,22 @@ const AppContent: React.FC = () => {
         initSupabase(url, key);
     }
   }, []);
+
+  useEffect(() => {
+    const el = adminContentRef.current;
+    if (!el) return;
+    const onScroll = () => setShowAdminScrollTop(el.scrollTop > 400);
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [adminContentRef]);
+
+  useEffect(() => {
+    const el = studentContentRef.current;
+    if (!el) return;
+    const onScroll = () => setShowStudentScrollTop(el.scrollTop > 400);
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [studentContentRef]);
 
   useEffect(() => {
     // Preload critical images
@@ -270,7 +291,7 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-[100dvh] bg-white dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 flex flex-col">
         {/* Student Content Area */}
-        <div className="flex-1 overflow-y-auto pb-24">
+        <div ref={studentContentRef} className="flex-1 overflow-y-auto pb-24">
            <div className="max-w-7xl mx-auto p-4 md:p-8">
              <div className="flex justify-end items-center mb-4">
                <button 
@@ -288,6 +309,15 @@ const AppContent: React.FC = () => {
              {activeTab === 'recipes' && <RecipesView />}
            </div>
         </div>
+        {showStudentScrollTop && (
+          <button
+            onClick={() => studentContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Subir"
+            className="lg:hidden fixed right-4 bottom-24 z-[160] w-12 h-12 rounded-full bg-black text-white dark:bg-white dark:text-black shadow-md flex items-center justify-center transition-transform duration-200 active:scale-95 touch-target"
+          >
+            <ChevronUp className="w-6 h-6" />
+          </button>
+        )}
 
         {/* Student Bottom Navigation */}
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
@@ -328,6 +358,13 @@ const AppContent: React.FC = () => {
   // Admin / Full App View
   return (
     <div className="flex h-[100dvh] bg-white dark:bg-stone-900 overflow-hidden font-sans text-stone-900 dark:text-stone-100 antialiased selection:bg-brand-light selection:text-white">
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        aria-label="Menú"
+        className="lg:hidden fixed top-3 left-3 z-[200] w-12 h-12 rounded-full bg-white/90 dark:bg-stone-900/90 border border-stone-200 dark:border-stone-800 backdrop-blur-md shadow-sm flex items-center justify-center transition-transform duration-200 active:scale-95 touch-target"
+      >
+        {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
       {/* Settings Modal */}
       <SettingsModal 
         isOpen={showSettings} 
@@ -351,7 +388,7 @@ const AppContent: React.FC = () => {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white dark:bg-stone-950">
         
         {/* Dynamic Content Area */}
-        <section className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">
+        <section ref={adminContentRef} className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">
           <div className="p-4 md:p-8 lg:p-10 pb-32 max-w-7xl mx-auto">
             <div key={activeTab} className="animate-slide-up">
               {activeTab === 'dashboard' ? (
@@ -445,6 +482,15 @@ const AppContent: React.FC = () => {
           </div>
         </section>
       </main>
+      {showAdminScrollTop && (
+        <button
+          onClick={() => adminContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Subir"
+          className="lg:hidden fixed right-4 bottom-24 z-[160] w-12 h-12 rounded-full bg-black text-white dark:bg-white dark:text-black shadow-md flex items-center justify-center transition-transform duration-200 active:scale-95 touch-target"
+        >
+          <ChevronUp className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Bottom Navigation (Mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb lg:hidden">

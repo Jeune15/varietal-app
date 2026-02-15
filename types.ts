@@ -133,7 +133,7 @@ export interface EspressoSession {
   deleted?: boolean;
 }
 
-export type BrewMethod = 'V60' | 'Chemex' | 'French Press' | 'Aeropress' | 'Espresso' | 'Otro';
+export type BrewMethod = 'Filtro' | 'Inmersión' | 'Hario Switch' | 'Aeropress';
 
 export type GrindSize =
   | 'extra-fine'
@@ -183,18 +183,20 @@ export interface FilterRecipe {
   name: string;
   method: BrewMethod;
   coffeeName: string;
+  coffeeOrigin: string;
+  coffeeDate: string;
   doseGrams: number;
   waterTempCelsius: number;
-  grindSize: GrindSize;
+  grinderModel: string;
   grinderClicks: number | null;
   totalWaterMl: number;
   ratio: string;
   totalTimeSeconds: number;
   pressureBars: number | null;
   filterType: string;
+  waterBrand: string;
   phases: FilterRecipePhase[];
   tasting: FilterTastingNotes;
-  methodSpecific: Record<string, string>;
   notes?: string;
   deleted?: boolean;
 }

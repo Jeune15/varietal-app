@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 import { createPortal } from 'react-dom';
 import { 
   Book, 
@@ -633,6 +634,7 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
 };
 
 const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryRecord[]; onDeleteHistory: (id: string) => void }> = ({ onSelect, history, onDeleteHistory }) => {
+
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
       <div className="space-y-2 mb-8">
@@ -643,12 +645,12 @@ const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryReco
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {MOCK_MODULES.map((mod) => {
+        {MOCK_MODULES.map((mod, i) => {
           return (
             <button 
               key={mod.id} 
               onClick={() => onSelect(mod)}
-              className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left"
+              className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 hover:-translate-y-1 hover:shadow-md h-full text-left"
             >
               <div className="w-full space-y-4">
                 <div className="flex justify-between items-start">
@@ -1035,13 +1037,22 @@ const ExamView: React.FC<{ exam: Exam; onComplete: (record: HistoryRecord) => vo
 const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplete: (record: HistoryRecord) => void }> = ({ module, onBack, onExamComplete }) => {
   const [activeTab, setActiveTab] = useState<'materials' | 'exam'>('materials');
   const [showExam, setShowExam] = useState(false);
+  const cursorRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      if (!cursorRef.current) return;
+      gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0.2, ease: 'power3.out' });
+    };
+    window.addEventListener('mousemove', move);
+    return () => window.removeEventListener('mousemove', move);
+  }, []);
 
   if (showExam) {
     return <ExamView exam={module.exam} onComplete={onExamComplete} onCancel={() => setShowExam(false)} />;
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-24">
+    <div className="max-w-4xl mx-auto pb-24 relative">
       {/* Header */}
       <div className="mb-8">
         <button 
@@ -1146,12 +1157,25 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
           </div>
         )}
       </div>
+      <div
+        ref={cursorRef}
+        className="pointer-events-none fixed z-[60] w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-stone-500/70 dark:border-stone-300/70 mix-blend-difference"
+      />
     </div>
   );
 };
 
 const ModulesView: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const cursorRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      if (!cursorRef.current) return;
+      gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0.2, ease: 'power3.out' });
+    };
+    window.addEventListener('mousemove', move);
+    return () => window.removeEventListener('mousemove', move);
+  }, []);
   
   const historyQuery = useLiveQuery(() => 
     db.history.where('type').equals('Examen').reverse().sortBy('date')

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../db';
@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Coffee, User as UserIcon, ClipboardList, SlidersHorizontal, X, ArrowLeft, ArrowRight, Check, Plus, Minus, Calendar } from 'lucide-react';
 import { SessionDetailModal } from '../components/CuppingSessionDetail';
+import { gsap } from 'gsap';
 
 interface Props {
   stocks: RoastedStock[];
@@ -56,6 +57,27 @@ const descriptorOptions = {
 const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
   const { canEdit } = useAuth();
   const { showToast } = useToast();
+  const cursorRef = useRef<HTMLDivElement | null>(null);
+  const internalCardRef = useRef<HTMLButtonElement | null>(null);
+  const freeCardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      if (!cursorRef.current) return;
+      gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0.2, ease: 'power3.out' });
+    };
+    window.addEventListener('mousemove', move);
+    return () => window.removeEventListener('mousemove', move);
+  }, []);
+
+  const liftEnter = (el: HTMLElement | null) => {
+    if (!el) return;
+    gsap.to(el, { y: -6, scale: 1.02, duration: 0.22, ease: 'power2.out' });
+  };
+  const liftLeave = (el: HTMLElement | null) => {
+    if (!el) return;
+    gsap.to(el, { y: 0, scale: 1, duration: 0.22, ease: 'power2.inOut' });
+  };
 
   const [activeTab, setActiveTab] = useState<'form' | 'recent'>('form');
   
@@ -367,10 +389,10 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
 
   return (
     <>
-    <div className="space-y-10 max-w-6xl mx-auto pb-48">
+    <div className="space-y-10 max-w-6xl mx-auto pb-48 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-8">
         <div className="space-y-2">
-          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Catación</h3>
+          <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase transition-all duration-300">Catación</h3>
           <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
             Sistema descriptivo de evaluación sensorial
           </p>
@@ -383,7 +405,7 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
                 setViewStep('type-selection');
                 setSessionType(null);
               })}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all ${
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
                 activeTab === 'form'
                   ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
                   : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
@@ -394,7 +416,7 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
             <button
               type="button"
               onClick={() => requestNavigation(() => setActiveTab('recent'))}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all ${
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
                 activeTab === 'recent'
                   ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
                   : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
@@ -414,9 +436,12 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
       {canEdit && activeTab === 'form' && viewStep === 'type-selection' && (
         <div className={`grid grid-cols-1 ${mode === 'all' ? 'md:grid-cols-2' : 'md:grid-cols-1 justify-center'} gap-8 max-w-4xl mx-auto`}>
            {mode !== 'free' && (
-           <button
+          <button
+             ref={internalCardRef}
+             onMouseEnter={() => liftEnter(internalCardRef.current)}
+             onMouseLeave={() => liftLeave(internalCardRef.current)}
              onClick={() => handleStartSetup('internal')}
-             className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300"
+             className="group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
            >
              <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
                <Coffee className="w-8 h-8" />
@@ -431,7 +456,12 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
            )}
 
            {mode !== 'internal' && (
-           <div className={`group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 ${mode === 'free' ? 'max-w-md mx-auto w-full' : ''}`}>
+          <div
+             ref={freeCardRef}
+             onMouseEnter={() => liftEnter(freeCardRef.current)}
+             onMouseLeave={() => liftLeave(freeCardRef.current)}
+             className={`group flex flex-col items-center justify-center gap-6 p-12 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${mode === 'free' ? 'max-w-md mx-auto w-full' : ''}`}
+           >
              <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-900 dark:text-white">
                <ClipboardList className="w-8 h-8" />
              </div>
@@ -810,7 +840,7 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
                 <div 
                   key={session.id} 
                   onClick={() => setSelectedSession(session)}
-                  className="p-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors cursor-pointer group"
+                  className="p-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-all duration-200 cursor-pointer group hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
@@ -890,6 +920,10 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
         </div>,
         document.body
       )}
+      <div
+        ref={cursorRef}
+        className="pointer-events-none fixed z-[60] w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-stone-500/70 dark:border-stone-300/70 mix-blend-difference"
+      />
     </div>
     </>
   );
