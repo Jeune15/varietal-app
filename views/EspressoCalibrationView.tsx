@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { 
-  Coffee, 
   Plus, 
   History, 
   BookOpen, 
@@ -831,20 +830,8 @@ export const EspressoView: React.FC = () => {
     <div className="max-w-4xl mx-auto pb-32 animate-fade-in px-4">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8 pt-8">
-        {view !== 'menu' && (
-          <button
-            onClick={() => setView('menu')}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver a Espresso
-          </button>
-        )}
         <div>
-          <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 flex items-center gap-3">
-            <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-stone-900 dark:bg-stone-100">
-              <Coffee className="w-5 h-5 text-white dark:text-stone-900" />
-            </span>
+          <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100">
             Recetas de Espresso
           </h1>
           <p className="text-stone-500 mt-1">
