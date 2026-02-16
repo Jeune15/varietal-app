@@ -356,13 +356,6 @@ const AppContent: React.FC = () => {
   // Admin / Full App View
   return (
     <div className="flex h-[100dvh] bg-white dark:bg-stone-900 overflow-hidden font-sans text-stone-900 dark:text-stone-100 antialiased selection:bg-brand-light selection:text-white">
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        aria-label="Menú"
-        className="lg:hidden fixed top-3 left-3 z-[200] w-12 h-12 rounded-full bg-white/90 dark:bg-stone-900/90 border border-stone-200 dark:border-stone-800 backdrop-blur-md shadow-sm flex items-center justify-center transition-transform duration-200 active:scale-95 touch-target"
-      >
-        {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
       {/* Settings Modal */}
       <SettingsModal 
         isOpen={showSettings} 
@@ -489,8 +482,8 @@ const AppContent: React.FC = () => {
         </button>
       )}
 
-      {/* Bottom Navigation (Mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb lg:hidden">
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
         <div className="flex items-center justify-between px-4 py-2">
           {menuItems.map((item) => {
             const Icon = item.icon;

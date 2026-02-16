@@ -24,6 +24,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const { canEdit, isAdmin } = useAuth();
   const { showToast } = useToast();
   const [showModal, setShowModal] = useState(false);
+  const [activeView, setActiveView] = useState<'active' | 'history'>('active');
   
   // Shipping Modal State
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
@@ -891,7 +892,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
 
   return (
     <>
-    <div className="space-y-12 animate-in fade-in duration-700 pb-48">
+      <div className="space-y-12 animate-in fade-in duration-700 pb-48">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
         <div className="space-y-2">
           <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Pedidos</h3>
@@ -907,461 +908,433 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
           </button>
           <button
             type="button"
-            onClick={() => setShowHistoryModal(true)}
+            onClick={() => setActiveView(prev => prev === 'history' ? 'active' : 'history')}
             className="w-full sm:w-auto px-6 py-3 border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
           >
             <Clock className="w-4 h-4" />
-            Historial
+            {activeView === 'history' ? 'Pedidos activos' : 'Historial'}
           </button>
         </div>
       </div>
 
-
-
-      <div className="lg:hidden space-y-4">
-        {orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado').length === 0 ? (
-          <div className="p-8 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-            Sin pedidos activos
-          </div>
-        ) : (
-          orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado').map((o) => (
-            <div key={o.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 space-y-4 shadow-sm">
-              <div className="flex justify-between items-start gap-4">
-                <div>
-                  <div className="font-bold text-black dark:text-white text-sm tracking-tight">{o.clientName}</div>
-                  <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono mt-1">ID: {o.id.slice(-4)}</div>
-                </div>
-                <div className="shrink-0">
-                  {getStatusBadge(o.status)}
-                </div>
+      {activeView === 'active' && (
+        <>
+          <div className="lg:hidden space-y-4">
+            {orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado').length === 0 ? (
+              <div className="p-8 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+                Sin pedidos activos
               </div>
-
-              <div className="border-t border-b border-stone-100 dark:border-stone-800 py-3">
-                {(() => {
-                  const displayQty =
-                    o.type === 'Servicio de Tueste' && typeof o.serviceRoastedQtyKg === 'number'
-                      ? o.serviceRoastedQtyKg
-                      : o.quantityKg;
-                  return (
-                    <div className="flex flex-col gap-1">
-                      {o.orderLines && o.orderLines.length > 0 ? (
-                        <>
-                          <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wide">Múltiples cafés</span>
-                          <div className="space-y-1 mt-1">
-                            {o.orderLines.slice(0, 3).map(line => (
-                              <div key={line.id} className="flex justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
-                                <span>{line.variety}</span>
-                                <span>{line.quantityKg.toFixed(2)} Kg</span>
-                              </div>
-                            ))}
-                            {o.orderLines.length > 3 && (
-                              <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">
-                                +{o.orderLines.length - 3} más
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono mt-1 block">
-                            {o.type} • {displayQty.toFixed(2)} Kg totales
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wide">{o.variety}</span>
-                          <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">{o.type} • {displayQty.toFixed(2)} Kg</span>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
-                  <span className="text-[9px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] block mb-1">Entrega</span>
-                  <span className="font-mono text-stone-600 dark:text-stone-400">{o.dueDate}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] block mb-1">Progreso</span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-stone-100 dark:bg-stone-800 h-1.5 overflow-hidden rounded-full">
-                      <div
-                        className={`h-full transition-all duration-500 ${o.progress === 100 ? 'bg-black dark:bg-white' : 'bg-stone-400 dark:bg-stone-500'}`}
-                        style={{ width: `${Number.isNaN(o.progress) ? 0 : o.progress}%` }}
-                      />
-                    </div>
-                    <span className="text-[9px] font-mono text-stone-400 dark:text-stone-500">{Number.isNaN(o.progress) ? 0 : o.progress}%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end items-center gap-4 pt-2 border-t border-stone-50 dark:border-stone-800">
-                <button
-                  type="button"
-                  onClick={() => handleDeleteOrder(o)}
-                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-                >
-                  <Trash2 className="w-3 h-3" /> Eliminar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedOrderIdForContinuation(prev => prev === o.id ? null : o.id)}
-                  className={`px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-all ${
-                    selectedOrderIdForContinuation === o.id
-                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                      : 'bg-white text-black border-stone-200 hover:border-black dark:bg-stone-900 dark:text-white dark:border-stone-700 dark:hover:border-white'
-                  }`}
-                >
-                  {selectedOrderIdForContinuation === o.id ? 'Seleccionado' : 'Seleccionar'}
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="hidden lg:block bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[900px]">
-            <thead className="bg-white dark:bg-stone-900 border-b border-black dark:border-white">
-              <tr>
-                <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-12"></th>
-                <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-56">Cliente</th>
-                <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em]">Detalle</th>
-                <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-32 text-center">Entrega</th>
-                <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-40 text-center">Estado</th>
-                <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-56 text-right">Progreso</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-              {orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado').length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest">
-                    Sin pedidos activos
-                  </td>
-                </tr>
-              ) : (
-                orders
-                  .filter(o => o.status !== 'Facturado' && o.status !== 'Enviado')
-                  .map((o) => (
-                  <tr key={o.id} className="hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors group">
-                    <td className="px-4 py-6 w-12">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedOrderIdForContinuation(prev =>
-                            prev === o.id ? null : o.id
-                          )
-                        }
-                        className={`w-4 h-4 border ${
-                          selectedOrderIdForContinuation === o.id
-                            ? 'border-black bg-black dark:border-white dark:bg-white'
-                            : 'border-stone-300 bg-white dark:border-stone-700 dark:bg-stone-900'
-                        }`}
-                      />
-                    </td>
-                    <td className="px-4 py-6">
+            ) : (
+              orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado').map((o) => (
+                <div key={o.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 space-y-4 shadow-sm">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
                       <div className="font-bold text-black dark:text-white text-sm tracking-tight">{o.clientName}</div>
                       <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono mt-1">ID: {o.id.slice(-4)}</div>
-                    </td>
-                    <td className="px-4 py-6">
-                      {(() => {
-                        const displayQty =
-                          o.type === 'Servicio de Tueste' && typeof o.serviceRoastedQtyKg === 'number'
-                            ? o.serviceRoastedQtyKg
-                            : o.quantityKg;
-                        return (
-                      <div className="flex flex-col gap-1">
-                        {o.orderLines && o.orderLines.length > 0 ? (
-                          <>
-                            <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Múltiples cafés</span>
-                            <div className="space-y-1">
-                              {o.orderLines.slice(0, 3).map(line => (
-                                <div key={line.id} className="flex justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
-                                  <span>{line.variety}</span>
-                                  <span>{line.quantityKg.toFixed(2)} Kg</span>
-                                </div>
-                              ))}
-                              {o.orderLines.length > 3 && (
-                                <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">
-                                  +{o.orderLines.length - 3} más
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">
-                              {o.type} • {displayQty.toFixed(2)} Kg totales
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">{o.variety}</span>
-                            <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">{o.type} • {displayQty.toFixed(2)} Kg</span>
-                          </>
-                        )}
-                      </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-6 text-xs text-stone-500 dark:text-stone-400 font-mono text-center">{o.dueDate}</td>
-                    <td className="px-4 py-6 text-center">
+                    </div>
+                    <div className="shrink-0">
                       {getStatusBadge(o.status)}
-                    </td>
-                    <td className="px-4 py-6">
-                      <div className="flex items-center justify-end gap-3">
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="w-24 bg-stone-100 dark:bg-stone-800 h-0.5 overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-500 ${
-                                o.progress === 100 ? 'bg-black dark:bg-white' : 'bg-stone-400 dark:bg-stone-500'
-                              }`}
-                              style={{ width: `${Number.isNaN(o.progress) ? 0 : o.progress}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-[9px] font-mono text-stone-400 dark:text-stone-500">
-                            {Number.isNaN(o.progress) ? 0 : o.progress}%
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOrder(o)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-      {selectedOrderForContinuation && (
-        <div className="fixed bottom-6 right-6 z-[90]">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedOrderForActivities(selectedOrderForContinuation);
-              resetActivityForm();
-            }}
-            className="px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-[0.25em] shadow-lg border border-emerald-700"
-          >
-            Continuar con el pedido
-          </button>
-        </div>
-      )}
-
-      {showHistoryModal && createPortal(
-        <div
-          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={() => setShowHistoryModal(false)}
-        >
-          <div
-            className="bg-white dark:bg-stone-900 w-full max-w-5xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center p-4 border-b border-stone-200 dark:border-stone-800 bg-black dark:bg-stone-950 text-white shrink-0 sticky top-0 z-10">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
-                  Historial
-                </p>
-                <h4 className="text-lg font-black tracking-tight uppercase">
-                  Pedidos completados
-                </h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowHistoryModal(false)}
-                className="text-white hover:text-stone-300 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6 space-y-6">
-                {historicalOrders.length === 0 ? (
-                  <div className="p-8 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700">
-                    Aún no hay pedidos en el historial
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center bg-stone-50 p-4 border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
-                      <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto">
-                        <div className="relative">
-                          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                          <input
-                            type="text"
-                            placeholder="BUSCAR CLIENTE O VARIEDAD..."
-                            value={historySearch}
-                            onChange={e => {
-                              setHistorySearch(e.target.value);
-                              setHistoryPage(1);
-                            }}
-                            className="pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-64 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+
+                  <div className="border-t border-b border-stone-100 dark:border-stone-800 py-3">
+                    {(() => {
+                      const displayQty =
+                        o.type === 'Servicio de Tueste' && typeof o.serviceRoastedQtyKg === 'number'
+                          ? o.serviceRoastedQtyKg
+                          : o.quantityKg;
+                      return (
+                        <div className="flex flex-col gap-1">
+                          {o.orderLines && o.orderLines.length > 0 ? (
+                            <>
+                              <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wide">Múltiples cafés</span>
+                              <div className="space-y-1 mt-1">
+                                {o.orderLines.slice(0, 3).map(line => (
+                                  <div key={line.id} className="flex justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
+                                    <span>{line.variety}</span>
+                                    <span>{line.quantityKg.toFixed(2)} Kg</span>
+                                  </div>
+                                ))}
+                                {o.orderLines.length > 3 && (
+                                  <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">
+                                    +{o.orderLines.length - 3} más
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono mt-1 block">
+                                {o.type} • {displayQty.toFixed(2)} Kg totales
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wide">{o.variety}</span>
+                              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">{o.type} • {displayQty.toFixed(2)} Kg</span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="text-[9px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] block mb-1">Entrega</span>
+                      <span className="font-mono text-stone-600 dark:text-stone-400">{o.dueDate}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] block mb-1">Progreso</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-stone-100 dark:bg-stone-800 h-1.5 overflow-hidden rounded-full">
+                          <div
+                            className={`h-full transition-all duration-500 ${o.progress === 100 ? 'bg-black dark:bg-white' : 'bg-stone-400 dark:bg-stone-500'}`}
+                            style={{ width: `${Number.isNaN(o.progress) ? 0 : o.progress}%` }}
                           />
                         </div>
-                        <div>
-                          <input
-                            type="date"
-                            value={historyDate}
-                            onChange={e => {
-                              setHistoryDate(e.target.value);
-                              setHistoryPage(1);
-                            }}
-                            className="pl-4 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-40 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
-                          />
-                        </div>
-                        <div>
-                          <select
-                            value={historyType}
-                            onChange={e => {
-                              setHistoryType(e.target.value as any);
-                              setHistoryPage(1);
-                            }}
-                            className="pl-4 pr-8 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-48 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
-                          >
-                            <option value="all">Todos los tipos</option>
-                            <option value="service">Servicio de Tueste</option>
-                            <option value="sale">Venta Café Tostado</option>
-                          </select>
-                        </div>
+                        <span className="text-[9px] font-mono text-stone-400 dark:text-stone-500">{Number.isNaN(o.progress) ? 0 : o.progress}%</span>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="border border-stone-200 bg-white dark:bg-black dark:border-stone-800">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead className="bg-stone-50 border-b border-stone-200 dark:bg-stone-900 dark:border-stone-800">
-                            <tr>
-                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
-                                Cliente / Variedad
-                              </th>
-                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
-                                Fecha
-                              </th>
-                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
-                                Tipo
-                              </th>
-                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800 text-right">
-                                Cantidad
-                              </th>
-                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">
-                                Estado
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                            {paginatedHistoricalOrders.length === 0 ? (
-                              <tr>
-                                <td
-                                  colSpan={5}
-                                  className="px-6 py-16 text-center text-stone-400 font-medium uppercase text-sm"
-                                >
-                                  No hay pedidos que coincidan con los filtros.
-                                </td>
-                              </tr>
-                            ) : (
-                              paginatedHistoricalOrders.map(order => {
-                                const totalKg =
-                                  order.type === 'Servicio de Tueste' &&
-                                  typeof order.serviceRoastedQtyKg === 'number'
-                                    ? order.serviceRoastedQtyKg
-                                    : order.quantityKg;
-                                const dateLabel =
-                                  order.invoicedDate ||
-                                  order.shippedDate ||
-                                  order.entryDate ||
-                                  '';
-                                return (
-                                  <tr
-                                    key={order.id}
-                                    className="group hover:bg-stone-50 transition-colors dark:hover:bg-stone-800"
-                                  >
-                                    <td className="px-6 py-4 border-r border-stone-100 dark:border-stone-800">
-                                      <div className="font-bold text-black text-sm tracking-tight dark:text-white">
-                                        {order.clientName}
-                                      </div>
-                                      <div className="text-xs text-stone-500 font-bold uppercase mt-1 dark:text-stone-400">
-                                        {order.variety || '—'}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs font-mono text-stone-600 border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
-                                      {dateLabel ? dateLabel.split('T')[0] : '—'}
-                                    </td>
-                                    <td className="px-6 py-4 border-r border-stone-100 dark:border-stone-800">
-                                      <span
-                                        className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                                          order.type === 'Servicio de Tueste'
-                                            ? 'bg-stone-100 text-stone-600 border-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700'
-                                            : 'bg-black text-white border-black dark:bg-stone-700 dark:text-white dark:border-stone-600'
-                                        }`}
-                                      >
-                                        {order.type === 'Servicio de Tueste'
-                                          ? 'Servicio'
-                                          : 'Venta'}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs font-bold text-stone-600 text-right tabular-nums border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
-                                      {totalKg.toFixed(2)} Kg
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                      <span
-                                        className={`inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] border ${
-                                          order.status === 'Facturado'
-                                            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                                            : 'bg-white text-stone-500 border-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700'
-                                        }`}
-                                      >
-                                        {order.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                );
-                              })
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                  <div className="flex justify-end items-center gap-4 pt-2 border-t border-stone-50 dark:border-stone-800">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOrder(o)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3 h-3" /> Eliminar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrderIdForContinuation(prev => prev === o.id ? null : o.id)}
+                      className={`px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-all ${
+                        selectedOrderIdForContinuation === o.id
+                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                          : 'bg-white text-black border-stone-200 hover:border-black dark:bg-stone-900 dark:text-white dark:border-stone-700 dark:hover:border-white'
+                      }`}
+                    >
+                      {selectedOrderIdForContinuation === o.id ? 'Seleccionado' : 'Seleccionar'}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
-                      {historyTotalPages > 1 && (
-                        <div className="flex items-center justify-between p-4 border-t border-stone-200 dark:border-stone-800">
+          <div className="hidden lg:block bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[900px]">
+                <thead className="bg-white dark:bg-stone-900 border-b border-black dark:border-white">
+                  <tr>
+                    <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-12"></th>
+                    <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-56">Cliente</th>
+                    <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em]">Detalle</th>
+                    <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-32 text-center">Entrega</th>
+                    <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-40 text-center">Estado</th>
+                    <th className="px-4 py-6 text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] w-56 text-right">Progreso</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado').length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-20 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest">
+                        Sin pedidos activos
+                      </td>
+                    </tr>
+                  ) : (
+                    orders
+                      .filter(o => o.status !== 'Facturado' && o.status !== 'Enviado')
+                      .map((o) => (
+                      <tr key={o.id} className="hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors group">
+                        <td className="px-4 py-6 w-12">
                           <button
+                            type="button"
                             onClick={() =>
-                              setHistoryPage(p => Math.max(1, p - 1))
-                            }
-                            disabled={historyPage === 1}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800 dark:text-white"
-                          >
-                            <ChevronLeft className="w-4 h-4" /> Anterior
-                          </button>
-                          <span className="text-xs font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
-                            Página {historyPage} de {historyTotalPages}
-                          </span>
-                          <button
-                            onClick={() =>
-                              setHistoryPage(p =>
-                                Math.min(historyTotalPages, p + 1)
+                              setSelectedOrderIdForContinuation(prev =>
+                                prev === o.id ? null : o.id
                               )
                             }
-                            disabled={historyPage === historyTotalPages}
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800 dark:text-white"
-                          >
-                            Siguiente <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+                            className={`w-4 h-4 border ${
+                              selectedOrderIdForContinuation === o.id
+                                ? 'border-black bg-black dark:border-white dark:bg-white'
+                                : 'border-stone-300 bg-white dark:border-stone-700 dark:bg-stone-900'
+                            }`}
+                          />
+                        </td>
+                        <td className="px-4 py-6">
+                          <div className="font-bold text-black dark:text-white text-sm tracking-tight">{o.clientName}</div>
+                          <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono mt-1">ID: {o.id.slice(-4)}</div>
+                        </td>
+                        <td className="px-4 py-6">
+                          {(() => {
+                            const displayQty =
+                              o.type === 'Servicio de Tueste' && typeof o.serviceRoastedQtyKg === 'number'
+                                ? o.serviceRoastedQtyKg
+                                : o.quantityKg;
+                            return (
+                          <div className="flex flex-col gap-1">
+                            {o.orderLines && o.orderLines.length > 0 ? (
+                              <>
+                                <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">Múltiples cafés</span>
+                                <div className="space-y-1">
+                                  {o.orderLines.slice(0, 3).map(line => (
+                                    <div key={line.id} className="flex justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
+                                      <span>{line.variety}</span>
+                                      <span>{line.quantityKg.toFixed(2)} Kg</span>
+                                    </div>
+                                  ))}
+                                  {o.orderLines.length > 3 && (
+                                    <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono">
+                                      +{o.orderLines.length - 3} más
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">
+                                  {o.type} • {displayQty.toFixed(2)} Kg totales
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">{o.variety}</span>
+                                <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">{o.type} • {displayQty.toFixed(2)} Kg</span>
+                              </>
+                            )}
+                          </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-4 py-6 text-xs text-stone-500 dark:text-stone-400 font-mono text-center">{o.dueDate}</td>
+                        <td className="px-4 py-6 text-center">
+                          {getStatusBadge(o.status)}
+                        </td>
+                        <td className="px-4 py-6">
+                          <div className="flex items-center justify-end gap-3">
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="w-24 bg-stone-100 dark:bg-stone-800 h-0.5 overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-500 ${
+                                    o.progress === 100 ? 'bg-black dark:bg-white' : 'bg-stone-400 dark:bg-stone-500'
+                                  }`}
+                                  style={{ width: `${Number.isNaN(o.progress) ? 0 : o.progress}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-[9px] font-mono text-stone-400 dark:text-stone-500">
+                                {Number.isNaN(o.progress) ? 0 : o.progress}%
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOrder(o)}
+                              className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>,
-        document.body
+
+          {selectedOrderForContinuation && (
+            <div className="fixed bottom-6 right-6 z-[90]">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOrderForActivities(selectedOrderForContinuation);
+                  resetActivityForm();
+                }}
+                className="px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-[0.25em] shadow-lg border border-emerald-700"
+              >
+                Continuar con el pedido
+              </button>
+            </div>
+          )}
+        </>
       )}
+
+      {activeView === 'history' && (
+        <div className="space-y-6">
+          {historicalOrders.length === 0 ? (
+            <div className="p-8 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700">
+              Aún no hay pedidos en el historial
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center bg-stone-50 p-6 border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
+                <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      type="text"
+                      placeholder="BUSCAR CLIENTE..."
+                      value={historySearch}
+                      onChange={e => {
+                        setHistorySearch(e.target.value);
+                        setHistoryPage(1);
+                      }}
+                      className="pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-64 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="date"
+                      value={historyDate}
+                      onChange={e => {
+                        setHistoryDate(e.target.value);
+                        setHistoryPage(1);
+                      }}
+                      className="pl-4 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-40 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={historyType}
+                      onChange={e => {
+                        setHistoryType(e.target.value as any);
+                        setHistoryPage(1);
+                      }}
+                      className="pl-4 pr-8 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-48 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+                    >
+                      <option value="all">Todos los tipos</option>
+                      <option value="service">Servicio de Tueste</option>
+                      <option value="sale">Venta Café Tostado</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-stone-200 bg-white dark:bg-black dark:border-stone-800">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-stone-50 border-b border-stone-200 dark:bg-stone-900 dark:border-stone-800">
+                      <tr>
+                        <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                          Cliente
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                          Fecha Pedido
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                          Tipo
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800 text-right">
+                          Cantidad
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">
+                          Estado
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                      {paginatedHistoricalOrders.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="px-6 py-16 text-center text-stone-400 font-medium uppercase text-sm"
+                          >
+                            No hay pedidos que coincidan con los filtros.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedHistoricalOrders.map(order => {
+                          const totalKg =
+                            order.type === 'Servicio de Tueste' &&
+                            typeof order.serviceRoastedQtyKg === 'number'
+                              ? order.serviceRoastedQtyKg
+                              : order.quantityKg;
+                          const dateLabel =
+                            order.invoicedDate ||
+                            order.shippedDate ||
+                            order.entryDate ||
+                            '';
+                          return (
+                            <tr
+                              key={order.id}
+                              className="group hover:bg-stone-50 transition-colors dark:hover:bg-stone-800"
+                            >
+                              <td className="px-6 py-4 border-r border-stone-100 dark:border-stone-800">
+                                <div className="font-bold text-black text-sm tracking-tight dark:text-white">
+                                  {order.clientName}
+                                </div>
+                                <div className="text-xs text-stone-500 font-bold uppercase mt-1 dark:text-stone-400">
+                                  {order.variety || '—'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-xs font-mono text-stone-600 border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                {dateLabel ? dateLabel.split('T')[0] : '—'}
+                              </td>
+                              <td className="px-6 py-4 border-r border-stone-100 dark:border-stone-800">
+                                <span
+                                  className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${
+                                    order.type === 'Servicio de Tueste'
+                                      ? 'bg-stone-100 text-stone-600 border-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700'
+                                      : 'bg-black text-white border-black dark:bg-stone-700 dark:text-white dark:border-stone-600'
+                                  }`}
+                                >
+                                  {order.type === 'Servicio de Tueste'
+                                    ? 'Servicio'
+                                    : 'Venta'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-xs font-bold text-stone-600 text-right tabular-nums border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                {totalKg.toFixed(2)} Kg
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <span
+                                  className={`inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] border ${
+                                    order.status === 'Facturado'
+                                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                                      : 'bg-white text-stone-500 border-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700'
+                                  }`}
+                                >
+                                  {order.status}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {historyTotalPages > 1 && (
+                  <div className="flex items-center justify-between p-4 border-t border-stone-200 dark:border-stone-800">
+                    <button
+                      onClick={() =>
+                        setHistoryPage(p => Math.max(1, p - 1))
+                      }
+                      disabled={historyPage === 1}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800 dark:text-white"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Anterior
+                    </button>
+                    <span className="text-xs font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
+                      Página {historyPage} de {historyTotalPages}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setHistoryPage(p =>
+                          Math.min(historyTotalPages, p + 1)
+                        )
+                      }
+                      disabled={historyPage === historyTotalPages}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800 dark:text-white"
+                    >
+                      Siguiente <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      </div>
 
       {showModal && createPortal(
         <div 
