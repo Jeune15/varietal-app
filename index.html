@@ -72,6 +72,9 @@
                         'slide-up-menu': 'slideUpMenu 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'spin-slow': 'spin 3s linear infinite',
                         'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'zoom-in': 'zoomIn 0.6s ease-out forwards',
+                        'collapse-out': 'collapseOut 0.5s ease-in forwards',
+                        'zoom-out': 'zoomOut 0.5s ease-in forwards',
                     },
                     keyframes: {
                         fadeIn: {
@@ -89,6 +92,18 @@
                         fadeInUp: {
                             '0%': { opacity: '0', transform: 'translateY(20px)' },
                             '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        zoomIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        collapseOut: {
+                            '0%': { opacity: '1', transform: 'scaleY(1)' },
+                            '100%': { opacity: '0', transform: 'scaleY(0)' },
+                        },
+                        zoomOut: {
+                            '0%': { opacity: '1', transform: 'scale(1)' },
+                            '100%': { opacity: '0', transform: 'scale(0.9)' },
                         }
                     }
                 }
@@ -165,6 +180,66 @@
         .dark ::-webkit-scrollbar-track { background: #1c1917; border-left: 1px solid #292524; } /* stone-900 / stone-800 */
         .dark ::-webkit-scrollbar-thumb { background: #FFFFFF; }
         .dark ::-webkit-scrollbar-thumb:hover { background: #a8a29e; } /* stone-400 */
+
+        .word-split-item {
+            position: relative;
+            display: inline-block;
+            color: transparent;
+            cursor: default;
+        }
+
+        .word-split-item::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: 49%;
+            left: -10%;
+            right: -10%;
+            height: 4px;
+            border-radius: 4px;
+            margin-top: -2px;
+            background: #FF2C75;
+            transform: scale(0);
+            transform-origin: center;
+            transition: transform .8s cubic-bezier(.16, 1.08, .38, .98);
+            z-index: 1;
+        }
+
+        .word-split-mask {
+            display: block;
+            position: absolute;
+            overflow: hidden;
+            color: #000000;
+            top: 0;
+            height: 49%;
+            transition: all .8s cubic-bezier(.16, 1.08, .38, .98);
+        }
+
+        .word-split-mask span {
+            display: block;
+        }
+
+        .word-split-mask + .word-split-mask {
+            top: 49%;
+            height: 51%;
+        }
+
+        .word-split-mask + .word-split-mask span {
+            transform: translateY(-49%);
+        }
+
+        .word-split-item:hover .word-split-mask {
+            color: #FF2C75;
+            transform: skewX(12deg) translateX(5px);
+        }
+
+        .word-split-item:hover .word-split-mask + .word-split-mask {
+            transform: skewX(12deg) translateX(-5px);
+        }
+
+        .word-split-item:hover::before {
+            transform: scale(1);
+        }
 
         /* Typography Utilities */
         h1, h2, h3, h4, h5, h6 { 

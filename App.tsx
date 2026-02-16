@@ -262,8 +262,6 @@ const AppContent: React.FC = () => {
     { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
     { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
-    // Cupping is for everyone, but handled differently in UI flow
-    { id: 'cupping', label: 'Catación', icon: BarChart3, roles: ['admin', 'student'] }, 
     { id: 'invoicing', label: 'Facturación', icon: Receipt, roles: ['admin'] },
   ].filter(item => !userRole || (item.roles.includes(userRole)));
 
@@ -275,14 +273,14 @@ const AppContent: React.FC = () => {
   // Landing Page View
   if (viewState === 'landing') {
     return (
-      <>
+      <div className="animate-zoom-in">
         <LandingPage onMenuOpen={() => setIsNavMenuOpen(true)} />
         <NavigationMenu 
           isOpen={isNavMenuOpen} 
           onClose={() => setIsNavMenuOpen(false)} 
           onAuthenticate={handleAuthenticate}
         />
-      </>
+      </div>
     );
   }
 
@@ -396,6 +394,7 @@ const AppContent: React.FC = () => {
                   green={greenCoffees} 
                   roasts={roasts} 
                   orders={orders} 
+                  productionInventory={productionInventory}
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                   userRole={userRole}
                 />
@@ -460,9 +459,6 @@ const AppContent: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : activeTab === 'cupping' ? (
-                 // Should technically not be reachable by admin based on requirements, but kept as fallback
-                <CuppingView stocks={roastedStocks} mode="internal" />
               ) : activeTab === 'invoicing' ? (
                 <InvoicingView 
                   orders={orders}
@@ -474,6 +470,7 @@ const AppContent: React.FC = () => {
                   green={greenCoffees} 
                   roasts={roasts} 
                   orders={orders} 
+                  productionInventory={productionInventory}
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                   userRole={userRole}
                 />

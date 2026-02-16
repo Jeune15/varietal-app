@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { RoastedStock, RetailBagStock, Roast, ProductionItem } from '../types';
-import { ShoppingBag, CheckCircle, XCircle, Tag, Layers, Plus, Settings2, AlertCircle, Pencil, X } from 'lucide-react';
+import { ShoppingBag, CheckCircle, XCircle, Tag, Layers, Plus, Settings2, AlertCircle, Pencil, X, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -41,6 +41,9 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
   const [showEditStockModal, setShowEditStockModal] = useState(false);
   const [editingStock, setEditingStock] = useState<RoastedStock | null>(null);
   const [editStockWeight, setEditStockWeight] = useState<number | ''>('');
+
+  const [stockClientFilter, setStockClientFilter] = useState('');
+  const [stockVarietyFilter, setStockVarietyFilter] = useState('');
 
   const [prodForm, setProdForm] = useState<{
     name: string;
@@ -97,6 +100,21 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
     const roast = roasts.find(r => r.id === stock.roastId);
     return roast?.roastDate || null;
   };
+
+  const filteredRoastedStocks = useMemo(() => {
+    const clientQuery = stockClientFilter.trim().toLowerCase();
+    const varietyQuery = stockVarietyFilter.trim().toLowerCase();
+    const base = stocks.filter(s => s.remainingQtyKg > 0.001);
+    return base.filter(s => {
+      const client = s.clientName.toLowerCase();
+      const variety = s.variety.toLowerCase();
+      const matchesClient = clientQuery ? client.includes(clientQuery) : true;
+      const matchesVariety = varietyQuery ? variety.includes(varietyQuery) : true;
+      return matchesClient && matchesVariety;
+    });
+  }, [stocks, stockClientFilter, stockVarietyFilter]);
+
+  const visibleRoastedStocks = filteredRoastedStocks.slice(0, 10);
 
   const openSelectionModal = (stock: RoastedStock) => {
     if (!canEdit) return;
@@ -950,18 +968,39 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
             <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Silos de Café</h3>
             <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Existencias Tostadas &middot; Granel</p>
           </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="flex-1 min-w-[180px] relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input
+                type="text"
+                placeholder="BUSCAR CLIENTE..."
+                value={stockClientFilter}
+                onChange={e => setStockClientFilter(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:outline-none transition-colors dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:focus:border-white"
+              />
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <input
+                type="text"
+                placeholder="FILTRAR POR VARIEDAD..."
+                value={stockVarietyFilter}
+                onChange={e => setStockVarietyFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:outline-none transition-colors dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:focus:border-white"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="lg:hidden space-y-4">
-          {stocks.filter(s => s.remainingQtyKg > 0.001).length === 0 ? (
+        <div className="lg:hidden divide-y divide-stone-200 space-y-0">
+          {filteredRoastedStocks.length === 0 ? (
             <div className="p-8 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
               Sin stock a granel en sistema
             </div>
           ) : (
-            stocks.filter(s => s.remainingQtyKg > 0.001).map((s) => {
+            visibleRoastedStocks.map((s) => {
               const roastDate = getRoastDate(s);
               return (
-                <div key={s.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 shadow-sm space-y-4">
+                <div key={s.id} className="bg-white dark:bg-stone-900 p-4 space-y-4">
                   <div>
                     <div className="font-black text-black dark:text-white text-lg uppercase tracking-tight">{s.clientName}</div>
                     <div className="text-[10px] text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest mt-1">
@@ -1049,7 +1088,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
-                {stocks.filter(s => s.remainingQtyKg > 0.001).length === 0 ? (
+                {filteredRoastedStocks.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-24 text-center">
                       <div className="flex flex-col items-center gap-4">
@@ -1059,7 +1098,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                     </td>
                   </tr>
                 ) : (
-                  stocks.filter(s => s.remainingQtyKg > 0.001).map((s) => {
+                  visibleRoastedStocks.map((s) => {
                     const roastDate = getRoastDate(s);
                     return (
                     <tr key={s.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors group">

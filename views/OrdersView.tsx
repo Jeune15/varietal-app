@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { Order, OrderType, OrderLine, ProductionActivity, RoastedStock, RetailBagStock, ProductionItem, ProductionActivityType } from '../types';
-import { Plus, Clock, User, X, Truck, DollarSign, AlertTriangle, Trash2, Activity, ShoppingBag } from 'lucide-react';
+import { Plus, Clock, User, X, Truck, DollarSign, AlertTriangle, Trash2, Activity, ShoppingBag, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -29,6 +29,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState<Order | null>(null);
   const [shippingCost, setShippingCost] = useState<number>(0);
+  const [shippingQty, setShippingQty] = useState<number | ''>('');
 
   // Delete Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -49,6 +50,59 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const history = useLiveQuery(
     () => db.history.toArray() as Promise<ProductionActivity[]>
   ) || [];
+
+  const historicalOrders = useMemo(
+    () =>
+      orders
+        .filter(o => o.status === 'Enviado' || o.status === 'Facturado')
+        .sort((a, b) => {
+          const getTs = (order: Order) => {
+            const dateStr =
+              order.invoicedDate ||
+              order.shippedDate ||
+              order.dueDate ||
+              order.entryDate;
+            return dateStr ? new Date(dateStr).getTime() : 0;
+          };
+          return getTs(b) - getTs(a);
+        }),
+    [orders]
+  );
+
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyDate, setHistoryDate] = useState('');
+  const [historyType, setHistoryType] = useState<'all' | 'service' | 'sale'>('all');
+  const [historyPage, setHistoryPage] = useState(1);
+
+  const filteredHistoricalOrders = useMemo(() => {
+    const search = historySearch.trim().toLowerCase();
+    return historicalOrders.filter(o => {
+      const matchesSearch =
+        !search ||
+        o.clientName.toLowerCase().includes(search) ||
+        o.variety.toLowerCase().includes(search);
+      const selectedDate =
+        o.invoicedDate || o.shippedDate || o.entryDate || '';
+      const matchesDate = historyDate ? selectedDate.startsWith(historyDate) : true;
+      const matchesType =
+        historyType === 'all'
+          ? true
+          : historyType === 'service'
+            ? o.type === 'Servicio de Tueste'
+            : o.type === 'Venta Café Tostado';
+      return matchesSearch && matchesDate && matchesType;
+    });
+  }, [historicalOrders, historySearch, historyDate, historyType]);
+
+  const HISTORY_ITEMS_PER_PAGE = 25;
+  const historyTotalPages = Math.max(
+    1,
+    Math.ceil(filteredHistoricalOrders.length / HISTORY_ITEMS_PER_PAGE)
+  );
+  const paginatedHistoricalOrders = filteredHistoricalOrders.slice(
+    (historyPage - 1) * HISTORY_ITEMS_PER_PAGE,
+    historyPage * HISTORY_ITEMS_PER_PAGE
+  );
 
   const [activeMode, setActiveMode] = useState<ProductionActivityType | null>(null);
   const [selectedStockId, setSelectedStockId] = useState('');
@@ -75,6 +129,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const [retailLines, setRetailLines] = useState<RetailSelectionLine[]>([]);
 
   const [selectedOrderIdForContinuation, setSelectedOrderIdForContinuation] = useState<string | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Line-level helpers for molienda y bolsas
   const [lineGrindNumber, setLineGrindNumber] = useState<number | ''>('');
@@ -94,6 +149,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
     entryDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     requiresRoasting: true,
+    deliveryType: 'recojo' as 'envio' | 'recojo',
     deliveryAddress: '',
     deliveryAddressDetail: ''
   });
@@ -338,33 +394,115 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
 
   const confirmShipping = async () => {
     if (!selectedOrderForShipping) return;
-    
-    const updates: Partial<Order> = { 
-        status: 'Enviado',
-        shippingCost,
-        shippedDate: new Date().toISOString()
+  
+  const order = selectedOrderForShipping;
+  const shippedSoFar = order.shippedKg || 0;
+  const baseTargetKg =
+    order.type === 'Servicio de Tueste'
+      ? order.serviceRoastedQtyKg || order.quantityKg
+      : order.quantityKg;
+  const remainingTarget = Math.max(0, baseTargetKg - shippedSoFar);
+
+  if (remainingTarget <= 0.001) {
+    showToast('Este pedido ya fue despachado completamente.', 'info');
+    return;
+  }
+
+  const fulfilledForControl = order.fulfilledKg || baseTargetKg;
+  const remainingByFulfilled = Math.max(0, fulfilledForControl - shippedSoFar);
+
+  if (remainingByFulfilled <= 0.001) {
+    showToast('No hay producto armado para despachar. Avanza el pedido primero.', 'error');
+    return;
+  }
+
+  let requestedQty =
+    typeof shippingQty === 'number'
+      ? shippingQty
+      : shippingQty === ''
+        ? NaN
+        : parseFloat(shippingQty);
+
+  if (!requestedQty || requestedQty <= 0) {
+    requestedQty = Math.min(remainingTarget, remainingByFulfilled);
+  }
+
+  const maxAllowed = Math.min(remainingTarget, remainingByFulfilled);
+
+  if (requestedQty > maxAllowed + 0.001) {
+    showToast(
+      `Solo puedes despachar hasta ${maxAllowed.toFixed(2)} Kg para este pedido.`,
+      'error'
+    );
+    return;
+  }
+
+  const shipmentQty = Math.max(0, Math.min(requestedQty, maxAllowed));
+
+  if (shipmentQty <= 0) {
+    showToast('Ingresa una cantidad válida a despachar.', 'error');
+    return;
+  }
+
+  const newTotalShipped = shippedSoFar + shipmentQty;
+  const isCompleteDispatch = newTotalShipped >= baseTargetKg - 0.01;
+
+  const nowIso = new Date().toISOString();
+
+  const updates: Partial<Order> = { 
+    shippingCost,
+    shippedDate: nowIso,
+    shippedKg: newTotalShipped,
+    status: isCompleteDispatch
+      ? 'Enviado'
+      : order.status
+  };
+  
+  await db.orders.update(order.id, updates);
+  await syncToCloud('orders', { ...order, ...updates });
+
+  if (shippingCost > 0) {
+    const newExpense = {
+      id: Math.random().toString(36).substr(2, 9),
+      reason: `Envío Pedido ${order.clientName}`,
+      amount: shippingCost,
+      date: nowIso.split('T')[0],
+      status: 'pending' as const,
+      relatedOrderId: order.id
     };
-    
-    await db.orders.update(selectedOrderForShipping.id, updates);
-    await syncToCloud('orders', { ...selectedOrderForShipping, ...updates });
+    await db.expenses.add(newExpense);
+    await syncToCloud('expenses', newExpense);
+  }
 
-    // Automatically create an Expense if shipping cost > 0
-    if (shippingCost > 0) {
-        const newExpense = {
-            id: Math.random().toString(36).substr(2, 9),
-            reason: `Envío Pedido ${selectedOrderForShipping.clientName}`,
-            amount: shippingCost,
-            date: new Date().toISOString().split('T')[0],
-            status: 'pending' as const,
-            relatedOrderId: selectedOrderForShipping.id
-        };
-        await db.expenses.add(newExpense);
-        await syncToCloud('expenses', newExpense);
+  const dispatchActivity: ProductionActivity = {
+    id: Math.random().toString(36).substr(2, 9),
+    type: 'Despacho de Pedido',
+    date: nowIso,
+    details: {
+      orderId: order.id,
+      orderClientName: order.clientName,
+      orderType: order.type,
+      shippedKgStep: shipmentQty,
+      shippedKgTotal: newTotalShipped,
+      isCompleteDispatch,
+      deliveryType: order.deliveryType,
+      shippingCost,
+      shippingDate: nowIso
     }
+  };
 
-    setShippingModalOpen(false);
-    setSelectedOrderForShipping(null);
-    showToast('Pedido marcado como enviado', 'success');
+  await db.history.add(dispatchActivity);
+  await syncToCloud('history', dispatchActivity);
+
+  setShippingModalOpen(false);
+  setSelectedOrderForShipping(null);
+  setShippingQty('');
+  showToast(
+    isCompleteDispatch
+      ? 'Pedido despachado completamente'
+      : 'Despacho parcial registrado',
+    'success'
+  );
   };
 
   const handleSendOrder = (order: Order) => {
@@ -376,6 +514,15 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
     resetActivityForm();
     setSelectedOrderForShipping(order);
     setShippingCost(order.shippingCost || 0);
+  const shippedSoFar = order.shippedKg || 0;
+  const baseTargetKg =
+    order.type === 'Servicio de Tueste'
+      ? order.serviceRoastedQtyKg || order.quantityKg
+      : order.quantityKg;
+  const remainingTarget = Math.max(0, baseTargetKg - shippedSoFar);
+  setShippingQty(
+    remainingTarget > 0 ? parseFloat(remainingTarget.toFixed(2)) : ''
+  );
     setShippingModalOpen(true);
   };
 
@@ -430,6 +577,12 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
     if (!selectedOrderForActivities) return;
 
     const selectedOrderId = selectedOrderForActivities.id;
+
+    let activityDeductionKg: number | null = null;
+    let activityNewFulfilledKg: number | null = null;
+    let activityPrevFulfilledKg: number | null = null;
+    let activityOrderQtyKg: number | null = null;
+    let activityProgressAfter: number | null = null;
 
     if (activeMode === 'Armado de Bolsas Retail') {
       if (retailLines.length === 0) {
@@ -661,6 +814,14 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
           }
         }
 
+        activityPrevFulfilledKg = order.fulfilledKg || 0;
+        activityDeductionKg = deductionQty;
+        activityNewFulfilledKg = newFulfilled;
+        activityOrderQtyKg = !isServiceOrder
+          ? order.quantityKg
+          : (order.serviceRoastedQtyKg || order.quantityKg);
+        activityProgressAfter = updates.progress ?? order.progress;
+
         await db.orders.update(order.id, updates);
         await syncToCloud('orders', { ...order, ...updates });
       } else if (order) {
@@ -686,7 +847,12 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
         orderClientName: orderForActivity?.clientName,
         stockVariety: stockForActivity?.variety,
         stockClientName: stockForActivity?.clientName,
-        retailLines: activeMode === 'Armado de Bolsas Retail' ? retailLines : undefined
+        retailLines: activeMode === 'Armado de Bolsas Retail' ? retailLines : undefined,
+        ...(activityDeductionKg !== null ? { dispatchedKg: activityDeductionKg } : {}),
+        ...(activityPrevFulfilledKg !== null ? { previousFulfilledKg: activityPrevFulfilledKg } : {}),
+        ...(activityNewFulfilledKg !== null ? { newFulfilledKg: activityNewFulfilledKg } : {}),
+        ...(activityOrderQtyKg !== null ? { orderTargetKg: activityOrderQtyKg } : {}),
+        ...(activityProgressAfter !== null ? { progressAfter: activityProgressAfter } : {})
       }
     };
 
@@ -731,13 +897,21 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
           <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Pedidos</h3>
           <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Gestión de Demanda Activa</p>
         </div>
-        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-4 w-full sm:w-auto justify-end">
           <button 
             onClick={() => { resetFormState(); setShowModal(true); }}
             className="w-full sm:w-auto px-6 py-3 bg-black dark:bg-stone-800 text-white dark:text-stone-200 border border-black dark:border-stone-700 hover:bg-white hover:text-black dark:hover:bg-stone-700 dark:hover:text-white font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             <Plus className="w-4 h-4" />
             Nuevo Pedido
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowHistoryModal(true)}
+            className="w-full sm:w-auto px-6 py-3 border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+          >
+            <Clock className="w-4 h-4" />
+            Historial
           </button>
         </div>
       </div>
@@ -979,6 +1153,216 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
         </div>
       )}
 
+      {showHistoryModal && createPortal(
+        <div
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setShowHistoryModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-stone-900 w-full max-w-5xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-4 border-b border-stone-200 dark:border-stone-800 bg-black dark:bg-stone-950 text-white shrink-0 sticky top-0 z-10">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
+                  Historial
+                </p>
+                <h4 className="text-lg font-black tracking-tight uppercase">
+                  Pedidos completados
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="text-white hover:text-stone-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6 space-y-6">
+                {historicalOrders.length === 0 ? (
+                  <div className="p-8 text-center text-stone-400 dark:text-stone-500 text-xs font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700">
+                    Aún no hay pedidos en el historial
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center bg-stone-50 p-4 border border-stone-200 dark:bg-stone-900 dark:border-stone-800">
+                      <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto">
+                        <div className="relative">
+                          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                          <input
+                            type="text"
+                            placeholder="BUSCAR CLIENTE O VARIEDAD..."
+                            value={historySearch}
+                            onChange={e => {
+                              setHistorySearch(e.target.value);
+                              setHistoryPage(1);
+                            }}
+                            className="pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-64 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="date"
+                            value={historyDate}
+                            onChange={e => {
+                              setHistoryDate(e.target.value);
+                              setHistoryPage(1);
+                            }}
+                            className="pl-4 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-40 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+                          />
+                        </div>
+                        <div>
+                          <select
+                            value={historyType}
+                            onChange={e => {
+                              setHistoryType(e.target.value as any);
+                              setHistoryPage(1);
+                            }}
+                            className="pl-4 pr-8 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-48 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
+                          >
+                            <option value="all">Todos los tipos</option>
+                            <option value="service">Servicio de Tueste</option>
+                            <option value="sale">Venta Café Tostado</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-stone-200 bg-white dark:bg-black dark:border-stone-800">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-stone-50 border-b border-stone-200 dark:bg-stone-900 dark:border-stone-800">
+                            <tr>
+                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                Cliente / Variedad
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                Fecha
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                Tipo
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest border-r border-stone-100 dark:text-stone-400 dark:border-stone-800 text-right">
+                                Cantidad
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">
+                                Estado
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                            {paginatedHistoricalOrders.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={5}
+                                  className="px-6 py-16 text-center text-stone-400 font-medium uppercase text-sm"
+                                >
+                                  No hay pedidos que coincidan con los filtros.
+                                </td>
+                              </tr>
+                            ) : (
+                              paginatedHistoricalOrders.map(order => {
+                                const totalKg =
+                                  order.type === 'Servicio de Tueste' &&
+                                  typeof order.serviceRoastedQtyKg === 'number'
+                                    ? order.serviceRoastedQtyKg
+                                    : order.quantityKg;
+                                const dateLabel =
+                                  order.invoicedDate ||
+                                  order.shippedDate ||
+                                  order.entryDate ||
+                                  '';
+                                return (
+                                  <tr
+                                    key={order.id}
+                                    className="group hover:bg-stone-50 transition-colors dark:hover:bg-stone-800"
+                                  >
+                                    <td className="px-6 py-4 border-r border-stone-100 dark:border-stone-800">
+                                      <div className="font-bold text-black text-sm tracking-tight dark:text-white">
+                                        {order.clientName}
+                                      </div>
+                                      <div className="text-xs text-stone-500 font-bold uppercase mt-1 dark:text-stone-400">
+                                        {order.variety || '—'}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs font-mono text-stone-600 border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                      {dateLabel ? dateLabel.split('T')[0] : '—'}
+                                    </td>
+                                    <td className="px-6 py-4 border-r border-stone-100 dark:border-stone-800">
+                                      <span
+                                        className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${
+                                          order.type === 'Servicio de Tueste'
+                                            ? 'bg-stone-100 text-stone-600 border-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700'
+                                            : 'bg-black text-white border-black dark:bg-stone-700 dark:text-white dark:border-stone-600'
+                                        }`}
+                                      >
+                                        {order.type === 'Servicio de Tueste'
+                                          ? 'Servicio'
+                                          : 'Venta'}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs font-bold text-stone-600 text-right tabular-nums border-r border-stone-100 dark:text-stone-400 dark:border-stone-800">
+                                      {totalKg.toFixed(2)} Kg
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                      <span
+                                        className={`inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] border ${
+                                          order.status === 'Facturado'
+                                            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                                            : 'bg-white text-stone-500 border-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700'
+                                        }`}
+                                      >
+                                        {order.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {historyTotalPages > 1 && (
+                        <div className="flex items-center justify-between p-4 border-t border-stone-200 dark:border-stone-800">
+                          <button
+                            onClick={() =>
+                              setHistoryPage(p => Math.max(1, p - 1))
+                            }
+                            disabled={historyPage === 1}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800 dark:text-white"
+                          >
+                            <ChevronLeft className="w-4 h-4" /> Anterior
+                          </button>
+                          <span className="text-xs font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
+                            Página {historyPage} de {historyTotalPages}
+                          </span>
+                          <button
+                            onClick={() =>
+                              setHistoryPage(p =>
+                                Math.min(historyTotalPages, p + 1)
+                              )
+                            }
+                            disabled={historyPage === historyTotalPages}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800 dark:text-white"
+                          >
+                            Siguiente <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showModal && createPortal(
         <div 
           className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
@@ -1017,30 +1401,74 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                   </div>
                 </div>
 
-                {formData.type !== 'Servicio de Tueste' && (
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Dirección</label>
-                      <input
-                        type="text"
-                        placeholder="Calle, número, referencia principal"
-                        className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-medium transition-colors placeholder:text-stone-300 dark:placeholder:text-stone-600 text-black dark:text-white"
-                        value={formData.deliveryAddress}
-                        onChange={e => setFormData({ ...formData, deliveryAddress: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Detalle de dirección</label>
-                      <input
-                        type="text"
-                        placeholder="Piso, departamento, indicaciones adicionales"
-                        className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-medium transition-colors placeholder:text-stone-300 dark:placeholder:text-stone-600 text-black dark:text-white"
-                        value={formData.deliveryAddressDetail}
-                        onChange={e => setFormData({ ...formData, deliveryAddressDetail: e.target.value })}
-                      />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">
+                      Tipo de entrega
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            deliveryType: 'recojo',
+                            deliveryAddress: '',
+                            deliveryAddressDetail: ''
+                          })
+                        }
+                        className={`px-3 py-1 border text-[10px] font-bold uppercase tracking-[0.2em] ${
+                          formData.deliveryType === 'recojo'
+                            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                            : 'bg-white dark:bg-stone-900 text-stone-400 dark:text-stone-500 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        Recojo en tienda
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            deliveryType: 'envio'
+                          })
+                        }
+                        className={`px-3 py-1 border text-[10px] font-bold uppercase tracking-[0.2em] ${
+                          formData.deliveryType === 'envio'
+                            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                            : 'bg-white dark:bg-stone-900 text-stone-400 dark:text-stone-500 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        Envío
+                      </button>
                     </div>
                   </div>
-                )}
+
+                  {formData.deliveryType === 'envio' && (
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Dirección</label>
+                        <input
+                          type="text"
+                          placeholder="Calle, número, referencia principal"
+                          className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-medium transition-colors placeholder:text-stone-300 dark:placeholder:text-stone-600 text-black dark:text-white"
+                          value={formData.deliveryAddress}
+                          onChange={e => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Detalle de dirección</label>
+                        <input
+                          type="text"
+                          placeholder="Piso, departamento, indicaciones adicionales"
+                          className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-medium transition-colors placeholder:text-stone-300 dark:placeholder:text-stone-600 text-black dark:text-white"
+                          value={formData.deliveryAddressDetail}
+                          onChange={e => setFormData({ ...formData, deliveryAddressDetail: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-8">
@@ -1378,21 +1806,46 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <p className="font-bold text-sm text-stone-600 dark:text-stone-300 uppercase tracking-wide">
-                  Costo de envío
-                </p>
-                
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    className="w-full p-4 pl-12 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-bold text-xl transition-colors text-black dark:text-white outline-none"
-                    value={shippingCost}
-                    onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                    autoFocus
+              <div className="grid gap-6">
+                <div className="space-y-2">
+                  <p className="font-bold text-sm text-stone-600 dark:text-stone-300 uppercase tracking-wide">
+                    Cantidad a despachar (Kg)
+                  </p>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="w-full p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-bold text-base transition-colors text-black dark:text-white outline-none"
+                    value={shippingQty === '' ? '' : shippingQty}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setShippingQty('');
+                      } else {
+                        const num = parseFloat(val);
+                        setShippingQty(Number.isNaN(num) ? '' : num);
+                      }
+                    }}
+                    placeholder="Dejar vacío para despachar todo lo pendiente"
                   />
-                  <DollarSign className="w-6 h-6 absolute left-4 top-4 text-stone-400" />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-bold text-sm text-stone-600 dark:text-stone-300 uppercase tracking-wide">
+                    Costo de envío
+                  </p>
+                  
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      className="w-full p-4 pl-12 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-bold text-xl transition-colors text-black dark:text-white outline-none"
+                      value={shippingCost}
+                      onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
+                      autoFocus
+                    />
+                    <DollarSign className="w-6 h-6 absolute left-4 top-4 text-stone-400" />
+                  </div>
                 </div>
               </div>
 

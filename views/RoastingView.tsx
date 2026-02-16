@@ -17,7 +17,6 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
   const { showToast } = useToast();
   const [showNewRoastModal, setShowNewRoastModal] = useState(false);
   const [showDailySummary, setShowDailySummary] = useState(false);
-  const [activeTab, setActiveTab] = useState<'queue' | 'history'>('queue');
 
   // New Roast Form State
   const [selectedGreenCoffeeId, setSelectedGreenCoffeeId] = useState<string>('');
@@ -349,19 +348,36 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
   const sortedRoasts = useMemo(() => {
     return [...roasts].sort((a, b) => new Date(b.roastDate).getTime() - new Date(a.roastDate).getTime());
   }, [roasts]);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyDate, setHistoryDate] = useState('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const filteredRoasts = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    return sortedRoasts.filter(r => {
+      if (historyDate && !r.roastDate.startsWith(historyDate)) {
+        return false;
+      }
+      if (!query) return true;
+      const green = greenCoffees.find(g => g.id === r.greenCoffeeId);
+      const variety = green?.variety.toLowerCase() || '';
+      const client = green?.clientName.toLowerCase() || '';
+      return variety.includes(query) || client.includes(query);
+    });
+  }, [sortedRoasts, historySearch, historyDate, greenCoffees]);
+
+  const ROASTS_PER_PAGE = 15;
+
   const totalPages = useMemo(
-    () =>
-      rowsPerPage > 0 ? Math.max(1, Math.ceil(sortedRoasts.length / rowsPerPage)) : 1,
-    [sortedRoasts, rowsPerPage]
+    () => Math.max(1, Math.ceil(filteredRoasts.length / ROASTS_PER_PAGE)),
+    [filteredRoasts]
   );
 
-  const displayedRoasts =
-    activeTab === 'queue'
-      ? sortedRoasts.slice(0, 10)
-      : sortedRoasts.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const displayedRoasts = useMemo(
+    () => filteredRoasts.slice((currentPage - 1) * ROASTS_PER_PAGE, currentPage * ROASTS_PER_PAGE),
+    [filteredRoasts, currentPage]
+  );
 
   return (
     <>
@@ -544,21 +560,36 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
 
         {/* Bottom Section: Roast History */}
         <div className="w-full">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
             <h3 className="text-xl font-black uppercase tracking-tight">Historial de Tuestes</h3>
-            <div className="flex gap-2">
-              <button 
-                className={`px-4 py-2 text-sm font-bold uppercase tracking-wider border ${activeTab === 'queue' ? 'bg-black text-white border-black' : 'text-stone-500 border-transparent hover:border-stone-200'}`}
-                onClick={() => setActiveTab('queue')}
-              >
-                Recientes
-              </button>
-              <button 
-                className={`px-4 py-2 text-sm font-bold uppercase tracking-wider border ${activeTab === 'history' ? 'bg-black text-white border-black' : 'text-stone-500 border-transparent hover:border-stone-200'}`}
-                onClick={() => setActiveTab('history')}
-              >
-                Todos
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="w-4 h-4 absolute left-0 top-3 text-stone-400" />
+                <input
+                  type="text"
+                  className="w-full py-2 pl-6 pr-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-medium rounded-sm placeholder:text-stone-300 dark:placeholder:text-stone-600 text-stone-700 dark:text-stone-100 focus:outline-none focus:border-black dark:focus:border-white"
+                  placeholder="Buscar por café o cliente..."
+                  value={historySearch}
+                  onChange={e => {
+                    setHistorySearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500">
+                  Fecha
+                </span>
+                <input
+                  type="date"
+                  value={historyDate}
+                  onChange={e => {
+                    setHistoryDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-2 border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs font-medium text-stone-700 dark:text-stone-100 rounded-sm focus:outline-none focus:border-black dark:focus:border-white"
+                />
+              </div>
             </div>
           </div>
 
@@ -573,36 +604,21 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                 const green = greenCoffees.find(g => g.id === roast.greenCoffeeId);
                 return (
                   <div key={roast.id} className="bg-white border border-stone-200 p-4 shadow-sm space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-black text-sm">#{roast.id.slice(0, 8)}</div>
-                        <div className="text-xs text-stone-500 font-medium">{roast.roastDate.split('T')[0]}</div>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-black dark:text-white uppercase tracking-tight">
+                          {green?.variety || 'Desconocido'}
+                        </p>
+                        <p className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">
+                          {roast.roastDate.split('T')[0]}
+                        </p>
                       </div>
-                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                        roast.weightLossPercentage > 20 ? 'bg-red-100 text-red-700' : 
-                        roast.weightLossPercentage < 10 ? 'bg-yellow-100 text-yellow-700' : 
-                        'bg-stone-100 text-stone-700'
-                      }`}>
-                        Merma: {roast.weightLossPercentage.toFixed(1)}%
+                      <span className="text-sm font-black text-black dark:text-white">
+                        {roast.greenQtyKg.toFixed(2)} <span className="text-[10px] font-bold text-stone-400">Kg verde</span>
                       </span>
                     </div>
-                    
-                    <div className="bg-stone-50 p-3 rounded text-xs space-y-2 border border-stone-100">
-                      <div>
-                        <span className="block text-stone-400 text-[10px] uppercase tracking-wider">Café Verde</span>
-                        <span className="font-bold text-black">{green?.variety || 'Desconocido'}</span>
-                        <div className="text-[10px] text-stone-500">{green?.clientName} - {green?.origin}</div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-stone-200">
-                        <div>
-                          <span className="block text-stone-400 text-[10px] uppercase tracking-wider">Entrada</span>
-                          <span className="font-medium text-stone-600">{roast.greenQtyKg.toFixed(2)} kg</span>
-                        </div>
-                        <div>
-                          <span className="block text-stone-400 text-[10px] uppercase tracking-wider">Salida</span>
-                          <span className="font-bold text-black">{roast.roastedQtyKg.toFixed(2)} kg</span>
-                        </div>
-                      </div>
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400">
+                      {green?.clientName}
                     </div>
                   </div>
                 );
@@ -615,17 +631,16 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-stone-50 border-b border-stone-200 text-xs uppercase tracking-wider text-stone-500">
-                  <th className="p-4 font-bold border-r border-stone-100">Fecha / ID</th>
+                  <th className="p-4 font-bold border-r border-stone-100">Fecha</th>
                   <th className="p-4 font-bold border-r border-stone-100">Café Verde</th>
-                  <th className="p-4 font-bold border-r border-stone-100 text-right">Peso Entrada</th>
-                  <th className="p-4 font-bold border-r border-stone-100 text-right">Peso Salida</th>
-                  <th className="p-4 font-bold text-right">Merma %</th>
+                  <th className="p-4 font-bold border-r border-stone-100 text-right">Kg Verde</th>
+                  <th className="p-4 font-bold text-right">Kg Tostado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {displayedRoasts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-stone-400 font-medium uppercase text-sm">
+                    <td colSpan={4} className="p-8 text-center text-stone-400 font-medium uppercase text-sm">
                       No hay registros de tueste
                     </td>
                   </tr>
@@ -636,27 +651,19 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                     return (
                       <tr key={roast.id} className="hover:bg-stone-50 transition-colors group">
                         <td className="p-4 border-r border-stone-100">
-                          <div className="font-bold text-black text-xs">{roast.id.slice(0, 8)}</div>
-                          <div className="text-xs text-stone-500 font-medium">{roast.roastDate.split('T')[0]}</div>
+                          <div className="text-xs text-stone-500 font-medium">
+                            {roast.roastDate.split('T')[0]}
+                          </div>
                         </td>
                         <td className="p-4 border-r border-stone-100">
                           <span className="font-bold text-black block">{green?.variety || 'Desconocido'}</span>
-                          <span className="text-xs text-stone-500 uppercase">{green?.clientName} - {green?.origin}</span>
+                          <span className="text-xs text-stone-500 uppercase">{green?.clientName}</span>
                         </td>
                         <td className="p-4 text-right font-medium text-stone-600 border-r border-stone-100">
                           {roast.greenQtyKg.toFixed(2)} kg
                         </td>
-                        <td className="p-4 text-right font-bold text-black border-r border-stone-100">
+                        <td className="p-4 text-right font-bold text-black">
                           {roast.roastedQtyKg.toFixed(2)} kg
-                        </td>
-                        <td className="p-4 text-right">
-                          <span className={`px-2 py-1 text-xs font-bold ${
-                            roast.weightLossPercentage > 20 ? 'bg-red-100 text-red-700' : 
-                            roast.weightLossPercentage < 10 ? 'bg-yellow-100 text-yellow-700' : 
-                            'bg-stone-100 text-stone-700'
-                          }`}>
-                            {roast.weightLossPercentage.toFixed(1)}%
-                          </span>
                         </td>
                       </tr>
                     );
@@ -666,44 +673,26 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
             </table>
             </div>
           </div>
-          {activeTab === 'history' && sortedRoasts.length > 0 && (
+          {filteredRoasts.length > 0 && (
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-stone-100 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-stone-500 uppercase tracking-widest">Mostrar</span>
-                <select
-                  value={rowsPerPage}
-                  onChange={e => {
-                    setRowsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-stone-200 bg-white px-2 py-1 text-xs font-bold uppercase tracking-widest focus:border-black outline-none"
-                >
-                  <option value={10}>10</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span className="text-stone-400 uppercase tracking-widest">registros</span>
+              <div className="text-stone-500 font-mono">
+                Página {currentPage} de {totalPages}
               </div>
-              <div className="flex items-center gap-3 justify-between md:justify-end">
-                <span className="text-stone-500 font-mono">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    className="px-2 py-1 border border-stone-200 text-stone-500 hover:border-black hover:text-black disabled:opacity-40 disabled:hover:border-stone-200 disabled:hover:text-stone-500 transition-colors"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    className="px-2 py-1 border border-stone-200 text-stone-500 hover:border-black hover:text-black disabled:opacity-40 disabled:hover:border-stone-200 disabled:hover:text-stone-500 transition-colors"
-                  >
-                    ›
-                  </button>
-                </div>
+              <div className="flex items-center gap-1 justify-end">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className="px-2 py-1 border border-stone-200 text-stone-500 hover:border-black hover:text-black disabled:opacity-40 disabled:hover:border-stone-200 disabled:hover:text-stone-500 transition-colors"
+                >
+                  ‹
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className="px-2 py-1 border border-stone-200 text-stone-500 hover:border-black hover:text-black disabled:opacity-40 disabled:hover:border-stone-200 disabled:hover:text-stone-500 transition-colors"
+                >
+                  ›
+                </button>
               </div>
             </div>
           )}
@@ -809,7 +798,7 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-12">
+              <div className="grid grid-cols-1 gap-12">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-400 dark:text-stone-500">Perfil / Notas</label>
                   <input 
@@ -819,36 +808,6 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                     value={profile}
                     onChange={(e) => setProfile(e.target.value)}
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-400 dark:text-stone-500">Orden Relacionada</label>
-                  <select 
-                    className="w-full py-3 bg-transparent border-b border-stone-300 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-medium transition-colors px-0 placeholder:text-stone-300 dark:text-white"
-                    value={selectedOrderId || ''}
-                    onChange={(e) => setSelectedOrderId(e.target.value)}
-                  >
-                    <option value="" className="dark:bg-stone-900">-- Ninguna --</option>
-                    {pendingOrders.map(order => (
-                      <option key={order.id} value={order.id} className="dark:bg-stone-900">
-                        #{order.id.slice(0, 8)} - {order.clientName}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedOrderForRoast && (
-                    <div className="mt-4 text-[11px] text-stone-600 dark:text-stone-400 border-l-2 border-black dark:border-white pl-3 py-1">
-                      <div className="flex justify-between items-baseline">
-                        <span className="font-bold text-sm uppercase tracking-tight">
-                          {selectedOrderForRoast?.clientName}
-                        </span>
-                        <span className="font-mono text-xs">
-                          {selectedOrderForRoast.quantityKg.toFixed(2)} Kg
-                        </span>
-                      </div>
-                      <div className="mt-1 text-stone-400 dark:text-stone-500 uppercase tracking-wider text-[10px]">
-                        {selectedOrderForRoast?.orderLines && selectedOrderForRoast.orderLines.length > 0 ? 'Múltiples cafés' : selectedOrderForRoast.variety}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { GreenCoffee, Roast, Order } from '../types';
+import { GreenCoffee, Roast, Order, ProductionItem } from '../types';
 import { exportDatabaseToJson, initSupabase } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
@@ -22,11 +22,12 @@ interface Props {
   green: GreenCoffee[];
   roasts: Roast[];
   orders: Order[];
+  productionInventory: ProductionItem[];
   onNavigate?: (tabId: string) => void;
   userRole?: 'admin' | 'student' | null;
 }
 
-const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate, userRole }) => {
+const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInventory, onNavigate, userRole }) => {
   const [showSyncConfig, setShowSyncConfig] = useState(false);
   const [syncForm, setSyncForm] = useState({
     url: localStorage.getItem('supabase_url') || '',
@@ -35,58 +36,14 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate, use
   
   const { canEdit } = useAuth();
   
-  const totalGreen = green.reduce((acc, curr) => acc + (Number(curr.quantityKg) || 0), 0);
-  const totalRoasted = roasts.reduce((acc, curr) => acc + (Number(curr.roastedQtyKg) || 0), 0);
-  const pendingOrders = orders.filter(o => o.status !== 'Enviado' && o.status !== 'Facturado').length;
-  
-  // Architectural Monochromatic Palette
-  const COLORS = ['#000000', '#404040', '#737373', '#A3A3A3', '#D4D4D4'];
-
   const today = new Date().toISOString().split('T')[0];
-
-  const orderNeedsRoast = (order: Order) => {
-    const isServiceOrder = order.type === 'Servicio de Tueste';
-    const currentAccumulated = order.accumulatedRoastedKg || 0;
-    const currentGreenAccumulated = order.accumulatedGreenUsedKg || 0;
-
-    if (isServiceOrder) {
-      return currentGreenAccumulated < (order.quantityKg - 0.1);
-    }
-
-    return currentAccumulated < (order.quantityKg - 0.1);
-  };
-
-  const roastingQueue = useMemo(
-    () =>
-      orders.filter(
-        o =>
-          (o.status === 'Pendiente' || o.status === 'En Producción') &&
-          (o.requiresRoasting ?? true) &&
-          orderNeedsRoast(o)
-      ),
-    [orders]
-  );
-
-  const packingQueue = useMemo(
-    () => orders.filter(o => o.status === 'Listo para Despacho'),
-    [orders]
-  );
-
-  const invoicingQueue = useMemo(
-    () => orders.filter(o => o.status === 'Enviado'),
-    [orders]
-  );
-
-  const openOrders = useMemo(
-    () => orders.filter(o => o.status !== 'Facturado'),
-    [orders]
-  );
-
-  const roastingQueuePreview = useMemo(
-    () => roastingQueue.slice(0, 5),
-    [roastingQueue]
-  );
-
+  const totalGreen = green.reduce((acc, curr) => acc + (Number(curr.quantityKg) || 0), 0);
+  const totalOrders = orders.length;
+  
+  const roastedToday = roasts
+    .filter(r => r.roastDate === today)
+    .reduce((acc, curr) => acc + (Number(curr.roastedQtyKg) || 0), 0);
+  
   const lowGreen = useMemo(
     () =>
       green
@@ -95,38 +52,40 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate, use
         .slice(0, 5),
     [green]
   );
-
-  const ordersByStatus = useMemo(() => {
-    const totalOrders = orders.length;
-    const getStats = (status: string) => {
-        const filtered = orders.filter(o => o.status === status);
-        const count = filtered.length;
-        const kg = filtered.reduce((acc, curr) => acc + curr.quantityKg, 0);
-        return { count, kg };
-    };
-
-    const statuses = ['Pendiente', 'En Producción', 'Listo para Despacho', 'Enviado', 'Facturado'];
-    
-    return statuses.map(status => {
-        const stats = getStats(status);
-        return {
-            name: status === 'Listo para Despacho' ? 'Listo' : status,
-            fullName: status,
-            value: stats.count,
-            kg: stats.kg,
-            percentage: totalOrders > 0 ? ((stats.count / totalOrders) * 100).toFixed(1) : '0'
-        };
-    }).filter(item => item.value > 0);
-  }, [orders]);
-
-  const roastHistoryData = useMemo(
+  
+  const dedupedUtility = useMemo(() => {
+    const map = new Map<string, ProductionItem>();
+    productionInventory.forEach(item => {
+      const key = `${item.name}__${item.format || ''}`;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, item);
+      } else {
+        map.set(key, {
+          ...existing,
+          quantity: existing.quantity + item.quantity,
+          minThreshold: Math.min(existing.minThreshold, item.minThreshold)
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [productionInventory]);
+  
+  const lowUtility = useMemo(
     () =>
-      roasts.slice(-7).map(r => ({
-        name: r.roastDate.split('-').slice(1).join('/'),
-        kg: Number(r.roastedQtyKg) || 0
-      })),
-    [roasts]
+      dedupedUtility
+        .filter(item => item.quantity <= item.minThreshold)
+        .sort((a, b) => a.quantity - b.quantity)
+        .slice(0, 5),
+    [dedupedUtility]
   );
+
+  const formatUtilityQuantity = (item: ProductionItem) => {
+    if (item.type === 'rechargeable') {
+      return `${item.quantity.toFixed(0)}%`;
+    }
+    return `${item.quantity.toFixed(0)} unid`;
+  };
 
   const handleSaveConnection = () => {
     let url = syncForm.url.trim();
@@ -196,506 +155,122 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, onNavigate, use
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <MetricCard
-          label="Para Tostar"
-          value={roastingQueue.length}
-          icon={<Flame strokeWidth={1.5} />}
-          description="Órdenes que requieren tueste"
-        />
-        <MetricCard
-          label="Para Despacho"
-          value={packingQueue.length}
-          icon={<Package strokeWidth={1.5} />}
-          description="Órdenes listas para armar y enviar"
-        />
-        <MetricCard
-          label="Para Facturar"
-          value={invoicingQueue.length}
-          icon={<Clock strokeWidth={1.5} />}
-          description="Órdenes enviadas sin factura"
-        />
-        <MetricCard
-          label="Stock Verde"
+          label="Stock café verde"
           value={`${totalGreen.toFixed(0)} Kg`}
           icon={<Package strokeWidth={1.5} />}
           description="Total disponible en verde"
         />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-6">
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 dark:text-stone-500">
-                  Cola de producción
-                </p>
-                <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
-                  Órdenes para tostar
-                </h3>
-              </div>
-              <span className="text-[10px] font-bold bg-black text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
-                {roastingQueue.length} activas
-              </span>
-            </div>
-            {/* Mobile Cards for Roasting Queue */}
-            <div className="lg:hidden space-y-4">
-              {roastingQueuePreview.length === 0 ? (
-                <div className="p-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700 dark:text-stone-500">
-                  No hay órdenes pendientes de tueste
-                </div>
-              ) : (
-                roastingQueuePreview.map(order => {
-                  const isService = order.type === 'Servicio de Tueste';
-                  const produced = isService
-                    ? order.accumulatedGreenUsedKg || 0
-                    : order.accumulatedRoastedKg || 0;
-                  const remaining = Math.max(0, order.quantityKg - produced);
-                  return (
-                    <div key={order.id} className="bg-white border border-stone-200 p-4 shadow-sm space-y-3 dark:bg-stone-900 dark:border-stone-800">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-bold text-black text-xs truncate max-w-[140px] dark:text-white">{order.clientName}</div>
-                          <div className="text-[10px] text-stone-400 font-mono">#{order.id.slice(0, 8)}</div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-black dark:text-white">{remaining.toFixed(2)}</span>
-                          <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">Kg</span>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-stone-50 p-3 rounded text-xs space-y-2 border border-stone-100 dark:bg-stone-800 dark:border-stone-700">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wide dark:text-stone-300">
-                            {order.orderLines && order.orderLines.length > 0 ? 'Múltiples cafés' : order.variety}
-                          </span>
-                          {order.roastType && (
-                            <span className="inline-flex self-start items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-100 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-900/30">
-                              {order.roastType}
-                            </span>
-                          )}
-                        </div>
-                        <div className="pt-2 border-t border-stone-200 flex justify-between items-center dark:border-stone-700">
-                          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Entrega</span>
-                          <span className="text-[11px] font-mono text-stone-500 dark:text-stone-400">{order.dueDate}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 border-b border-stone-200 dark:bg-stone-950 dark:border-stone-800">
-                  <tr>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
-                      Pedido
-                    </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest dark:text-stone-400">
-                      Café
-                    </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right dark:text-stone-400">
-                      Pendiente Kg
-                    </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 uppercase tracking-widest text-right dark:text-stone-400">
-                      Entrega
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                  {roastingQueuePreview.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="px-4 py-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600"
-                      >
-                        No hay órdenes pendientes de tueste
-                      </td>
-                    </tr>
-                  ) : (
-                    roastingQueuePreview.map(order => {
-                      const isService = order.type === 'Servicio de Tueste';
-                      const produced = isService
-                        ? order.accumulatedGreenUsedKg || 0
-                        : order.accumulatedRoastedKg || 0;
-                      const remaining = Math.max(0, order.quantityKg - produced);
-                      return (
-                        <tr key={order.id} className="hover:bg-stone-50 transition-colors dark:hover:bg-stone-800/50">
-                          <td className="px-4 py-3 align-top">
-                            <div className="font-bold text-black text-xs truncate max-w-[140px] dark:text-white">
-                              {order.clientName}
-                            </div>
-                            <div className="text-[10px] text-stone-400 font-mono">
-                              #{order.id.slice(0, 8)}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 align-top">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wide truncate max-w-[140px] dark:text-stone-300">
-                                {order.orderLines && order.orderLines.length > 0 ? 'Múltiples cafés' : order.variety}
-                              </span>
-                              {order.orderLines && order.orderLines.length > 0 && (
-                                <div className="space-y-0.5 text-[9px] text-stone-500 font-mono max-w-[160px] dark:text-stone-400">
-                                  {order.orderLines.slice(0, 2).map(line => (
-                                    <div key={line.id} className="flex justify-between">
-                                      <span className="truncate max-w-[100px]">{line.variety}</span>
-                                      <span>{line.quantityKg.toFixed(1)} Kg</span>
-                                    </div>
-                                  ))}
-                                  {order.orderLines.length > 2 && (
-                                    <div className="text-[8px] text-stone-400 dark:text-stone-600">
-                                      +{order.orderLines.length - 2} más
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              {order.roastType && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-100 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-900/30">
-                                  {order.roastType}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right align-top">
-                            <span className="text-sm font-black text-black dark:text-white">
-                              {remaining.toFixed(2)}
-                            </span>
-                            <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
-                              Kg
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right align-top">
-                            <span className="text-[11px] font-mono text-stone-500 dark:text-stone-400">
-                              {order.dueDate}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {roastingQueue.length > roastingQueuePreview.length && userRole === 'admin' && (
-              <div className="pt-3 mt-3 border-t border-stone-100 flex justify-end dark:border-stone-800">
-                <button
-                  onClick={() => onNavigate && onNavigate('roasting')}
-                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-black underline underline-offset-4 dark:text-white"
-                >
-                  Ver cola completa en Tostado
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 hover:border-black dark:hover:border-stone-600 transition-colors duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] mb-1">
-                  Flujo de pedidos
-                </p>
-                <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
-                  Órdenes abiertas
-                </h3>
-              </div>
-              <span className="text-[10px] font-bold bg-stone-900 dark:bg-stone-700 text-white dark:text-stone-200 px-3 py-1 tracking-widest uppercase">
-                {openOrders.length}
-              </span>
-            </div>
-            {/* Mobile Cards for Open Orders */}
-            <div className="lg:hidden space-y-4">
-              {openOrders.length === 0 ? (
-                <div className="p-8 text-center text-[11px] text-stone-400 dark:text-stone-500 font-mono uppercase tracking-widest border border-dashed border-stone-300 dark:border-stone-700">
-                  No hay pedidos activos
-                </div>
-              ) : (
-                openOrders.slice(0, 6).map(order => (
-                  <div key={order.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 shadow-sm space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-black dark:text-white text-xs truncate max-w-[140px]">{order.clientName}</div>
-                        <div className="text-[10px] text-stone-400 font-mono">
-                          {order.variety} • {order.quantityKg.toFixed(2)} Kg
-                        </div>
-                      </div>
-                      <span className="border border-black dark:border-stone-500 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-black dark:text-white whitespace-nowrap">
-                        {order.status}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-col gap-1 pt-2 border-t border-stone-100 dark:border-stone-800">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Progreso</span>
-                        <span className="text-[9px] font-mono text-stone-400">{Number.isNaN(order.progress) ? 0 : order.progress}%</span>
-                      </div>
-                      <div className="w-full bg-stone-100 dark:bg-stone-800 h-1 overflow-hidden">
-                        <div
-                          className={`h-full ${order.progress === 100 ? 'bg-black dark:bg-stone-200' : 'bg-stone-400'}`}
-                          style={{
-                            width: `${Number.isNaN(order.progress) ? 0 : order.progress}%`
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700">
-                  <tr>
-                    <th className="px-4 py-3 font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
-                      Cliente
-                    </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
-                      Estado
-                    </th>
-                    <th className="px-4 py-3 font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest text-right">
-                      Progreso
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                  {openOrders.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="px-4 py-8 text-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600"
-                      >
-                        No hay pedidos activos
-                      </td>
-                    </tr>
-                  ) : (
-                    openOrders.slice(0, 6).map(order => (
-                      <tr key={order.id} className="hover:bg-stone-50 transition-colors dark:hover:bg-stone-800/50">
-                        <td className="px-4 py-3 align-top">
-                          <div className="font-bold text-black text-xs truncate max-w-[140px] dark:text-white">
-                            {order.clientName}
-                          </div>
-                          <div className="text-[10px] text-stone-400 font-mono">
-                            {order.variety} • {order.quantityKg.toFixed(2)} Kg
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="border border-black px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-black whitespace-nowrap dark:border-stone-500 dark:text-white">
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="w-20 bg-stone-100 h-0.5 overflow-hidden dark:bg-stone-800">
-                              <div
-                                className={`h-full ${order.progress === 100 ? 'bg-black dark:bg-stone-200' : 'bg-stone-400'}`}
-                                style={{
-                                  width: `${Number.isNaN(order.progress) ? 0 : order.progress}%`
-                                }}
-                              />
-                            </div>
-                            <span className="text-[9px] font-mono text-stone-400">
-                              {Number.isNaN(order.progress) ? 0 : order.progress}%
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 dark:text-stone-500">
-                  Alertas de stock
-                </p>
-                <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
-                  Verde crítico
-                </h3>
-              </div>
-              <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
-                {lowGreen.length}
-              </span>
-            </div>
-            {lowGreen.length === 0 ? (
-              <div className="h-32 flex items-center justify-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600">
-                Sin alertas de stock verde
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {lowGreen.map(item => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between border border-stone-100 px-3 py-2 text-xs dark:border-stone-800"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-bold text-black uppercase tracking-wide truncate max-w-[140px] dark:text-white">
-                        {item.variety}
-                      </span>
-                      <span className="text-[10px] text-stone-400 uppercase tracking-widest truncate max-w-[140px] dark:text-stone-500">
-                        {item.clientName}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-black text-red-600 dark:text-red-500">
-                        {item.quantityKg.toFixed(1)}
-                      </span>
-                      <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
-                        Kg
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] dark:text-white">
-                Resumen rápido
-              </h3>
-              <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest dark:text-stone-500">
-                {pendingOrders} pedidos abiertos
-              </span>
-            </div>
-            <div className="space-y-2 text-[11px] text-stone-600 dark:text-stone-400">
-              <div className="flex justify-between">
-                <span>Kg tostados históricos</span>
-                <span className="font-bold dark:text-stone-300">{totalRoasted.toFixed(1)} Kg</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Kg verdes en sistema</span>
-                <span className="font-bold dark:text-stone-300">{totalGreen.toFixed(1)} Kg</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          label="Tostado hoy"
+          value={`${roastedToday.toFixed(1)} Kg`}
+          icon={<Flame strokeWidth={1.5} />}
+          description="Kg tostados en la fecha actual"
+        />
+        <MetricCard
+          label="Pedidos en sistema"
+          value={totalOrders}
+          icon={<Package strokeWidth={1.5} />}
+          description="Número total de pedidos registrados"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="border border-stone-200 bg-white p-8 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 flex items-center gap-2 border-b border-stone-100 pb-4 dark:border-stone-800 dark:text-white">
-            <BarChartIcon className="w-4 h-4" />
-            Producción Reciente
-          </h3>
-          <div className="h-64 w-full">
-            {roasts.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={roastHistoryData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E5E5" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#737373', fontSize: 10, fontFamily: 'Inter', fontWeight: 600}} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#A3A3A3', fontSize: 10, fontFamily: 'Inter'}} 
-                  />
-                  <Tooltip 
-                    cursor={{fill: '#F5F5F5'}} 
-                    contentStyle={{
-                        backgroundColor: '#1c1917', 
-                        border: '1px solid #292524', 
-                        color: '#fff',
-                        fontFamily: 'Inter',
-                        fontSize: '12px',
-                        borderRadius: '0px'
-                    }} 
-                  />
-                  <Bar dataKey="kg" fill="#44403c" radius={[0, 0, 0, 0]} barSize={24} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-                <div className="h-full flex flex-col items-center justify-center text-stone-300 dark:text-stone-700">
-                    <Flame className="w-10 h-10 mb-4 opacity-10" />
-                    <p className="text-[10px] font-black uppercase tracking-widest italic">Sin registros</p>
-                </div>
-            )}
+        <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 dark:text-stone-500">
+                Alertas de stock
+              </p>
+              <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
+                Café verde — stock bajo
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
+              {lowGreen.length}
+            </span>
           </div>
-        </div>
-
-        {/* Gráfico de Pastel - Estado de Ordenes */}
-        <div className="border border-stone-200 bg-white p-8 hover:border-black transition-colors duration-300 flex flex-col dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 flex items-center gap-2 border-b border-stone-100 pb-4 dark:border-stone-800 dark:text-white">
-            <PieChartIcon className="w-4 h-4" />
-            Estado de Ordenes
-          </h3>
-          <div className="h-64 w-full relative">
-             {orders.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                    <Pie
-                    data={ordersByStatus}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="none"
-                    >
-                    {ordersByStatus.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                    <Label
-                        value={orders.length}
-                        position="center"
-                        className="text-3xl font-black"
-                        style={{ fill: '#737373', fontSize: '24px', fontWeight: '900', fontFamily: 'Inter' }}
-                    />
-                    </Pie>
-                    <Tooltip 
-                        content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                                <div className="bg-black text-white p-3 shadow-xl dark:bg-stone-800 dark:border dark:border-stone-700">
-                                <p className="text-[10px] uppercase tracking-widest font-bold mb-1">{data.fullName}</p>
-                                <p className="text-sm font-mono">{data.value} Ordenes ({data.percentage}%)</p>
-                                <p className="text-xs text-stone-400 font-mono mt-1">{data.kg.toFixed(1)} Kg</p>
-                                </div>
-                            );
-                            }
-                            return null;
-                        }}
-                    />
-                </PieChart>
-                </ResponsiveContainer>
-             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-stone-300 dark:text-stone-700">
-                    <Package className="w-10 h-10 mb-4 opacity-10" />
-                    <p className="text-[10px] font-black uppercase tracking-widest italic">Sin datos</p>
-                </div>
-             )}
-          </div>
-            
-          <div className="mt-6 space-y-3">
-              {ordersByStatus.map((entry, index) => (
-                <div key={entry.name} className="flex items-center justify-between group cursor-default">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                    <span className="text-[10px] uppercase tracking-wider text-stone-600 font-bold group-hover:text-black transition-colors dark:text-stone-400 dark:group-hover:text-stone-200">{entry.fullName}</span>
+          {lowGreen.length === 0 ? (
+            <div className="h-32 flex items-center justify-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600">
+              Sin alertas de stock verde
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {lowGreen.map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between border border-stone-100 px-3 py-2 text-xs dark:border-stone-800"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-bold text-black uppercase tracking-wide truncate max-w-[140px] dark:text-white">
+                      {item.variety}
+                    </span>
+                    <span className="text-[10px] text-stone-400 uppercase tracking-widest truncate max-w-[140px] dark:text-stone-500">
+                      {item.clientName}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-mono text-stone-400">{entry.kg.toFixed(1)} Kg</span>
-                    <span className="text-xs font-bold text-black min-w-[3rem] text-right dark:text-white">{entry.value} ({entry.percentage}%)</span>
+                  <div className="text-right">
+                    <span className="text-sm font-black text-red-600 dark:text-red-500">
+                      {item.quantityKg.toFixed(1)}
+                    </span>
+                    <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
+                      Kg
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        <div className="border border-stone-200 bg-white p-6 hover:border-black transition-colors duration-300 dark:bg-stone-900 dark:border-stone-800 dark:hover:border-stone-600">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-1 dark:text-stone-500">
+                Compras pendientes
+              </p>
+              <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
+                Utilería — stock bajo
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
+              {lowUtility.length}
+            </span>
+          </div>
+          {lowUtility.length === 0 ? (
+            <div className="h-32 flex items-center justify-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600">
+              Sin insumos con stock bajo
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {lowUtility.map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between border border-stone-100 px-3 py-2 text-xs dark:border-stone-800"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-bold text-black uppercase tracking-wide truncate max-w-[160px] dark:text-white">
+                      {item.name}
+                    </span>
+                    {item.format && (
+                      <span className="text-[10px] text-stone-400 uppercase tracking-widest truncate max-w-[160px] dark:text-stone-500">
+                        {item.format}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-black text-red-600 dark:text-red-500">
+                      {formatUtilityQuantity(item)}
+                    </span>
+                    <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
+                      Comprar
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -796,4 +371,3 @@ const MetricCard: React.FC<{ label: string; value: string | number; icon: React.
 );
 
 export default DashboardView;
-

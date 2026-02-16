@@ -59,8 +59,10 @@ export interface Order {
   sortingLossKg?: number;
   fulfilledFromStockId?: string;
   shippedDate?: string;
+  shippedKg?: number;
   shippingCost?: number;
   invoicedDate?: string;
+  deliveryType?: 'envio' | 'recojo';
   deliveryAddress?: string;
   deliveryAddressDetail?: string;
   isPaused?: boolean;

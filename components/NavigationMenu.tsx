@@ -46,7 +46,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
     if (isOpen) {
       setIsVisible(true);
     } else {
-      const t = setTimeout(() => setIsVisible(false), 1500);
+      const t = setTimeout(() => setIsVisible(false), 700);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
@@ -57,15 +57,15 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
     <>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 z-[200] transition-opacity duration-[1500ms] ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[200] transition-opacity duration-700 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => {
           setActiveOption(null);
           onClose();
         }}
       />
 
-      {/* Bottom Sheet */}
-      <div className={`fixed bottom-0 left-0 right-0 h-[75vh] bg-stone-900 z-[210] rounded-t-[2rem] overflow-hidden shadow-2xl transform transition-transform duration-[1500ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+      {/* Slide-in Panel */}
+      <div className={`fixed inset-y-0 right-0 w-full max-w-5xl bg-stone-900 z-[210] overflow-hidden shadow-2xl transform transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         
         {/* Close Button */}
         <button 
@@ -108,7 +108,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
                         <input 
                           type="password"
                           autoFocus
-                          className="w-full bg-transparent border-b border-white/40 py-2 text-center text-white text-xl font-serif focus:border-white focus:outline-none transition-colors placeholder:text-white/30"
+                          className="w-full bg-transparent border-b border-white/40 py-2 text-center text-white text-sm font-bold focus:border-white focus:outline-none transition-colors placeholder:text-white/30"
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
@@ -164,7 +164,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
                         <input 
                           type="password"
                           autoFocus
-                          className="w-full bg-transparent border-b border-white/40 py-2 text-center text-white text-xl font-serif focus:border-white focus:outline-none transition-colors placeholder:text-white/30"
+                          className="w-full bg-transparent border-b border-white/40 py-2 text-center text-white text-sm font-bold focus:border-white focus:outline-none transition-colors placeholder:text-white/30"
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}

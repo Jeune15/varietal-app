@@ -6,30 +6,43 @@ interface LoaderProps {
 
 const Loader: React.FC<LoaderProps> = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
+  const [isHiding, setIsHiding] = useState(false);
 
   useEffect(() => {
-    const duration = 1500; // 1.5 seconds total load time
+    const duration = 1500;
     const interval = 15;
     const steps = duration / interval;
     const increment = 100 / steps;
+
+    let cancelled = false;
 
     const timer = setInterval(() => {
       setProgress(prev => {
         const next = prev + increment;
         if (next >= 100) {
           clearInterval(timer);
-          setTimeout(() => onComplete?.(), 500); // Small delay before unmounting
+          setTimeout(() => {
+            if (cancelled) return;
+            setIsHiding(true);
+            setTimeout(() => {
+              if (cancelled) return;
+              onComplete?.();
+            }, 500);
+          }, 1000);
           return 100;
         }
         return next;
       });
     }, interval);
 
-    return () => clearInterval(timer);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-[300] bg-black text-white flex flex-col items-center justify-center transition-opacity duration-500">
+    <div className={`fixed inset-0 z-[300] bg-black text-white flex flex-col items-center justify-center transition-opacity duration-500 ${isHiding ? 'animate-zoom-out' : ''}`}>
       <div className="relative w-24 h-24 mb-8">
         <img 
           src="/logocircular.png" 

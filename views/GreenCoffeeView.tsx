@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { GreenCoffee } from '../types';
 import { db, syncToCloud } from '../db';
@@ -16,8 +16,24 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<GreenCoffee | null>(null);
   
-  // Filter out empty stock
   const activeCoffees = coffees.filter(c => c.quantityKg > 0);
+
+  const [clientFilter, setClientFilter] = useState('');
+  const [varietyFilter, setVarietyFilter] = useState('');
+
+  const filteredCoffees = useMemo(() => {
+    const clientQuery = clientFilter.trim().toLowerCase();
+    const varietyQuery = varietyFilter.trim().toLowerCase();
+    return activeCoffees.filter(c => {
+      const client = c.clientName.toLowerCase();
+      const variety = c.variety.toLowerCase();
+      const matchesClient = clientQuery ? client.includes(clientQuery) : true;
+      const matchesVariety = varietyQuery ? variety.includes(varietyQuery) : true;
+      return matchesClient && matchesVariety;
+    });
+  }, [activeCoffees, clientFilter, varietyFilter]);
+
+  const visibleCoffees = filteredCoffees.slice(0, 10);
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -91,16 +107,40 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
         )}
       </div>
 
-      {/* Grid de Contenido - Lista en móvil, Tabla en Desktop */}
-      <div className="bg-white border border-stone-200 shadow-sm">
-        {/* Vista Mobile / Tablet (Lista de Cards) */}
+      <div className="bg-white border border-stone-200 shadow-sm dark:bg-stone-900 dark:border-stone-800">
+        <div className="border-b border-stone-100 dark:border-stone-800 px-4 py-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">
+            Filtros de listado
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="flex-1 min-w-[180px] relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input
+                type="text"
+                placeholder="BUSCAR CLIENTE..."
+                value={clientFilter}
+                onChange={e => setClientFilter(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:outline-none transition-colors dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:focus:border-white"
+              />
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <input
+                type="text"
+                placeholder="FILTRAR POR VARIEDAD..."
+                value={varietyFilter}
+                onChange={e => setVarietyFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:outline-none transition-colors dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:focus:border-white"
+              />
+            </div>
+          </div>
+        </div>
         <div className="block lg:hidden divide-y divide-stone-100">
-          {activeCoffees.length === 0 ? (
+          {visibleCoffees.length === 0 ? (
             <div className="p-12 text-center text-stone-400 font-medium uppercase text-xs tracking-widest">Sin existencias</div>
           ) : (
-            activeCoffees.map((c) => (
-              <div key={c.id} className="p-6 active:bg-stone-50 transition-colors">
-                <div className="flex justify-between items-start mb-4">
+            visibleCoffees.map((c) => (
+              <div key={c.id} className="p-4 active:bg-stone-50 transition-colors">
+                <div className="flex justify-between items-start mb-3">
                   <div>
                     <h4 className="text-lg font-black text-black dark:text-orange-600 uppercase tracking-tight">{c.clientName}</h4>
                     <p className="text-xs font-bold text-stone-500 mt-1 uppercase tracking-wide">{c.variety}</p>
@@ -109,7 +149,7 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
                     {c.entryDate}
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100 dark:border-stone-800">
                   <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500">
                     <MapPin className="w-3 h-3" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">{c.origin}</span>
@@ -134,7 +174,6 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
           )}
         </div>
 
-        {/* Vista Desktop (Tabla Tradicional) */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-white dark:bg-stone-900 border-b-2 border-black dark:border-white">
@@ -146,14 +185,14 @@ const GreenCoffeeView: React.FC<Props> = ({ coffees }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-              {activeCoffees.length === 0 ? (
+              {visibleCoffees.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-12 text-center text-stone-400 dark:text-stone-500 font-medium uppercase text-xs tracking-widest">
                     Sin existencias
                   </td>
                 </tr>
               ) : (
-                activeCoffees.map((c) => (
+                visibleCoffees.map((c) => (
                   <tr key={c.id} className="hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors group">
                     <td className="px-8 py-6 font-bold text-sm text-black dark:text-orange-600 uppercase tracking-wide">{c.clientName}</td>
                     <td className="px-6 py-6">
