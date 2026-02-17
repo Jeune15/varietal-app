@@ -356,7 +356,12 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
     await db.orders.add(newOrder);
     await syncToCloud('orders', newOrder);
     
-    showToast('Pedido creado exitosamente', 'success');
+    const supabase = getSupabase();
+    if (!supabase) {
+      showToast('Pedido guardado solo en este dispositivo. Configura la sincronización en Ajustes para compartirlo.', 'info');
+    } else {
+      showToast('Pedido creado y sincronizado con la nube', 'success');
+    }
     setShowModal(false);
     resetFormState();
   };
