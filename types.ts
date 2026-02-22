@@ -123,6 +123,31 @@ export interface EspressoShot {
   tasteBalance: string[]; // Multi-select ['sour', 'bitter', 'balanced', etc.]
   sensory: SensoryAnalysis;
   notes?: string;
+  waterTempCelsius?: number;
+  preinfusionSeconds?: number;
+  pressureBar?: number;
+  firstDropsSeconds?: number;
+  tamping?: 'soft' | 'normal' | 'firm';
+  acidityScore?: number;
+  sweetnessScore?: number;
+  bitternessScore?: number;
+  bodyScore?: number;
+  clarityScore?: number;
+  sensoryCategories?: string[];
+  sensorySubnotes?: string;
+  acidityDescriptors?: string;
+  sweetnessDescriptors?: string;
+  bitternessDescriptors?: string;
+  bodyDescriptors?: string;
+  clarityDescriptors?: string;
+  sensoryTimelineOffsets?: number[];
+  sensoryTimelineNotes?: string[];
+  temporalProfileStart?: number;
+  temporalProfileMiddle?: number;
+  temporalProfileEnd?: number;
+  temporalProfileStartNotes?: string;
+  temporalProfileMiddleNotes?: string;
+  temporalProfileEndNotes?: string;
 }
 
 export interface EspressoSession {
@@ -133,6 +158,9 @@ export interface EspressoSession {
   shots: EspressoShot[];
   notes?: string;
   deleted?: boolean;
+  coffeeOrigin?: string;
+  coffeeProcess?: string;
+  roastDate?: string;
 }
 
 export type BrewMethod = 'Filtro' | 'Inmersión' | 'Hario Switch' | 'Aeropress';

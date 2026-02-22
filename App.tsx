@@ -194,6 +194,139 @@ const AppContent: React.FC = () => {
     }
   }, [userRole, activeTab]);
 
+  useEffect(() => {
+    let currentY = window.scrollY || 0;
+    let targetY = currentY;
+    let frameId: number | null = null;
+    let lastWheelTime = 0;
+    let gestureFactor = 1;
+
+    const clampTarget = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll <= 0) {
+        targetY = 0;
+        currentY = 0;
+        return;
+      }
+      if (targetY < 0) targetY = 0;
+      if (targetY > maxScroll) targetY = maxScroll;
+    };
+
+    const animate = () => {
+      const diff = targetY - currentY;
+      if (Math.abs(diff) < 0.2) {
+        currentY = targetY;
+        frameId = null;
+        return;
+      }
+      const factor = Math.min(0.4, 0.2 + Math.abs(diff) / 1000);
+      currentY += diff * factor;
+      window.scrollTo(0, currentY);
+      frameId = requestAnimationFrame(animate);
+    };
+
+    const scheduleAnimation = () => {
+      if (frameId != null) return;
+      frameId = requestAnimationFrame(animate);
+    };
+
+    const updateTarget = (deltaY: number) => {
+      targetY += deltaY;
+      clampTarget();
+      scheduleAnimation();
+    };
+
+    const getScrollableParent = (node: HTMLElement | null): HTMLElement | null => {
+      let el: HTMLElement | null = node;
+      while (el && el !== document.body && el !== document.documentElement) {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const scrollParent = target ? getScrollableParent(target) : null;
+      if (scrollParent && scrollParent !== document.body && scrollParent !== document.documentElement) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const now = performance.now();
+      if (lastWheelTime && now - lastWheelTime < 300) {
+        const deltaTime = now - lastWheelTime;
+        gestureFactor = Math.min(gestureFactor + deltaTime / 600, 3);
+      } else {
+        gestureFactor = 1;
+      }
+      lastWheelTime = now;
+
+      const direction = event.deltaY > 0 ? 1 : -1;
+      const magnitude = Math.min(Math.abs(event.deltaY), 140) / 80;
+      const baseStep = 36;
+      const delta = direction * baseStep * (0.5 + magnitude) * gestureFactor;
+      updateTarget(delta);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      let delta = 0;
+      if (event.key === 'ArrowDown') {
+        delta = 40;
+      } else if (event.key === 'ArrowUp') {
+        delta = -40;
+      } else if (event.key === 'PageDown') {
+        delta = window.innerHeight * 0.8;
+      } else if (event.key === 'PageUp') {
+        delta = -window.innerHeight * 0.8;
+      } else if (event.key === 'Home') {
+        targetY = 0;
+        clampTarget();
+        scheduleAnimation();
+        event.preventDefault();
+        return;
+      } else if (event.key === 'End') {
+        targetY = document.documentElement.scrollHeight - window.innerHeight;
+        clampTarget();
+        scheduleAnimation();
+        event.preventDefault();
+        return;
+      }
+
+      if (delta !== 0) {
+        event.preventDefault();
+        updateTarget(delta);
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, []);
+
   const handleManualSync = async () => {
     setIsSyncing(true);
     await pullFromCloud();
@@ -319,7 +452,7 @@ const AppContent: React.FC = () => {
 
         {/* Student Bottom Navigation */}
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
-          <div className="flex items-center justify-around px-4 py-2">
+          <div className="flex items-center justify-center gap-4 px-2 py-2">
             {[
               { id: 'cupping', label: 'Catación', icon: BarChart3 },
               { id: 'modules', label: 'Módulos', icon: Package },
@@ -338,7 +471,7 @@ const AppContent: React.FC = () => {
                   }`}
                 >
                   <Icon 
-                    className={`w-5 h-5 transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
+                    className={`w-[18px] h-[18px] transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
                     strokeWidth={isActive ? 2.5 : 2} 
                   />
                   <span className={`text-[9px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>

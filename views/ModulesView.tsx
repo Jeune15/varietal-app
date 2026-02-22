@@ -567,13 +567,13 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
               const title = titleLine.replace('•', '').trim();
               const desc = lines.filter(l => l !== titleLine).join(' ').trim();
               return (
-                <li key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+                <li key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed">
                   <strong className="font-bold text-stone-900 dark:text-stone-100">{title}:</strong> {desc}
                 </li>
               );
             }
             return (
-               <li key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+               <li key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed">
                  {block}
                </li>
             );
@@ -586,7 +586,7 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
     return (
       <div className="space-y-4">
         {blocks.map((block, i) => (
-          <p key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed font-serif">
+          <p key={i} className="text-stone-600 dark:text-stone-300 leading-relaxed">
             {block}
           </p>
         ))}
@@ -636,10 +636,10 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
 const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryRecord[]; onDeleteHistory: (id: string) => void }> = ({ onSelect, history, onDeleteHistory }) => {
 
   return (
-    <div className="space-y-10 max-w-6xl mx-auto pb-48 animate-fade-in">
+    <div className="space-y-10 max-w-6xl mx-auto pb-32 animate-fade-in">
       <div className="space-y-2 mb-8">
         <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
-        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+        <p className="text-[11px] md:text-xs font-bold text-stone-400 uppercase tracking-widest">
           Material educativo y recursos
         </p>
       </div>
@@ -1053,15 +1053,15 @@ const ModuleDetail: React.FC<{ module: Module, onBack: () => void, onExamComplet
 
   return (
     <div className="max-w-4xl mx-auto pb-24 relative">
-      {/* Header */}
+      <button
+        onClick={onBack}
+        className="fixed top-4 md:top-6 left-4 md:left-8 z-[200] inline-flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm rounded-lg border border-stone-200 dark:border-stone-800 shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-[11px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300"
+        aria-label="Volver"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>Volver</span>
+      </button>
       <div className="mb-8">
-        <button 
-          onClick={onBack}
-          className="flex items-center text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Volver a Módulos
-        </button>
         <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-stone-100 font-serif mb-2">{module.title}</h2>
         <p className="text-lg md:text-xl text-stone-600 dark:text-stone-400 mb-4">{module.subtitle}</p>
         <p className="text-stone-500 dark:text-stone-500 leading-relaxed">{module.description}</p>

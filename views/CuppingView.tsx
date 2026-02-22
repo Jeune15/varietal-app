@@ -389,11 +389,11 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
 
   return (
     <>
-    <div className="space-y-10 max-w-6xl mx-auto pb-48 relative">
+    <div className="space-y-10 max-w-6xl mx-auto pb-32 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-8">
         <div className="space-y-2">
           <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase transition-all duration-300">Catación</h3>
-          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+          <p className="text-[11px] md:text-xs font-bold text-stone-400 uppercase tracking-widest">
             Sistema descriptivo de evaluación sensorial
           </p>
         </div>

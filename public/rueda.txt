@@ -1,0 +1,203 @@
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import * as d3 from "d3-shape";
+
+const dataTree = [
+  {
+    name: "Frutal",
+    base: "#ef4444",
+    children: [
+      {
+        name: "Cítrico",
+        children: ["Limón", "Naranja", "Toronja"]
+      },
+      {
+        name: "Frutos Rojos",
+        children: ["Fresa", "Cereza"]
+      }
+    ]
+  },
+  {
+    name: "Floral",
+    base: "#a855f7",
+    children: [
+      {
+        name: "Blanca",
+        children: ["Jazmín", "Azahar"]
+      }
+    ]
+  }
+];
+
+const size = 600;
+
+export default function SCASensoryWheelUltraPro() {
+  const [level, setLevel] = useState("category"); 
+  const [focused, setFocused] = useState(null);
+  const [selected, setSelected] = useState(null);
+
+  const radius = {
+    category: [220, 280],
+    sub: [150, 220],
+    descriptor: [80, 150]
+  };
+
+  const center = size / 2;
+
+  const visibleData = useMemo(() => {
+    if (level === "category") return dataTree;
+    if (level === "sub") return focused.children;
+    if (level === "descriptor") return focused.children;
+  }, [level, focused]);
+
+  const pie = d3.pie().value(() => 1).sort(null);
+  const arcs = pie(visibleData || []);
+
+  const arcGen = (inner, outer) =>
+    d3.arc().innerRadius(inner).outerRadius(outer);
+
+  return (
+    <div className="flex justify-center items-center">
+      <svg width={size} height={size}>
+        <defs>
+          {/* Gradientes dinámicos */}
+          {dataTree.map(cat => (
+            <radialGradient id={`grad-${cat.name}`} key={cat.name}>
+              <stop offset="0%" stopColor={cat.base} stopOpacity="1"/>
+              <stop offset="100%" stopColor={cat.base} stopOpacity="0.6"/>
+            </radialGradient>
+          ))}
+
+          {/* Glow */}
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          {/* Sombra interior */}
+          <filter id="innerShadow">
+            <feOffset dx="0" dy="2"/>
+            <feGaussianBlur stdDeviation="4" result="offset-blur"/>
+            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+            <feFlood floodColor="black" floodOpacity="0.4"/>
+            <feComposite operator="in" in2="inverse"/>
+            <feComposite operator="over" in2="SourceGraphic"/>
+          </filter>
+        </defs>
+
+        <g transform={`translate(${center},${center})`}>
+          <AnimatePresence>
+            {arcs.map((arcData, i) => {
+              const item = visibleData[i];
+              const arcPath = arcGen(
+                radius[level][0],
+                radius[level][1]
+              )(arcData);
+
+              const isActive = selected === item?.name;
+
+              return (
+                <motion.g
+                  key={item.name}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{
+                    scale: 1,
+                    opacity: 1
+                  }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                >
+                  <motion.path
+                    d={arcPath}
+                    fill={
+                      level === "category"
+                        ? `url(#grad-${item.name})`
+                        : focused?.base
+                    }
+                    stroke="#fff"
+                    strokeWidth="2"
+                    filter={isActive ? "url(#glow)" : "url(#innerShadow)"}
+                    whileHover={{ scale: 1.03 }}
+                    onClick={() => {
+                      if (level === "category") {
+                        setFocused(item);
+                        setLevel("sub");
+                      } else if (level === "sub") {
+                        setFocused({
+                          ...focused,
+                          children: item.children
+                        });
+                        setLevel("descriptor");
+                      } else {
+                        setSelected(item);
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                  />
+
+                  {/* Texto curvo dinámico */}
+                  <text fill="white" fontSize="14" fontWeight="600">
+                    <textPath
+                      href={`#textpath-${level}-${i}`}
+                      startOffset="50%"
+                      textAnchor="middle"
+                    >
+                      {item.name.toUpperCase()}
+                    </textPath>
+                  </text>
+
+                  <path
+                    id={`textpath-${level}-${i}`}
+                    d={d3.arc()
+                      .innerRadius(radius[level][1] - 20)
+                      .outerRadius(radius[level][1] - 20)(arcData)}
+                    fill="none"
+                  />
+                </motion.g>
+              );
+            })}
+          </AnimatePresence>
+
+          {/* Centro interactivo */}
+          <motion.circle
+            r={60}
+            fill="#111827"
+            animate={{
+              scale: [1, 1.03, 1]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            onClick={() => {
+              if (level === "descriptor") setLevel("sub");
+              else if (level === "sub") setLevel("category");
+              else {
+                setFocused(null);
+                setSelected(null);
+              }
+            }}
+            style={{ cursor: "pointer" }}
+          />
+
+          <text
+            textAnchor="middle"
+            dy=".3em"
+            fill="white"
+            fontSize="13"
+          >
+            {level === "category"
+              ? "SCA"
+              : level === "sub"
+              ? "Subcategorías"
+              : "Descriptores"}
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}

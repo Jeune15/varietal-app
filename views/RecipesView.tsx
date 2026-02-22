@@ -45,6 +45,31 @@ const formatRatio = (waterPerGram: number): string => {
   return `1:${rounded}`;
 };
 
+interface TopBackButtonProps {
+  onClick?: () => void;
+}
+
+const TopBackButton: React.FC<TopBackButtonProps> = ({ onClick }) => {
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      window.history.back();
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="fixed top-4 md:top-6 left-4 md:left-8 z-[200] inline-flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm rounded-lg border border-stone-200 dark:border-stone-800 shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-[11px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300"
+      aria-label="Volver"
+    >
+      <ArrowLeft className="w-4 h-4" />
+      <span>Volver</span>
+    </button>
+  );
+};
+
 const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) => {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
@@ -762,23 +787,23 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
   const selectedVariable = variablesAndTechniques.find(item => item.id === selectedVariableId) || null;
 
   return (
-    <div className="bg-stone-100 dark:bg-stone-900/40 p-6 md:p-8 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-6">
-      <div className="flex flex-col gap-2">
+    <div className="bg-stone-100 dark:bg-stone-900/40 p-6 md:p-10 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-8">
+      <div className="flex flex-col gap-3">
         <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
           Variables y herramientas ({method})
         </h2>
-        <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-2xl">
+        <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
           Relaciona los ajustes de receta con las herramientas que usas alrededor del filtro. Todo suma o resta a nivel de extracción y sensación en la taza.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <div className="space-y-4">
+      <div className="space-y-8">
+          <div className="space-y-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
               Métodos
             </p>
-            <p className="text-[11px] text-stone-500 mt-1">
+            <p className="text-[11px] md:text-xs text-stone-500 mt-1">
               Drippers y sistemas de filtrado que definen la base de flujo, claridad y cuerpo.
             </p>
           </div>
@@ -791,7 +816,7 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
                   setSelectedMethodId(selectedMethodId === item.id ? null : item.id);
                   setSelectedToolId(null);
                 }}
-                className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
                   selectedMethodId === item.id
                     ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
                     : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
@@ -801,45 +826,49 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
               </button>
             ))}
           </div>
-          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-4">
+          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
             {selectedMethod ? (
-              <div className="space-y-3">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                    Tipo
-                  </p>
-                  <p className="text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                    {selectedMethod.type}
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Tipo
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {selectedMethod.type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Perfil típico en taza
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {selectedMethod.cupProfile}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                  Impacto técnico
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                  {selectedMethod.technicalImpact.map((line, idx) => (
-                    <li key={idx}>{line}</li>
-                  ))}
-                </ul>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 mt-2">
-                    Perfil típico en taza
+                <div className="space-y-3">
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                    Impacto técnico
                   </p>
-                  <p className="text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                    {selectedMethod.cupProfile}
-                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                    {selectedMethod.technicalImpact.map((line, idx) => (
+                      <li key={idx}>{line}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             ) : (
-              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400">
+              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                 Selecciona un método para ver tipo, impacto técnico y perfil de taza.
               </p>
             )}
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
               Herramientas
             </p>
-            <p className="text-[11px] text-stone-500 mt-1">
+            <p className="text-[11px] md:text-xs text-stone-500 mt-1">
               Elementos que modifican el flujo, la estabilidad o la forma en que se extrae y se sirve el café.
             </p>
           </div>
@@ -852,7 +881,7 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
                   setSelectedToolId(selectedToolId === item.id ? null : item.id);
                   setSelectedMethodId(null);
                 }}
-                className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
                   selectedToolId === item.id
                     ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
                     : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
@@ -862,36 +891,40 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
               </button>
             ))}
           </div>
-          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-4">
+          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
             {selectedTool ? (
-              <div className="space-y-3">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                    Tipo
-                  </p>
-                  <p className="text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                    {selectedTool.type}
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Tipo
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {selectedTool.type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Perfil típico en taza
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {selectedTool.cupProfile}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                  Impacto técnico
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                  {selectedTool.technicalImpact.map((line, idx) => (
-                    <li key={idx}>{line}</li>
-                  ))}
-                </ul>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 mt-2">
-                    Perfil típico en taza
+                <div className="space-y-3">
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                    Impacto técnico
                   </p>
-                  <p className="text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                    {selectedTool.cupProfile}
-                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                    {selectedTool.technicalImpact.map((line, idx) => (
+                      <li key={idx}>{line}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             ) : (
-              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400">
+              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                 Elige una herramienta para ver qué cambia a nivel técnico (flujo, temperatura, minerales, estabilidad) y cómo se traduce en el perfil de la taza.
               </p>
             )}
@@ -900,10 +933,10 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
 
         <div className="space-y-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
               Variables y técnicas
             </p>
-            <p className="text-[11px] text-stone-500 mt-1">
+            <p className="text-[11px] md:text-xs text-stone-500 mt-1">
               Cada ajuste que haces en la receta mueve la balanza entre acidez, dulzor, cuerpo y claridad.
             </p>
           </div>
@@ -913,7 +946,7 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
                 key={variable.id}
                 type="button"
                 onClick={() => setSelectedVariableId(selectedVariableId === variable.id ? null : variable.id)}
-                className={`px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
                   selectedVariableId === variable.id
                     ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
                     : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
@@ -923,36 +956,40 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
               </button>
             ))}
           </div>
-          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-4">
+          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
             {selectedVariable ? (
-              <div className="space-y-3">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                    Tipo
-                  </p>
-                  <p className="text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                    {selectedVariable.type}
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Tipo
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {selectedVariable.type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Perfil típico en taza
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {selectedVariable.cupProfile}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                  Impacto técnico
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                  {selectedVariable.technicalImpact.map((line: string, idx: number) => (
-                    <li key={idx}>{line}</li>
-                  ))}
-                </ul>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 mt-2">
-                    Perfil típico en taza
+                <div className="space-y-3">
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                    Impacto técnico
                   </p>
-                  <p className="text-xs md:text-sm text-stone-700 dark:text-stone-300">
-                    {selectedVariable.cupProfile}
-                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                    {selectedVariable.technicalImpact.map((line: string, idx: number) => (
+                      <li key={idx}>{line}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             ) : (
-              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400">
+              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                 Selecciona una variable o técnica para ver su tipo, su impacto técnico y cómo modifica la taza.
               </p>
             )}
@@ -1184,14 +1221,14 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
     .find(item => item.id === openId) || null;
 
   return (
-    <div className="border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-900/90 p-6 lg:p-10 space-y-8">
-      <div className="grid grid-cols-1 gap-8 items-start">
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100 mb-1">
+    <div className="border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-900/90 p-6 lg:p-10 space-y-10">
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
               Perfilación
             </h2>
-            <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 mt-2 leading-relaxed max-w-[36ch] md:max-w-2xl">
+            <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 leading-relaxed max-w-3xl">
               Modelo causa–efecto y ajustes por objetivo.
             </p>
             <div className="mt-4 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-stone-50/60 dark:bg-stone-900">
@@ -1201,7 +1238,7 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                     <button
                       type="button"
                       onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                      className={`w-full text-left px-5 py-4 min-h-[44px] text-xs font-bold uppercase tracking-widest flex items-center justify-between transition-colors ${
+                      className={`w-full text-left px-5 py-4 min-h-[44px] text-[10px] md:text-[11px] font-bold uppercase tracking-widest flex items-center justify-between transition-colors ${
                         openId === item.id
                           ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900'
                           : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'
@@ -1219,39 +1256,39 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                     >
                       <div className="space-y-4">
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
+                          <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
                           {'symptomList' in item && Array.isArray((item as any).symptomList) ? (
-                            <ul className="list-disc list-inside space-y-2 text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                            <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                               {(item as any).symptomList.map((line: string, idx: number) => (
                                 <li key={idx}>{line}</li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{item.symptom}</p>
+                            <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.symptom}</p>
                           )}
                         </div>
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-1">Qué te está diciendo el café</p>
+                          <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-amber-500 mb-1">Qué te está diciendo el café</p>
                           {'causeList' in item && Array.isArray((item as any).causeList) ? (
-                            <ul className="list-disc list-inside space-y-2 text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                            <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                               {(item as any).causeList.map((line: string, idx: number) => (
                                 <li key={idx}>{line}</li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{item.cause}</p>
+                            <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.cause}</p>
                           )}
                         </div>
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-1">Ajustes sugeridos</p>
+                          <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-green-600 mb-1">Ajustes sugeridos</p>
                           {'solutionList' in item && Array.isArray((item as any).solutionList) ? (
-                            <ul className="list-disc list-inside space-y-2 text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                            <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                               {(item as any).solutionList.map((line: string, idx: number) => (
                                 <li key={idx}>{line}</li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{item.solution}</p>
+                            <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.solution}</p>
                           )}
                         </div>
                       </div>
@@ -1261,13 +1298,13 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
               </div>
             </div>
           </div>
-          <div className="pt-2">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-3">
-              <div>
-                <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100 mb-1">
+          <div className="pt-2 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4">
+              <div className="space-y-3">
+                <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
                   Problemas comunes ({method})
                 </h2>
-                <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 mt-2 max-w-[36ch] md:max-w-2xl leading-relaxed">
+                <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
                   Usa este mapa visual y sensorial para interpretar lo que ves en el filtro y lo que pruebas en la taza, y convierte esas señales en ajustes concretos.
                 </p>
               </div>
@@ -1278,10 +1315,10 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
             {problemSections.map(section => (
               <div key={section.id} className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-stone-50/60 dark:bg-stone-900 mt-4">
                 <div className="px-5 py-4 border-b border-stone-200 dark:border-stone-800">
-                  <p className="text-xs font-bold uppercase tracking-widest text-stone-500">
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
                     {section.label}
                   </p>
-                  <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                  <p className="text-[11px] md:text-xs text-stone-500 mt-2 leading-relaxed">
                     {section.description}
                   </p>
                 </div>
@@ -1291,7 +1328,7 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                       <button
                         type="button"
                         onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                        className={`w-full text-left px-5 py-4 min-h-[44px] text-xs font-bold uppercase tracking-widest flex items-center justify-between transition-colors ${
+                        className={`w-full text-left px-5 py-4 min-h-[44px] text-[10px] md:text-[11px] font-bold uppercase tracking-widest flex items-center justify-between transition-colors ${
                           openId === item.id
                             ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900'
                             : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'
@@ -1309,39 +1346,39 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                       >
                         <div className="space-y-4">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
+                            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
                             {'symptomList' in item && Array.isArray((item as any).symptomList) ? (
-                              <ul className="list-disc list-inside space-y-2 text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                              <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                                 {(item as any).symptomList.map((line: string, idx: number) => (
                                   <li key={idx}>{line}</li>
                                 ))}
                               </ul>
                             ) : (
-                              <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{item.symptom}</p>
+                              <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.symptom}</p>
                             )}
                           </div>
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-1">Qué te está diciendo el café</p>
+                            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-amber-500 mb-1">Qué te está diciendo el café</p>
                             {'causeList' in item && Array.isArray((item as any).causeList) ? (
-                              <ul className="list-disc list-inside space-y-2 text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                              <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                                 {(item as any).causeList.map((line: string, idx: number) => (
                                   <li key={idx}>{line}</li>
                                 ))}
                               </ul>
                             ) : (
-                              <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{item.cause}</p>
+                              <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.cause}</p>
                             )}
                           </div>
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-1">Ajustes sugeridos</p>
+                            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-green-600 mb-1">Ajustes sugeridos</p>
                             {'solutionList' in item && Array.isArray((item as any).solutionList) ? (
-                              <ul className="list-disc list-inside space-y-2 text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
+                              <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                                 {(item as any).solutionList.map((line: string, idx: number) => (
                                   <li key={idx}>{line}</li>
                                 ))}
                               </ul>
                             ) : (
-                              <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{item.solution}</p>
+                              <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.solution}</p>
                             )}
                           </div>
                         </div>
@@ -1604,14 +1641,7 @@ const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
-      <button
-        onClick={onBack}
-        className="mb-6 inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Volver a Filtrados
-      </button>
-
+      <TopBackButton onClick={onBack} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <button
           type="button"
@@ -2209,13 +2239,13 @@ const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       )}
 
       {view === 'guide' && (
-        <div className="max-w-3xl">
+        <div className="w-full">
           <FilterCalibrationGuide method={current?.method ?? 'Filtro'} />
         </div>
       )}
 
       {view === 'troubleshoot' && (
-        <div className="max-w-3xl">
+        <div className="w-full">
           <FilterTroubleshootingGuide method={current?.method ?? 'Filtro'} />
         </div>
       )}
@@ -2372,14 +2402,9 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-32 animate-fade-in px-4 pt-8">
-      <button
-        onClick={onBack}
-        className="mb-6 inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Volver a Filtrados
-      </button>
+    <>
+      <TopBackButton onClick={onBack} />
+      <div className="max-w-4xl mx-auto pb-32 animate-fade-in px-4 pt-8">
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
         <div>
@@ -2593,6 +2618,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
@@ -2602,6 +2628,7 @@ export const RecipesView: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const espressoCardRef = useRef<HTMLButtonElement | null>(null);
   const filterCardRef = useRef<HTMLButtonElement | null>(null);
+  const espressoBackHandlerRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
     const handleMove = (e: MouseEvent) => {
@@ -2634,14 +2661,20 @@ export const RecipesView: React.FC = () => {
   if (selectedCategory === 'espresso') {
     content = (
       <div className="relative">
-        <button
-          onClick={() => setSelectedCategory('none')}
-          className="fixed top-6 md:top-8 lg:top-10 left-4 lg:left-8 z-10 inline-flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm rounded-lg border border-stone-200 dark:border-stone-800 shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-sm text-stone-600 dark:text-stone-300"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a Espresso
-        </button>
-        <EspressoView />
+        <TopBackButton
+          onClick={() => {
+            if (espressoBackHandlerRef.current) {
+              const handled = espressoBackHandlerRef.current();
+              if (handled) return;
+            }
+            setSelectedCategory('none');
+          }}
+        />
+        <EspressoView
+          onRegisterBackHandler={(handler) => {
+            espressoBackHandlerRef.current = handler;
+          }}
+        />
       </div>
     );
   } else if (selectedCategory === 'filter') {
