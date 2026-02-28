@@ -1,0 +1,142 @@
+import { useState } from "react"
+import { presets, PresetType } from "../../engine/presets"
+import {
+  generatePresetCase,
+  generateRandomPresetCase,
+} from "../../engine/caseGenerator"
+import { describeShot } from "../../engine/sensoryTranslator"
+import { applyAdjustment } from "../../engine/calibrationEngine"
+import { isVictory } from "../../engine/victory"
+import { ShotState, Adjustment } from "../../engine/types"
+
+export default function Simulator() {
+  const [selectedPreset, setSelectedPreset] = useState<PresetType | "random" | null>(null)
+  const [state, setState] = useState<ShotState | null>(null)
+  const [moves, setMoves] = useState(0)
+  const [won, setWon] = useState(false)
+
+  function startSimulation() {
+    if (!selectedPreset) return
+
+    const initialState =
+      selectedPreset === "random"
+        ? generateRandomPresetCase()
+        : generatePresetCase(selectedPreset)
+
+    setState(initialState)
+    setMoves(0)
+    setWon(false)
+  }
+
+  function handleAdjustment(adjustment: Adjustment) {
+    if (!state || won) return
+
+    const newState = applyAdjustment(state, adjustment)
+    setState(newState)
+    setMoves(prev => prev + 1)
+
+    if (isVictory(newState)) {
+      setWon(true)
+    }
+  }
+
+  function reset() {
+    setState(null)
+    setMoves(0)
+    setWon(false)
+    setSelectedPreset(null)
+  }
+
+  return (
+    <div className="p-6 max-w-xl mx-auto space-y-4">
+      <h1 className="text-2xl font-bold">Simulador de Calibración</h1>
+
+      {!state && (
+        <>
+          <h2 className="font-semibold">Selecciona un caso:</h2>
+
+          <div className="space-y-2">
+            {presets.map(preset => (
+              <div key={preset.type} className="border p-3 rounded">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="preset"
+                    value={preset.type}
+                    onChange={() => setSelectedPreset(preset.type)}
+                  />
+                  <span className="font-medium">{preset.label}</span>
+                </label>
+                <p className="text-sm text-gray-600">
+                  Objetivo: {preset.pedagogicalGoal}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Nivel: {preset.difficulty}
+                </p>
+              </div>
+            ))}
+
+            <div className="border p-3 rounded">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="preset"
+                  value="random"
+                  onChange={() => setSelectedPreset("random")}
+                />
+                <span className="font-medium">Caso aleatorio</span>
+              </label>
+            </div>
+          </div>
+
+          <button
+            onClick={startSimulation}
+            disabled={!selectedPreset}
+            className="mt-4 px-4 py-2 bg-black text-white rounded"
+          >
+            Iniciar simulación
+          </button>
+        </>
+      )}
+
+      {state && (
+        <>
+          <div className="p-4 border rounded">
+            <p>{describeShot(state)}</p>
+          </div>
+
+          {!won ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => handleAdjustment("finerGrind")} className="btn">
+                Molienda más fina
+              </button>
+              <button onClick={() => handleAdjustment("coarserGrind")} className="btn">
+                Molienda más gruesa
+              </button>
+              <button onClick={() => handleAdjustment("higherRatio")} className="btn">
+                Más rendimiento
+              </button>
+              <button onClick={() => handleAdjustment("lowerRatio")} className="btn">
+                Menos rendimiento
+              </button>
+              <button onClick={() => handleAdjustment("higherTemp")} className="btn">
+                ↑ Temperatura
+              </button>
+              <button onClick={() => handleAdjustment("lowerTemp")} className="btn">
+                ↓ Temperatura
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 bg-green-100 rounded">
+              <p>🎉 Extracción ideal lograda en {moves} ajustes.</p>
+            </div>
+          )}
+
+          <button onClick={reset} className="mt-4 underline">
+            Volver al menú
+          </button>
+        </>
+      )}
+    </div>
+  )
+}

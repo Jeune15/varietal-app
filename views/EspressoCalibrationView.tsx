@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { EspressoSimulator } from '../components/EspressoSimulator/EspressoSimulator';
 import { 
   Plus, 
   History, 
@@ -20,7 +21,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Trash2,
-  Eye
+  Eye,
+  Gamepad2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { line, curveMonotoneX } from 'd3-shape';
@@ -672,7 +674,7 @@ const SensoryTimeline: React.FC<SensoryTimelineProps> = ({ offsets, notes, onCha
                 onDragEnd={isFixed ? undefined : ((_, info) => handleDragEnd(index, info.offset.y))}
                 style={{ y: safeOffsets[index] || 0 }}
                 className={
-                  'w-4 h-4 rounded-full bg-black shadow-md border border-white' +
+                  'w-6 h-6 rounded-full bg-black shadow-md border-2 border-white dark:border-stone-800' +
                   (isFixed ? ' cursor-default' : ' cursor-grab active:cursor-grabbing')
                 }
               />
@@ -686,7 +688,7 @@ const SensoryTimeline: React.FC<SensoryTimelineProps> = ({ offsets, notes, onCha
               key={label}
               type="button"
               onClick={() => handleOpenEditor(index)}
-              className="text-[11px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors"
+              className="text-[11px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
             >
               {label}
               {safeNotes[index] && ' •'}
@@ -1007,7 +1009,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                   required
                   value={sessionData.coffeeName}
                   onChange={e => setSessionData({...sessionData, coffeeName: e.target.value})}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                  className="w-full p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                   placeholder="Ej. Etiopía Yirgacheffe"
                 />
               </div>
@@ -1017,7 +1019,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                   type="text"
                   value={sessionData.coffeeOrigin}
                   onChange={e => setSessionData({...sessionData, coffeeOrigin: e.target.value})}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                  className="w-full p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                   placeholder="Origen o finca"
                 />
               </div>
@@ -1026,7 +1028,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                 <select
                   value={sessionData.coffeeProcess}
                   onChange={e => setSessionData({...sessionData, coffeeProcess: e.target.value})}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                  className="w-full p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                 >
                   <option value="">Selecciona proceso</option>
                   <option value="lavado">Lavado</option>
@@ -1042,7 +1044,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                   type="date"
                   value={sessionData.roastDate}
                   onChange={e => setSessionData({...sessionData, roastDate: e.target.value})}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                  className="w-full p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                 />
               </div>
               <div className="space-y-1">
@@ -1057,7 +1059,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                   type="text"
                   value={sessionData.baristaName}
                   onChange={e => setSessionData({...sessionData, baristaName: e.target.value})}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                  className="w-full p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                   placeholder="Nombre del barista"
                 />
               </div>
@@ -1069,7 +1071,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
               <button
                 type="button"
                 onClick={() => setLevel('basic')}
-                className={`px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-full transition-colors ${
+                className={`px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-full transition-colors ${
                   level === 'basic'
                     ? 'bg-black text-white dark:bg-white dark:text-black'
                     : 'text-stone-500'
@@ -1080,7 +1082,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
               <button
                 type="button"
                 onClick={() => setLevel('advanced')}
-                className={`px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-full transition-colors ${
+                className={`px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-full transition-colors ${
                   level === 'advanced'
                     ? 'bg-black text-white dark:bg-white dark:text-black'
                     : 'text-stone-500'
@@ -1174,7 +1176,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       step="0.1"
                       value={currentShot.doseIn}
                       onChange={e => setCurrentShot({...currentShot, doseIn: Number(e.target.value)})}
-                      className="w-full p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-mono font-bold"
+                      className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-mono font-bold"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1186,7 +1188,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       step="0.1"
                       value={currentShot.yieldOut}
                       onChange={e => setCurrentShot({...currentShot, yieldOut: Number(e.target.value)})}
-                      className="w-full p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-mono font-bold"
+                      className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-mono font-bold"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1198,7 +1200,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       step="1"
                       value={currentShot.timeSeconds}
                       onChange={e => setCurrentShot({...currentShot, timeSeconds: Number(e.target.value)})}
-                      className="w-full p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-mono font-bold"
+                      className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-mono font-bold"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1209,7 +1211,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       type="text"
                       value={currentShot.grindSetting}
                       onChange={e => setCurrentShot({...currentShot, grindSetting: e.target.value})}
-                      className="w-full p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-bold"
+                      className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs text-center font-bold"
                       placeholder="Ej. 2.4"
                     />
                   </div>
@@ -1374,7 +1376,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                           temporalProfileStartNotes: e.target.value
                         })
                       }
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Análisis del inicio..."
                     />
                   </div>
@@ -1410,7 +1412,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                           temporalProfileMiddleNotes: e.target.value
                         })
                       }
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Análisis de la parte media..."
                     />
                   </div>
@@ -1446,7 +1448,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                           temporalProfileEndNotes: e.target.value
                         })
                       }
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Análisis del final..."
                     />
                   </div>
@@ -1472,7 +1474,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       type="text"
                       value={currentShot.acidityDescriptors || ''}
                       onChange={e => setCurrentShot({...currentShot, acidityDescriptors: e.target.value})}
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Descriptores de acidez (ej. cítrico, jugoso...)"
                     />
                   </div>
@@ -1496,7 +1498,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       type="text"
                       value={currentShot.sweetnessDescriptors || ''}
                       onChange={e => setCurrentShot({...currentShot, sweetnessDescriptors: e.target.value})}
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Descriptores de dulzor (ej. caramelo, miel...)"
                     />
                   </div>
@@ -1520,7 +1522,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       type="text"
                       value={currentShot.bitternessDescriptors || ''}
                       onChange={e => setCurrentShot({...currentShot, bitternessDescriptors: e.target.value})}
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Descriptores de amargor (ej. cacao, tánico...)"
                     />
                   </div>
@@ -1544,7 +1546,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       type="text"
                       value={currentShot.bodyDescriptors || ''}
                       onChange={e => setCurrentShot({...currentShot, bodyDescriptors: e.target.value})}
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Descriptores de cuerpo (ej. sedoso, pesado...)"
                     />
                   </div>
@@ -1568,7 +1570,7 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                       type="text"
                       value={currentShot.clarityDescriptors || ''}
                       onChange={e => setCurrentShot({...currentShot, clarityDescriptors: e.target.value})}
-                      className="w-full mt-1 p-2 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       placeholder="Descriptores de claridad (ej. limpio, turbio...)"
                     />
                   </div>
@@ -1663,13 +1665,13 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
             <h2 className="text-xl font-black text-stone-900 dark:text-stone-100">{session.coffeeName}</h2>
             <p className="text-sm text-stone-500">{new Date(session.date).toLocaleDateString()} • {session.baristaName}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors">
+          <button onClick={onClose} className="p-3 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6">
           {session.notes && (
             <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800/30">
               <h4 className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500 mb-2">Notas de Sesión</h4>
@@ -1704,7 +1706,7 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
                 {shot.tasteBalance && shot.tasteBalance.length > 0 && (
                    <div className="flex flex-wrap gap-1">
                      {shot.tasteBalance.map(t => (
-                       <span key={t} className="text-[10px] uppercase font-bold px-2 py-0.5 bg-stone-200 dark:bg-stone-700 rounded text-stone-600 dark:text-stone-300">
+                       <span key={t} className="text-xs uppercase font-bold px-2 py-0.5 bg-stone-200 dark:bg-stone-700 rounded text-stone-600 dark:text-stone-300">
                          {t === 'sour' ? 'Ácido' : t === 'sweet' ? 'Dulce' : t === 'balanced' ? 'Balance' : 'Amargo'}
                        </span>
                      ))}
@@ -1740,15 +1742,15 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
 
                 {shot.sensoryTimelineOffsets && shot.sensoryTimelineOffsets.length >= 3 && (
                   <div className="mt-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-1">
                       Línea de tiempo sensorial
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
                       {shot.sensoryTimelineOffsets.map((off, i) => {
                         const clamped = Math.max(-40, Math.min(40, off || 0));
                         const labels = ['Impacto', 'Inicio', 'Desarrollo', 'Final', 'Postgusto'];
                         return (
-                          <div key={i} className="flex flex-col items-center gap-1">
+                          <div key={i} className="flex flex-col items-center gap-1 min-w-[50px]">
                             <div className="w-1.5 h-8 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden">
                               <div
                                 className="w-full bg-gradient-to-b from-emerald-400 to-sky-500"
@@ -1758,7 +1760,7 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
                                 }}
                               />
                             </div>
-                            <span className="text-[9px] uppercase tracking-widest text-stone-500">
+                            <span className="text-[10px] uppercase tracking-widest text-stone-500 text-center">
                               {labels[i] || labels[labels.length - 1]}
                             </span>
                           </div>
@@ -1788,7 +1790,7 @@ interface EspressoViewProps {
 }
 
 export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandler }) => {
-  const [view, setView] = useState<'menu' | 'new' | 'guide' | 'troubleshoot'>('menu');
+  const [view, setView] = useState<'menu' | 'new' | 'guide' | 'troubleshoot' | 'simulator'>('menu');
   const [selectedSession, setSelectedSession] = useState<EspressoSession | null>(null);
   const { showToast } = useToast();
   
@@ -1846,12 +1848,14 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
             {view === 'new' && 'Calibraciones'}
             {view === 'guide' && 'Guía de Calibración'}
             {view === 'troubleshoot' && 'Problemas Comunes'}
+            {view === 'simulator' && 'Simulador de Calibración'}
           </h1>
           <p className="text-stone-500 mt-1">
             {view === 'menu' && 'Gestiona tus recetas y resuelve problemas de extracción.'}
             {view === 'new' && 'Registra una nueva sesión de calibración.'}
             {view === 'guide' && 'Guía paso a paso para el espresso perfecto.'}
             {view === 'troubleshoot' && 'Diagnóstico y solución de problemas.'}
+            {view === 'simulator' && 'Entrena tu paladar y lógica de ajuste con casos prácticos.'}
           </p>
         </div>
       </div>
@@ -1859,7 +1863,7 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
       {/* Main Menu */}
       {view === 'menu' && (
         <div className="space-y-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MenuCard 
               title="Calibraciones" 
               desc="Registra múltiples recetas para encontrar el espresso perfecto." 
@@ -1878,6 +1882,13 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
               desc="Soluciona extracciones rápidas, lentas o sabores indeseados." 
               icon={AlertTriangle} 
               onClick={() => setView('troubleshoot')}
+            />
+            <MenuCard 
+              title="Simulador" 
+              desc="Entrena tu lógica de ajuste con casos prácticos." 
+              icon={Gamepad2} 
+              onClick={() => setView('simulator')}
+              color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
             />
           </div>
 
@@ -1952,6 +1963,18 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
       {view === 'new' && <CalibrationSessionForm onCancel={() => setView('menu')} onSave={() => setView('menu')} />}
       {view === 'guide' && <CalibrationGuide />}
       {view === 'troubleshoot' && <TroubleshootingGuide />}
+      {view === 'simulator' && (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setView('menu')}
+            className="flex items-center gap-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors mb-4 p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-bold">Volver al menú</span>
+          </button>
+          <EspressoSimulator />
+        </div>
+      )}
       
       {/* Detail Modal */}
       {selectedSession && (

@@ -525,14 +525,14 @@ const Slideshow: React.FC<{ slides: string[] }> = ({ slides }) => {
       {/* Navigation Arrows */}
       <button 
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-300"
+        className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
       
       <button 
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-300"
+        className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
