@@ -29,7 +29,253 @@ import { line, curveMonotoneX } from 'd3-shape';
 import { EspressoSession, EspressoShot, SensoryAnalysis } from '../types';
 import { useToast } from '../contexts/ToastContext';
 
+const TechniqueSection = () => {
+  const tools = [
+    { name: 'Máquina de espresso', desc: 'Genera presión y temperatura estables para la extracción.' },
+    { name: 'Molino', desc: 'Muele el café con precisión según el punto de extracción requerido.' },
+    { name: 'Balanza digital', desc: 'Controla dosis y rendimiento con exactitud.' },
+    { name: 'Tamper', desc: 'Compacta el café de manera uniforme.' },
+    { name: 'Distribuidor (OCD o similar)', desc: 'Nivela la superficie antes del tamping.' },
+    { name: 'WDT (Weiss Distribution Tool)', desc: 'Rompe grumos y mejora homogeneidad del lecho.' },
+    { name: 'Portafiltro', desc: 'Sostiene la canasta y el café durante la extracción.' },
+    { name: 'Canasta', desc: 'Define la cantidad de dosis y forma de la pastilla.' },
+    { name: 'Knock box', desc: 'Recipiente para descartar el puck limpio y ordenadamente.' },
+    { name: 'Paño seco', desc: 'Limpia el portafiltro y la canasta.' },
+    { name: 'Paño húmedo', desc: 'Limpia la ducha del grupo y superficies.' },
+    { name: 'Cepillo de grupo', desc: 'Elimina residuos de café en la junta y ducha.' },
+    { name: 'Timer', desc: 'Controla tiempo exacto de extracción.' },
+    { name: 'Taza precalentada', desc: 'Mantiene estabilidad térmica del espresso.' },
+  ];
+
+  const steps = [
+    { title: 'Verificar estación', desc: 'Superficie limpia, paños diferenciados, herramientas alineadas y balanza calibrada.' },
+    { title: 'Purgar el grupo', desc: '1–2 segundos para estabilizar temperatura y limpiar residuos.' },
+    { title: 'Secar portafiltro', desc: 'Usar paño seco; humedad altera la extracción.' },
+    { title: 'Dosificar por peso', desc: 'Moler directamente en portafiltro verificando gramos exactos.' },
+    { title: 'Aplicar WDT', desc: 'Romper grumos desde fondo hacia superficie, sin compactar.' },
+    { title: 'Nivelar', desc: 'Usar distribuidor o golpecitos controlados para superficie plana.' },
+    { title: 'Tamping recto y firme', desc: 'Presión consistente, muñeca alineada, sin inclinar.' },
+    { title: 'Limpiar borde de canasta', desc: 'Retirar restos para asegurar buen sellado.' },
+    { title: 'Insertar y bloquear', desc: 'Movimiento firme y limpio, sin golpear.' },
+    { title: 'Colocar taza y balanza', desc: 'Todo centrado antes de iniciar.' },
+    { title: 'Iniciar extracción y timer simultáneamente', desc: 'Control visual del flujo.' },
+    { title: 'Observar el flujo', desc: 'Inicio uniforme, color avellana, sin chorros laterales.' },
+    { title: 'Detener por peso, no por tiempo', desc: 'Cortar en el rendimiento objetivo.' },
+    { title: 'Retirar taza con limpieza', desc: 'Sin goteos en estación.' },
+    { title: 'Descartar puck inmediatamente', desc: 'Knock box limpio, sin acumulación.' },
+    { title: 'Limpiar canasta y purgar grupo nuevamente', desc: 'Mantener grupo libre de residuos.' },
+    { title: 'Secar y dejar portafiltro insertado', desc: 'Mantener estabilidad térmica.' },
+    { title: 'Revisar estación', desc: 'Superficie limpia, paños ordenados, sin café suelto.' },
+  ];
+
+  return (
+    <div className="space-y-12 animate-fade-in">
+      {/* Receta Base */}
+      <div className="bg-stone-100 dark:bg-stone-900/50 p-6 rounded-xl border border-stone-200 dark:border-stone-800">
+        <h3 className="text-xl font-bold mb-4 text-stone-800 dark:text-stone-200">La Receta Base</h3>
+        <p className="text-stone-600 dark:text-stone-400 mb-4">
+          Para empezar a calibrar, recomendamos partir de una proporción (ratio) de 1:2.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-stone-900 p-4 rounded-lg shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-1">Dosis (In)</p>
+            <p className="text-2xl font-black text-brand dark:text-brand-light">18g - 20g</p>
+            <p className="text-xs text-stone-400 mt-1">Depende del filtro</p>
+          </div>
+          <div className="bg-white dark:bg-stone-900 p-4 rounded-lg shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-1">Rendimiento (Out)</p>
+            <p className="text-2xl font-black text-brand dark:text-brand-light">36g - 40g</p>
+            <p className="text-xs text-stone-400 mt-1">Ratio 1:2</p>
+          </div>
+          <div className="bg-white dark:bg-stone-900 p-4 rounded-lg shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-1">Tiempo</p>
+            <p className="text-2xl font-black text-brand dark:text-brand-light">25s - 30s</p>
+            <p className="text-xs text-stone-400 mt-1">Desde que accionas la bomba</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Herramientas */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200 flex items-center gap-2">
+          <Settings className="w-5 h-5" /> Herramientas Necesarias
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {tools.map((tool, idx) => (
+            <div key={idx} className="flex gap-3 p-3 bg-white dark:bg-stone-900 rounded-lg border border-stone-100 dark:border-stone-800">
+              <div className="mt-1 w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
+              <div>
+                <span className="block font-bold text-sm text-stone-900 dark:text-stone-100">{tool.name}</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">{tool.desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pasos */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" /> Pasos Técnicos
+        </h3>
+        <div className="relative border-l-2 border-stone-200 dark:border-stone-800 ml-3 space-y-8 py-2">
+          {steps.map((step, idx) => (
+            <div key={idx} className="relative pl-6">
+              <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-700 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-stone-400 dark:bg-stone-600" />
+              </div>
+              <h4 className="font-bold text-sm text-stone-900 dark:text-stone-100">{step.title}</h4>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CommonProblemsSection = () => {
+  const [openItem, setOpenItem] = useState<string | null>(null);
+
+  const problems = [
+    {
+      id: 'acidic',
+      code: 'A',
+      title: 'Espresso muy ácido / verde / hueco',
+      symptoms: ['Acidez punzante', 'Poco dulzor', 'Final corto', 'Sensación aguada'],
+      causeLabel: 'Causa',
+      cause: 'Subextracción.',
+      solutionsLabel: 'Soluciones (en este orden)',
+      solutions: [
+        'Moler más fino -> aumenta extracción',
+        'Aumentar rendimiento -> extraer más compuestos dulces',
+        'Subir temperatura -> disuelve más sólidos',
+        'Aumentar preinfusión -> mejora uniformidad'
+      ],
+      avoid: 'Subir dosis primero (no corrige la causa principal).'
+    },
+    {
+      id: 'bitter',
+      code: 'B',
+      title: 'Espresso muy amargo / seco / astringente',
+      symptoms: ['Amargor dominante', 'Sequedad en lengua', 'Final largo y pesado'],
+      causeLabel: 'Causa',
+      cause: 'Sobreextracción.',
+      solutionsLabel: 'Soluciones (en este orden)',
+      solutions: [
+        'Moler más grueso -> reduce extracción',
+        'Reducir rendimiento -> menos compuestos tardíos',
+        'Bajar temperatura -> menos solubilidad',
+        'Reducir tiempo total'
+      ]
+    },
+    {
+      id: 'acidic-bitter',
+      code: 'C',
+      title: 'Espresso ácido y amargo al mismo tiempo',
+      symptoms: ['Sabor confuso', 'Acidez agria + final seco', 'Poca claridad'],
+      causeLabel: 'Causa',
+      cause: 'Canalización (Channeling). El agua pasa rápido por grietas (ácido) y sobreextrae esas zonas (amargo).',
+      solutionsLabel: 'Soluciones',
+      solutions: [
+        'Mejorar distribución (WDT)',
+        'Tamper más nivelado',
+        'Revisar si la dosis es muy alta para el filtro'
+      ]
+    },
+    {
+      id: 'fast',
+      code: 'D',
+      title: 'El shot sale muy rápido (< 20s)',
+      causeLabel: 'Causa',
+      cause: 'Poca resistencia al agua.',
+      solutionsLabel: 'Soluciones',
+      solutions: [
+        'Moler más fino (ajuste principal)',
+        'Aumentar dosis (si el filtro lo permite)'
+      ]
+    },
+    {
+      id: 'slow',
+      code: 'E',
+      title: 'El shot sale muy lento o gotea (> 40s)',
+      causeLabel: 'Causa',
+      cause: 'Excesiva resistencia.',
+      solutionsLabel: 'Soluciones',
+      solutions: [
+        'Moler más grueso',
+        'Bajar dosis',
+        'Revisar si la máquina tiene presión adecuada'
+      ]
+    }
+  ];
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200">Diagnóstico y Soluciones</h3>
+      {problems.map(item => (
+        <div key={item.id} className="border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-stone-900 overflow-hidden">
+          <button
+            onClick={() => setOpenItem(openItem === item.id ? null : item.id)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
+                item.id === 'acidic' ? 'bg-yellow-100 text-yellow-700' :
+                item.id === 'bitter' ? 'bg-stone-800 text-white' :
+                'bg-red-100 text-red-700'
+              }`}>
+                {item.code}
+              </div>
+              <span className="font-bold text-sm text-stone-900 dark:text-stone-100">{item.title}</span>
+            </div>
+            {openItem === item.id ? <ChevronUp className="w-5 h-5 text-stone-400" /> : <ChevronDown className="w-5 h-5 text-stone-400" />}
+          </button>
+          
+          {openItem === item.id && (
+            <div className="p-4 bg-stone-50 dark:bg-stone-950 border-t border-stone-100 dark:border-stone-800">
+              {item.symptoms && (
+                <div className="mb-3">
+                  <span className="text-xs font-bold uppercase text-stone-500">Síntomas</span>
+                  <ul className="mt-1 list-disc list-inside text-sm text-stone-600 dark:text-stone-400 space-y-1">
+                    {item.symptoms.map((symptom: string) => (
+                      <li key={symptom}>{symptom}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="mb-3">
+                <span className="text-xs font-bold uppercase text-red-500">
+                  {item.causeLabel || 'Causa'}
+                </span>
+                <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.cause}</p>
+              </div>
+              <div className="mb-2">
+                <span className="text-xs font-bold uppercase text-green-600">
+                  {item.solutionsLabel || 'Soluciones'}
+                </span>
+                <ul className="mt-1 list-disc list-inside text-sm text-stone-600 dark:text-stone-400 space-y-1">
+                  {item.solutions.map((solution: string) => (
+                    <li key={solution}>{solution}</li>
+                  ))}
+                </ul>
+              </div>
+              {item.avoid && (
+                <div className="mt-2">
+                  <span className="text-xs font-bold uppercase text-amber-600">Evita</span>
+                  <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.avoid}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const CalibrationGuide = () => {
+  const [activeTab, setActiveTab] = useState<'variables' | 'tecnica' | 'problemas'>('variables');
   const [activeVariable, setActiveVariable] = useState<string | null>(null);
   const [hoveredVariable, setHoveredVariable] = useState<string | null>(null);
 
@@ -37,10 +283,46 @@ const CalibrationGuide = () => {
     activeVariable === id || hoveredVariable === id;
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="space-y-6">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200">Variables enfocadas en espresso</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+    <div className="space-y-6 animate-fade-in">
+      {/* Tabs */}
+      <div className="flex p-1 bg-stone-100 dark:bg-stone-800 rounded-xl overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('variables')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+            activeTab === 'variables'
+              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
+        >
+          Variables
+        </button>
+        <button
+          onClick={() => setActiveTab('tecnica')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+            activeTab === 'tecnica'
+              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
+        >
+          Técnica
+        </button>
+        <button
+          onClick={() => setActiveTab('problemas')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+            activeTab === 'problemas'
+              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
+        >
+          Problemas Comunes
+        </button>
+      </div>
+
+      {/* Content */}
+      {activeTab === 'variables' && (
+        <div className="space-y-6 animate-fade-in">
+            <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200">Variables enfocadas en espresso</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div
             className={`border rounded-xl overflow-hidden cursor-pointer transition-colors ${
               isActive('dosis')
@@ -336,213 +618,15 @@ const CalibrationGuide = () => {
           </div>
         </div>
       </div>
+      )}
 
-      <div className="bg-stone-100 dark:bg-stone-900/50 p-6 rounded-xl border border-stone-200 dark:border-stone-800">
-        <h3 className="text-xl font-bold mb-4 text-stone-800 dark:text-stone-200">La Receta Base</h3>
-        <p className="text-stone-600 dark:text-stone-400 mb-4">
-          Para empezar a calibrar, recomendamos partir de una proporción (ratio) de 1:2.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-stone-900 p-4 rounded-lg shadow-sm">
-            <p className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-1">Dosis (In)</p>
-            <p className="text-2xl font-black text-brand dark:text-brand-light">18g - 20g</p>
-            <p className="text-xs text-stone-400 mt-1">Depende del filtro</p>
-          </div>
-          <div className="bg-white dark:bg-stone-900 p-4 rounded-lg shadow-sm">
-            <p className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-1">Rendimiento (Out)</p>
-            <p className="text-2xl font-black text-brand dark:text-brand-light">36g - 40g</p>
-            <p className="text-xs text-stone-400 mt-1">Ratio 1:2</p>
-          </div>
-          <div className="bg-white dark:bg-stone-900 p-4 rounded-lg shadow-sm">
-            <p className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-1">Tiempo</p>
-            <p className="text-2xl font-black text-brand dark:text-brand-light">25s - 30s</p>
-            <p className="text-xs text-stone-400 mt-1">Desde que accionas la bomba</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200">Pasos para Calibrar</h3>
-        <ol className="list-decimal list-inside space-y-3 text-stone-600 dark:text-stone-400">
-          <li className="pl-2"><span className="font-bold text-stone-800 dark:text-stone-200">Prepara el puck:</span> Distribuye homogéneamente y compacta (tamp) nivelado.</li>
-          <li className="pl-2"><span className="font-bold text-stone-800 dark:text-stone-200">Pesa y Cronometra:</span> Usa una balanza bajo la taza. Inicia el tiempo al encender la máquina.</li>
-          <li className="pl-2"><span className="font-bold text-stone-800 dark:text-stone-200">Detén por peso:</span> Corta la extracción 2g antes de tu peso objetivo (goteo residual).</li>
-          <li className="pl-2">
-            <span className="font-bold text-stone-800 dark:text-stone-200">Evalúa y Ajusta:</span> 
-            <ul className="list-disc list-inside pl-6 mt-2 space-y-1 text-sm">
-              <li>Si salió muy rápido (&lt; 25s) → Afina la molienda.</li>
-              <li>Si salió muy lento (&gt; 30s) → Engruesa la molienda.</li>
-              <li>Si el tiempo está bien pero sabe ácido → Aumenta el ratio (más agua) o temperatura.</li>
-              <li>Si el tiempo está bien pero sabe amargo → Disminuye el ratio (menos agua) o temperatura.</li>
-            </ul>
-          </li>
-        </ol>
-      </div>
+      {activeTab === 'tecnica' && <TechniqueSection />}
+      {activeTab === 'problemas' && <CommonProblemsSection />}
     </div>
   );
 };
 
-const TroubleshootingGuide = () => {
-  const [openItem, setOpenItem] = useState<string | null>(null);
 
-  const problems = [
-    {
-      id: 'acidic',
-      code: 'A',
-      title: 'Espresso muy ácido / verde / hueco',
-      symptoms: ['Acidez punzante', 'Poco dulzor', 'Final corto', 'Sensación aguada'],
-      causeLabel: 'Causa',
-      cause: 'Subextracción.',
-      solutionsLabel: 'Soluciones (en este orden)',
-      solutions: [
-        'Moler más fino -> aumenta extracción',
-        'Aumentar rendimiento -> extraer más compuestos dulces',
-        'Subir temperatura -> disuelve más sólidos',
-        'Aumentar preinfusión -> mejora uniformidad'
-      ],
-      avoid: 'Subir dosis primero (no corrige la causa principal).'
-    },
-    {
-      id: 'bitter',
-      code: 'B',
-      title: 'Espresso muy amargo / seco / astringente',
-      symptoms: ['Amargor dominante', 'Sequedad en lengua', 'Final largo y pesado'],
-      causeLabel: 'Causa',
-      cause: 'Sobreextracción.',
-      solutionsLabel: 'Soluciones (en este orden)',
-      solutions: [
-        'Moler más grueso -> reduce extracción',
-        'Reducir rendimiento -> menos compuestos tardíos',
-        'Bajar temperatura -> menos solubilidad',
-        'Reducir tiempo total'
-      ]
-    },
-    {
-      id: 'acidic-bitter',
-      code: 'C',
-      title: 'Espresso ácido y amargo al mismo tiempo',
-      symptoms: ['Sabor confuso', 'Sin dulzor', 'Sensación “sucia”'],
-      causeLabel: 'Causa',
-      cause: 'Canalización o extracción desigual.',
-      solutionsLabel: 'Soluciones',
-      solutions: [
-        'Revisar distribución del café',
-        'Mejorar tampeo uniforme',
-        'Añadir preinfusión',
-        'Revisar molienda (puede estar demasiado fina)'
-      ],
-      note: 'Este problema NO se corrige con ratio primero.'
-    },
-    {
-      id: 'weak',
-      code: 'D',
-      title: 'Espresso muy débil / aguado',
-      symptoms: ['Poco cuerpo', 'Sabor diluido', 'Baja intensidad'],
-      causeLabel: 'Causas posibles',
-      cause: 'Ratio demasiado largo o dosis baja.',
-      solutionsLabel: 'Soluciones',
-      solutions: [
-        'Reducir ratio (menos bebida)',
-        'Aumentar dosis',
-        'Moler ligeramente más fino'
-      ]
-    },
-    {
-      id: 'dense',
-      code: 'E',
-      title: 'Espresso muy denso / pesado / “espeso”',
-      symptoms: ['Mucho cuerpo', 'Poco brillo', 'Sabor cerrado'],
-      causeLabel: 'Causa',
-      cause: 'Ratio demasiado corto.',
-      solutionsLabel: 'Soluciones',
-      solutions: ['Aumentar rendimiento', 'Moler ligeramente más grueso']
-    },
-    {
-      id: 'low-sweetness',
-      code: 'F',
-      title: 'Falta de dulzor (pero sin amargor)',
-      symptoms: ['Correcto balance pero plano', 'No hay sensación jugosa'],
-      causeLabel: 'Causa',
-      cause: 'Extracción incompleta de azúcares.',
-      solutionsLabel: 'Soluciones',
-      solutions: [
-        'Aumentar ligeramente rendimiento',
-        'Añadir preinfusión',
-        'Subir temperatura 1 a 2 grados'
-      ]
-    },
-    {
-      id: 'flat',
-      code: 'G',
-      title: 'Sabor plano / sin definición',
-      symptoms: ['Todo sabe igual', 'Sin acidez ni dulzor claro'],
-      causeLabel: 'Causa',
-      cause: 'Extracción demasiado alta o temperatura excesiva.',
-      solutionsLabel: 'Soluciones',
-      solutions: ['Reducir temperatura', 'Reducir rendimiento', 'Ajustar molienda más gruesa']
-    }
-  ];
-
-  return (
-    <div className="space-y-4 animate-fade-in">
-      {problems.map((item) => (
-        <div key={item.id} className="border border-stone-200 dark:border-stone-800 rounded-lg overflow-hidden bg-white dark:bg-stone-900">
-          <button
-            onClick={() => setOpenItem(openItem === item.id ? null : item.id)}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
-          >
-            <span className="font-bold text-stone-800 dark:text-stone-200">
-              {item.code ? `${item.code}. ` : ''}{item.title}
-            </span>
-            {openItem === item.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
-          {openItem === item.id && (
-            <div className="p-4 bg-stone-50 dark:bg-stone-950 border-t border-stone-100 dark:border-stone-800">
-              {item.symptoms && (
-                <div className="mb-3">
-                  <span className="text-xs font-bold uppercase text-stone-500">Síntomas</span>
-                  <ul className="mt-1 list-disc list-inside text-sm text-stone-600 dark:text-stone-400 space-y-1">
-                    {item.symptoms.map((symptom: string) => (
-                      <li key={symptom}>{symptom}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="mb-3">
-                <span className="text-xs font-bold uppercase text-red-500">
-                  {item.causeLabel || 'Causa'}
-                </span>
-                <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.cause}</p>
-              </div>
-              <div className="mb-2">
-                <span className="text-xs font-bold uppercase text-green-600">
-                  {item.solutionsLabel || 'Soluciones'}
-                </span>
-                <ul className="mt-1 list-disc list-inside text-sm text-stone-600 dark:text-stone-400 space-y-1">
-                  {item.solutions.map((solution: string) => (
-                    <li key={solution}>{solution}</li>
-                  ))}
-                </ul>
-              </div>
-              {item.avoid && (
-                <div className="mt-2">
-                  <span className="text-xs font-bold uppercase text-amber-600">Evita</span>
-                  <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.avoid}</p>
-                </div>
-              )}
-              {item.note && (
-                <div className="mt-2">
-                  <span className="text-xs font-bold uppercase text-stone-500">Nota</span>
-                  <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.note}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 type SensoryTimelineProps = {
   offsets: number[];
@@ -1790,7 +1874,7 @@ interface EspressoViewProps {
 }
 
 export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandler }) => {
-  const [view, setView] = useState<'menu' | 'new' | 'guide' | 'troubleshoot' | 'simulator'>('menu');
+  const [view, setView] = useState<'menu' | 'new' | 'guide' | 'simulator'>('menu');
   const [selectedSession, setSelectedSession] = useState<EspressoSession | null>(null);
   const { showToast } = useToast();
   
@@ -1847,14 +1931,12 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
             {view === 'menu' && 'Recetas de Espresso'}
             {view === 'new' && 'Calibraciones'}
             {view === 'guide' && 'Guía de Calibración'}
-            {view === 'troubleshoot' && 'Problemas Comunes'}
             {view === 'simulator' && 'Simulador de Calibración'}
           </h1>
           <p className="text-stone-500 mt-1">
             {view === 'menu' && 'Gestiona tus recetas y resuelve problemas de extracción.'}
             {view === 'new' && 'Registra una nueva sesión de calibración.'}
             {view === 'guide' && 'Guía paso a paso para el espresso perfecto.'}
-            {view === 'troubleshoot' && 'Diagnóstico y solución de problemas.'}
             {view === 'simulator' && 'Entrena tu paladar y lógica de ajuste con casos prácticos.'}
           </p>
         </div>
@@ -1876,12 +1958,6 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
               desc="Aprende los fundamentos y ratios recomendados." 
               icon={BookOpen} 
               onClick={() => setView('guide')}
-            />
-            <MenuCard 
-              title="Problemas Comunes" 
-              desc="Soluciona extracciones rápidas, lentas o sabores indeseados." 
-              icon={AlertTriangle} 
-              onClick={() => setView('troubleshoot')}
             />
             <MenuCard 
               title="Simulador" 
@@ -1961,8 +2037,18 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
 
       {/* Sub Views */}
       {view === 'new' && <CalibrationSessionForm onCancel={() => setView('menu')} onSave={() => setView('menu')} />}
-      {view === 'guide' && <CalibrationGuide />}
-      {view === 'troubleshoot' && <TroubleshootingGuide />}
+      {view === 'guide' && (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setView('menu')}
+            className="flex items-center gap-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors mb-4 p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-bold">Volver al menú</span>
+          </button>
+          <CalibrationGuide />
+        </div>
+      )}
       {view === 'simulator' && (
         <div className="space-y-6">
           <button 
