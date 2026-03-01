@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { EspressoView } from './EspressoCalibrationView';
-import { Coffee, Filter, ChevronRight, ArrowLeft } from 'lucide-react';
+import { MilkTextureView } from '../components/MilkTextureView';
+import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
 import { FilterSession, FilterPour, FilterRecipe, FilterRecipePhase, BrewMethod } from '../types';
@@ -2624,10 +2625,11 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
 export const RecipesView: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk'>('none');
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const espressoCardRef = useRef<HTMLButtonElement | null>(null);
   const filterCardRef = useRef<HTMLButtonElement | null>(null);
+  const milkCardRef = useRef<HTMLButtonElement | null>(null);
   const espressoBackHandlerRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
@@ -2679,6 +2681,8 @@ export const RecipesView: React.FC = () => {
     );
   } else if (selectedCategory === 'filter') {
     content = <FilterRecipeManager onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'milk') {
+    content = <MilkTextureView onBack={() => setSelectedCategory('none')} />;
   } else {
     content = (
       <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
@@ -2691,7 +2695,7 @@ export const RecipesView: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <button
             ref={espressoCardRef}
             onClick={() => setSelectedCategory('espresso')}
@@ -2759,6 +2763,45 @@ export const RecipesView: React.FC = () => {
 
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
                 Diseña y documenta cada vertido para tus métodos de filtrado manual, con sesiones guiadas y soporte.
+              </p>
+            </div>
+
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
+                Entrar
+              </span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          <button
+            ref={milkCardRef}
+            onClick={() => setSelectedCategory('milk')}
+            onMouseEnter={() => handleCategoryCardEnter(milkCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(milkCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Droplet className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Capuchino y latte art
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Leche
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Microespuma, técnica y simuladores
+                </p>
+              </div>
+
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Aprende la ciencia de la texturización, domina la técnica paso a paso y practica con simuladores interactivos.
               </p>
             </div>
 

@@ -6,18 +6,18 @@ export function getAdvice(state: ShotState): string {
   // 1. Prioritize Extraction issues (most critical)
   if (state.extraction <= -1) {
     suggestions.push("Tu café está sub-extraído (ácido/rápido). Necesitas aumentar el tiempo de contacto o la temperatura.")
-    suggestions.push("Sugerencia: Muele más fino o aumenta la temperatura.")
+    suggestions.push("Sugerencia: Prueba molienda más fina, aumenta la preinfusión, o sube la temperatura.")
   } else if (state.extraction >= 1) {
     suggestions.push("Tu café está sobre-extraído (amargo/lento). Necesitas reducir la extracción.")
-    suggestions.push("Sugerencia: Muele más grueso o baja la temperatura.")
+    suggestions.push("Sugerencia: Prueba molienda más gruesa, reduce la preinfusión, o baja la temperatura.")
   }
 
   // 2. Check Intensity (Body/Strength) if Extraction is roughly ok
   if (Math.abs(state.extraction) <= 1) {
     if (state.intensity <= -2) {
-      suggestions.push("El cuerpo es muy débil. Considera aumentar la dosis o usar menos agua (ratio más corto).")
+      suggestions.push("El cuerpo es muy débil. Intenta aumentar la dosis o usa menos agua (ratio más corto).")
     } else if (state.intensity >= 2) {
-      suggestions.push("Es demasiado intenso/fuerte. Prueba un ratio más largo (más agua) para diluirlo.")
+      suggestions.push("Es demasiado intenso/fuerte. Prueba un ratio más largo (más agua) o reduce la dosis.")
     }
   }
 

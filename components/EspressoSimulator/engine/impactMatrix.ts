@@ -34,4 +34,24 @@ export const impactMatrix: Record<
     intensity: 0,
     balance: 1,
   },
+  higherDose: {
+    extraction: 0,
+    intensity: 1,
+    balance: 1,
+  },
+  lowerDose: {
+    extraction: 0,
+    intensity: -1,
+    balance: -1,
+  },
+  longerPreinfusion: {
+    extraction: 1,
+    intensity: 0,
+    balance: 1,
+  },
+  shorterPreinfusion: {
+    extraction: -1,
+    intensity: 0,
+    balance: -1,
+  },
 }

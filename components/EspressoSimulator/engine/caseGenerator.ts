@@ -1,4 +1,4 @@
-import { ShotState } from "./types"
+import { ShotState, Difficulty } from "./types"
 import { isVictory } from "./victory"
 import { presets, SimulationPreset } from "./presets"
 
@@ -18,7 +18,7 @@ function isTooCloseToBalanced(state: ShotState): boolean {
   return distanceFromIdeal <= 1
 }
 
-export function generateRandomCase(): ShotState {
+export function generateRandomCase(difficulty: Difficulty = "basic"): ShotState {
   let state: ShotState
 
   do {

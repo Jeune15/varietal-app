@@ -1,4 +1,5 @@
 export type Level = number
+export type Difficulty = "basic" | "advanced"
 
 export interface ShotState {
   extraction: number
@@ -13,3 +14,7 @@ export type Adjustment =
   | "lowerRatio"
   | "higherTemp"
   | "lowerTemp"
+  | "higherDose"
+  | "lowerDose"
+  | "longerPreinfusion"
+  | "shorterPreinfusion"

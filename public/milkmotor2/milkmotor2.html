@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Microespuma</title>
+
+<style>
+body{
+  margin:0;
+  background:#111;
+  color:#fff;
+  font-family:Arial, sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  touch-action:none;
+}
+
+h1{
+  font-weight:300;
+  letter-spacing:3px;
+  margin:20px 0;
+}
+
+canvas{
+  background:#1a1a1a;
+  border-radius:20px;
+  touch-action:none;
+}
+
+#controls{
+  margin-top:20px;
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+button, select{
+  background:#fff;
+  color:#111;
+  border:none;
+  padding:10px 18px;
+  border-radius:25px;
+  cursor:pointer;
+  font-size:14px;
+}
+
+#temp{
+  font-size:18px;
+  letter-spacing:2px;
+}
+
+#message{
+  margin-top:15px;
+  opacity:0.85;
+  text-align:center;
+  min-height:24px;
+  padding:0 20px;
+}
+
+.good{ color:#2ecc71; }
+.bad{ color:#e74c3c; }
+</style>
+</head>
+<body>
+
+<h1>MICROESPUMA</h1>
+
+<canvas id="canvas" width="380" height="380"></canvas>
+
+<div id="controls">
+  <div id="temp">20°C</div>
+  <button id="steamBtn">VAPOR</button>
+  <select id="milkType">
+    <option value="vaca">Vaca</option>
+    <option value="avena">Avena</option>
+  </select>
+  <button id="modeBtn">Modo Guiado</button>
+</div>
+
+<div id="message">Desliza verticalmente para mover la lanza</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let milkTemp=20;
+let steaming=false;
+let phase="aireacion";
+let wandDepth=0.35;
+let air=0;
+let integration=0;
+let time=0;
+let guided=true;
+let milk="vaca";
+let dragging=false;
+
+const steamBtn=document.getElementById("steamBtn");
+const tempDisplay=document.getElementById("temp");
+const message=document.getElementById("message");
+const milkSelect=document.getElementById("milkType");
+const modeBtn=document.getElementById("modeBtn");
+
+milkSelect.onchange=()=>milk=milkSelect.value;
+
+modeBtn.onclick=()=>{
+  guided=!guided;
+  modeBtn.innerText=guided?"Modo Guiado":"Modo Evaluación";
+};
+
+steamBtn.onclick=()=>{
+  steaming=!steaming;
+  if(!steaming && milkTemp>45) evaluate();
+};
+
+function updateDepth(clientY){
+  const rect=canvas.getBoundingClientRect();
+  wandDepth=(clientY-rect.top)/canvas.height;
+  wandDepth=Math.max(0.05,Math.min(0.95,wandDepth));
+}
+
+canvas.addEventListener("mousemove",e=>{
+  if(!('ontouchstart' in window)){
+    updateDepth(e.clientY);
+  }
+});
+
+canvas.addEventListener("touchstart",e=>{
+  dragging=true;
+  updateDepth(e.touches[0].clientY);
+});
+
+canvas.addEventListener("touchmove",e=>{
+  if(dragging){
+    updateDepth(e.touches[0].clientY);
+  }
+});
+
+canvas.addEventListener("touchend",()=>{
+  dragging=false;
+});
+
+function drawPitcher(){
+  ctx.beginPath();
+  ctx.arc(190,190,150,0,Math.PI*2);
+  ctx.strokeStyle="#fff";
+  ctx.lineWidth=2;
+  ctx.stroke();
+}
+
+function drawMilk(){
+  ctx.beginPath();
+  ctx.arc(190,190,135,0,Math.PI*2);
+  ctx.fillStyle="#f4f4f4";
+  ctx.fill();
+
+  let swirl=phase==="aireacion"?2:4;
+
+  for(let i=0;i<18;i++){
+    ctx.beginPath();
+    ctx.arc(
+      190+Math.sin(time*0.02+i)*swirl*3,
+      190+Math.cos(time*0.02+i)*swirl*3,
+      2+air*4,
+      0,Math.PI*2
+    );
+    ctx.strokeStyle="rgba(0,0,0,0.15)";
+    ctx.stroke();
+  }
+}
+
+function drawWand(){
+  let y=190-110+wandDepth*220;
+
+  ctx.strokeStyle="#fff";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(190,40);
+  ctx.lineTo(190,y);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(190,145,20,0,Math.PI*2);
+  ctx.strokeStyle="rgba(46,204,113,0.25)";
+  ctx.stroke();
+}
+
+function vibrate(){
+  if(navigator.vibrate){
+    navigator.vibrate(30);
+  }
+}
+
+function physics(){
+  if(!steaming) return;
+
+  milkTemp+=milk==="vaca"?0.11:0.09;
+
+  if(milkTemp>38) phase="integracion";
+
+  if(phase==="aireacion"){
+    if(wandDepth>0.28 && wandDepth<0.38){
+      air+=milk==="vaca"?0.02:0.015;
+      if(guided){
+        message.innerText="Bien.";
+        message.className="good";
+      }
+    }else if(wandDepth<=0.28){
+      air+=0.04;
+      if(guided){
+        message.innerText="Demasiado superficial.";
+        message.className="bad";
+        vibrate();
+      }
+    }else{
+      if(guided){
+        message.innerText="Muy profunda.";
+        message.className="bad";
+        vibrate();
+      }
+    }
+  }else{
+    integration+=0.02;
+    air-=0.002;
+    if(guided){
+      message.innerText="Integrando...";
+      message.className="";
+    }
+  }
+
+  if(milkTemp>65 && guided){
+    message.innerText="Temperatura alta.";
+    message.className="bad";
+  }
+
+  if(milkTemp>72){
+    milkTemp=72;
+    steaming=false;
+    evaluate();
+  }
+}
+
+function evaluate(){
+  let result;
+  message.className="";
+
+  if(air>0.8){
+    result="Espuma seca.";
+  }else if(air<0.2){
+    result="Leche muy líquida.";
+  }else{
+    result="Microespuma lista para latte art.";
+    message.className="good";
+  }
+
+  message.innerText=result;
+}
+
+function update(){
+  ctx.clearRect(0,0,380,380);
+  drawPitcher();
+  drawMilk();
+  drawWand();
+  physics();
+  tempDisplay.innerText=milkTemp.toFixed(1)+"°C";
+  time++;
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
