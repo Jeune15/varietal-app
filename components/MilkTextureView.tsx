@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Droplet, Flame, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Droplet, Flame, ChevronDown, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MilkFrothingSimulator } from './MilkFrothingSimulator';
 
@@ -148,6 +148,39 @@ const milkComponents = [
   }
 ];
 
+const commonProblems = [
+  {
+    id: 'screaming',
+    title: 'Grita al vaporizar (chillido agudo)',
+    cause: 'La lanceta está demasiado profunda o no entra aire al inicio.',
+    solution: 'Baja la jarra ligeramente hasta escuchar el "tss-tss" suave (aire entrando). El chillido indica que solo estás calentando leche sin texturizar.'
+  },
+  {
+    id: 'big-bubbles',
+    title: 'Burbujas grandes y visibles',
+    cause: 'Introdujiste aire demasiado rápido, muy tarde (cuando la leche ya estaba caliente) o la lanceta estaba muy en la superficie.',
+    solution: 'Introduce el aire SOLO al principio (antes de que la jarra se caliente). Luego hunde la lanceta ligeramente para crear vórtice y romper las burbujas grandes.'
+  },
+  {
+    id: 'separation',
+    title: 'La espuma se separa de la leche',
+    cause: 'Demasiado aire (espuma muy seca) o dejaste reposar la jarra mucho tiempo antes de servir.',
+    solution: 'Introduce menos aire (menos tiempo de "tss-tss"). Si reposa, agita la jarra en círculos (swirl) para reintegrar antes de verter.'
+  },
+  {
+    id: 'no-spin',
+    title: 'La leche no gira (sin vórtice)',
+    cause: 'La lanceta está en el centro de la jarra o muy profunda.',
+    solution: 'Busca una posición descentrada (a un lado) y encuentra el ángulo donde la leche empiece a rotar. El vórtice es vital para mezclar la espuma con el líquido.'
+  },
+  {
+    id: 'too-hot',
+    title: 'Leche quemada o sin dulzor',
+    cause: 'Superaste los 70°C. Las proteínas se desnaturalizan por completo y la lactosa pierde percepción de dulzor.',
+    solution: 'Usa tu mano en la jarra. Cuando esté demasiado caliente para tocarla (aprox 60°C), apaga inmediatamente. El calor residual subirá unos grados más.'
+  }
+];
+
 interface TopBackButtonProps {
   onClick?: () => void;
 }
@@ -176,6 +209,7 @@ const TopBackButton: React.FC<TopBackButtonProps> = ({ onClick }) => {
 export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [showSimulator, setShowSimulator] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [problemOpenId, setProblemOpenId] = useState<string | null>(null);
 
   return (
     <div className="relative min-h-screen bg-white dark:bg-stone-950" style={{ scrollBehavior: 'smooth' }}>
@@ -215,7 +249,7 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         <div className="space-y-4 mb-12">
           <h1 className="text-3xl md:text-4xl font-black text-stone-900 dark:text-stone-100 tracking-tighter uppercase flex items-center gap-3">
             <span className="text-3xl md:text-4xl">☕</span>
-            Leche
+            Conceptos y técnica
           </h1>
           <p className="text-xs font-bold uppercase tracking-widest text-stone-400 max-w-xl">
             Comprende la ciencia, aprende técnica y practica con simulador interactivo
@@ -398,6 +432,63 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <strong>60–65°C</strong> es tu zona segura. Menos = espuma inestable. Más = textura destruida.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Common Problems Section - Exclusive Accordion */}
+        <div className="mb-12 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 md:p-8 space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-stone-900 dark:text-stone-100" />
+              Problemas Comunes
+            </h2>
+            <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Diagnóstico y solución rápida</p>
+          </div>
+
+          <div className="space-y-2">
+            {commonProblems.map((problem) => {
+              const isOpen = problemOpenId === problem.id;
+              return (
+                <div key={problem.id} className="rounded-lg overflow-hidden border border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/30">
+                  <button
+                    onClick={() => setProblemOpenId(isOpen ? null : problem.id)}
+                    className="w-full p-4 flex items-center justify-between gap-3 text-left transition-colors hover:bg-stone-100 dark:hover:bg-stone-800/50 touch-target"
+                  >
+                    <span className="font-bold text-xs sm:text-sm uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                      {problem.title}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 pt-0 space-y-4 text-sm border-t border-stone-200/50 dark:border-stone-700/50 mt-2">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-red-500 block mb-1">Causa Probable</span>
+                            <p className="text-stone-600 dark:text-stone-400 text-xs leading-relaxed">
+                              {problem.cause}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400 block mb-1">Solución</span>
+                            <p className="text-stone-600 dark:text-stone-400 text-xs leading-relaxed">
+                              {problem.solution}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </div>
         </div>
 

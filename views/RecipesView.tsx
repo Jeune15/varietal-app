@@ -2722,7 +2722,7 @@ export const RecipesView: React.FC = () => {
                   Espresso
                 </h3>
                 <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Sesiones, recetas y diagnóstico
+                  Sesiones, calibración y diagnóstico
                 </p>
               </div>
 
@@ -2761,7 +2761,7 @@ export const RecipesView: React.FC = () => {
                   Filtrados
                 </h3>
                 <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Recetas, guías y problemas comunes
+                  Herramientas, guías y problemas comunes
                 </p>
               </div>
 
