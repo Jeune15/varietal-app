@@ -69,13 +69,10 @@ interface HistoryEntry {
 const CW = 340;
 const CH = 340;
 const CR = 170;
-const SCW = 340;
-const SCH = 340;
 
 export const MilkFrothingSimulator: React.FC = () => {
   // ── REFS ──
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sideCanvasRef = useRef<HTMLCanvasElement>(null);
   const wandVizRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
@@ -230,70 +227,6 @@ export const MilkFrothingSimulator: React.FC = () => {
     c.restore();
   }, []);
 
-  const drawSideView = useCallback(() => {
-    const canvas = sideCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const s = S.current;
-
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(0, 0, SCW, SCH);
-
-    const centerX = SCW / 2;
-    const centerY = SCH / 2;
-    const rectW = 120;
-    const rectH = 140;
-    const rectLeft = centerX - rectW / 2;
-    const rectTop = centerY - rectH / 2;
-    const rectBottom = centerY + rectH / 2;
-    const rectMidY = centerY;
-
-    ctx.save();
-    ctx.strokeStyle = '#333333';
-    ctx.lineWidth = 2.5;
-    ctx.fillStyle = 'white';
-    ctx.fillRect(rectLeft, rectTop, rectW, rectH);
-    ctx.strokeRect(rectLeft, rectTop, rectW, rectH);
-
-    const milkColor = `hsl(${30 + s.currentTemp * 0.05}, 28%, ${92 - s.currentTemp * 0.05}%)`;
-    ctx.fillStyle = milkColor;
-    ctx.fillRect(rectLeft, rectMidY, rectW, rectBottom - rectMidY);
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    const foamCount = s.particles.filter(p => p.isFoam).length;
-    const foamHeightPx = Math.max(0, (foamCount / 80) * 20);
-    ctx.fillRect(rectLeft, rectMidY - foamHeightPx, rectW, foamHeightPx);
-
-    // Lanceta
-    const originX = rectLeft;
-    const originY = rectTop;
-    const depthNorm = s.depth / 100;
-    let lancetaY;
-
-    if (depthNorm < 0.05) lancetaY = rectMidY;
-    else if (depthNorm < 0.30) lancetaY = rectMidY + (depthNorm - 0.05) / 0.25 * 10;
-    else if (depthNorm < 0.50) lancetaY = rectMidY + 10 + (depthNorm - 0.30) / 0.20 * 20;
-    else {
-      const milkDepth = (rectBottom - rectMidY) / 2;
-      lancetaY = rectMidY + 30 + (depthNorm - 0.50) / 0.50 * (milkDepth - 30);
-    }
-
-    ctx.strokeStyle = '#0066cc';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(originX, originY);
-    ctx.lineTo(originX, lancetaY);
-    ctx.stroke();
-
-    ctx.fillStyle = '#0066cc';
-    ctx.beginPath();
-    ctx.arc(originX, lancetaY, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  }, []);
-
   const drawMainCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -335,36 +268,50 @@ export const MilkFrothingSimulator: React.FC = () => {
       ctx.fill();
     }
 
+    // Wand
+    const w = getWandPos();
+    const active = s.running;
+
     // Vortex lines
     if (s.vortexSpeed > 0.15) {
       const speed = s.vortexSpeed;
-      const alpha = Math.min(speed / 4.5, 1) * 0.45;
-      const arms = 6;
+      const alpha = Math.min(speed / 4.5, 1) * 0.6; // Increased alpha for visibility
+      const arms = 8; // More arms for denser spiral
       ctx.save();
       ctx.globalAlpha = alpha;
       for (let arm = 0; arm < arms; arm++) {
         const gradient = ctx.createLinearGradient(0, 0, CW, CH);
-        gradient.addColorStop(0, 'rgba(0,0,0,0.7)');
-        gradient.addColorStop(1, 'rgba(100,100,100,0.2)');
+        gradient.addColorStop(0, 'rgba(255,255,255,0.8)'); // White
+        gradient.addColorStop(1, 'rgba(255,255,255,0.1)'); // Transparent white
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.0;
         ctx.beginPath();
         for (let i = 0; i <= 100; i++) {
           const t = i / 100;
           const a = s.vortexAngle + arm * (Math.PI * 2 / arms) + t * Math.PI * 3.5;
-          const r = t * (CR - 18);
-          const x = CR + r * Math.cos(a);
-          const y = CR + r * Math.sin(a);
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          const r = t * (CR - 18) * 1.5; // Slightly larger spread
+          // Use wand position (w.x, w.y) as the center of the vortex
+          const x = w.x + r * Math.cos(a);
+          const y = w.y + r * Math.sin(a);
+          
+          // Clamp to jug boundary visually
+          const distFromCenter = Math.sqrt((x - CR)**2 + (y - CR)**2);
+          if (distFromCenter < CR - 18) {
+             if (i === 0) {
+                ctx.moveTo(x, y);
+             } else {
+                ctx.lineTo(x, y);
+             }
+          } else {
+             // Stop this arm when hitting wall to avoid artifacts
+             break;
+          }
         }
         ctx.stroke();
       }
       ctx.restore();
     }
 
-    // Wand
-    const w = getWandPos();
-    const active = s.running;
     if (active) {
       const gg = ctx.createRadialGradient(w.x, w.y, 0, w.x, w.y, 36);
       gg.addColorStop(0, 'rgba(200,220,255,0.22)');
@@ -501,7 +448,6 @@ export const MilkFrothingSimulator: React.FC = () => {
 
     update(dt);
     drawMainCanvas();
-    drawSideView();
     
     // Throttle UI updates to every 10 frames roughly (not strictly implemented here, but simple check)
     if (S.current.running || Math.random() < 0.1) {
@@ -542,7 +488,7 @@ export const MilkFrothingSimulator: React.FC = () => {
     }
 
     requestRef.current = requestAnimationFrame(loop);
-  }, [drawMainCanvas, drawSideView, update]);
+  }, [drawMainCanvas, update]);
 
   useEffect(() => {
     initParticles();
@@ -623,6 +569,12 @@ export const MilkFrothingSimulator: React.FC = () => {
             ⚙ Controles
           </h2>
 
+          {/* Graphic Reference */}
+          <div className="w-full">
+             <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2 block">Referencia Gráfica</label>
+             <canvas ref={wandVizRef} width={180} height={44} className="w-full h-11 block bg-stone-50 dark:bg-stone-950/50 rounded border border-stone-100 dark:border-stone-800" />
+          </div>
+
           {/* Depth */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -649,7 +601,7 @@ export const MilkFrothingSimulator: React.FC = () => {
               <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Ángulo</label>
               <span className="text-xs font-mono font-bold text-stone-900 dark:text-stone-100">{uiState.angle}°</span>
             </div>
-            <canvas ref={wandVizRef} width={180} height={44} className="w-full h-11 block bg-stone-50 dark:bg-stone-950/50 rounded border border-stone-100 dark:border-stone-800" />
+            {/* Canvas moved up */}
             <input 
               type="range" min="0" max="70" 
               value={uiState.angle}
@@ -750,13 +702,6 @@ export const MilkFrothingSimulator: React.FC = () => {
                 style={{ width: `${(uiState.time / S.current.MAX_TIME) * 100}%` }}
              />
           </div>
-
-          {/* Side View */}
-           <canvas 
-                ref={sideCanvasRef} 
-                width={SCW} height={SCH} 
-                className="w-[140px] h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 hidden md:block"
-             />
         </div>
 
         {/* METRICS (Right) */}

@@ -92,9 +92,9 @@ const tableColumnWhitelist: Record<string, string[]> = {
   expenses: ['id', 'reason', 'amount', 'documentType', 'documentId', 'date', 'status', 'relatedOrderId'],
   productionInventory: ['id', 'name', 'type', 'quantity', 'minThreshold', 'format'],
   profiles: ['id', 'email', 'role', 'isActive'],
-  cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form', 'notes', 'sessionType', 'samples'],
-  espressoSessions: ['id', 'date', 'baristaName', 'coffeeName', 'shots', 'notes'],
-  filterSessions: ['id', 'date', 'brewerName', 'coffeeName', 'method', 'pours', 'notes'],
+  cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form', 'notes', 'sessionType', 'samples', 'deleted'],
+  espressoSessions: ['id', 'date', 'baristaName', 'coffeeName', 'shots', 'notes', 'coffeeOrigin', 'coffeeProcess', 'roastDate', 'deleted'],
+  filterSessions: ['id', 'date', 'brewerName', 'coffeeName', 'method', 'pours', 'notes', 'deleted'],
   filterRecipes: [
     'id',
     'createdAt',
