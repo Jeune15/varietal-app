@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { EspressoView } from './EspressoCalibrationView';
 import { MilkTextureView } from '../components/MilkTextureView';
-import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft } from 'lucide-react';
+import { SensoryTrainingView } from './SensoryTrainingView';
+import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
 import { FilterSession, FilterPour, FilterRecipe, FilterRecipePhase, BrewMethod } from '../types';
@@ -2625,11 +2626,12 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
 export const RecipesView: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping'>('none');
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const espressoCardRef = useRef<HTMLButtonElement | null>(null);
   const filterCardRef = useRef<HTMLButtonElement | null>(null);
   const milkCardRef = useRef<HTMLButtonElement | null>(null);
+  const cuppingCardRef = useRef<HTMLButtonElement | null>(null);
   const espressoBackHandlerRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
@@ -2683,15 +2685,17 @@ export const RecipesView: React.FC = () => {
     content = <FilterRecipeManager onBack={() => setSelectedCategory('none')} />;
   } else if (selectedCategory === 'milk') {
     content = <MilkTextureView onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'cupping') {
+    content = <SensoryTrainingView onBack={() => setSelectedCategory('none')} />;
   } else {
     content = (
       <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
         <div className="space-y-2 mb-12">
           <h1 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">
-            Recetas y Calibración
+            Herramientas
           </h1>
           <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
-            Gestiona tus perfiles de extracción y guías de preparación
+            Simuladores, guías y recursos interactivos
           </p>
         </div>
 
@@ -2787,7 +2791,7 @@ export const RecipesView: React.FC = () => {
                   <Droplet className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
-                  Capuchino y latte art
+                  Conceptos y técnica
                 </span>
               </div>
 
@@ -2802,6 +2806,45 @@ export const RecipesView: React.FC = () => {
 
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
                 Aprende la ciencia de la texturización, domina la técnica paso a paso y practica con simuladores interactivos.
+              </p>
+            </div>
+
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
+                Entrar
+              </span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          <button
+            ref={cuppingCardRef}
+            onClick={() => setSelectedCategory('cupping')}
+            onMouseEnter={() => handleCategoryCardEnter(cuppingCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(cuppingCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Brain className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Entrenamiento Sensorial
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Cata
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Simulador, diccionario y educación
+                </p>
+              </div>
+
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Entrena tu paladar con simuladores de atributos, consulta el diccionario sensorial y mejora tu técnica de cata.
               </p>
             </div>
 

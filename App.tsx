@@ -456,7 +456,7 @@ const AppContent: React.FC = () => {
             {[
               { id: 'cupping', label: 'Catación', icon: BarChart3 },
               { id: 'modules', label: 'Módulos', icon: Package },
-              { id: 'recipes', label: 'Recetas', icon: ClipboardList },
+              { id: 'recipes', label: 'Herramientas', icon: ClipboardList }
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
