@@ -234,6 +234,8 @@ export const EspressoSimulator: React.FC = () => {
     }
   };
 
+  if (!state) return null;
+
   const currentPreset = presets.find(p => p.id === selectedPresetId);
   const isAdvancedMode = selectedDifficulty === 'advanced';
 

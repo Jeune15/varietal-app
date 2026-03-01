@@ -74,7 +74,7 @@ export const MilkFrothingSimulator: React.FC = () => {
   // ── REFS ──
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wandVizRef = useRef<HTMLCanvasElement>(null);
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   
   // ── STATE (Mutable for physics loop) ──
