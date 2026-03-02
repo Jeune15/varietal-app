@@ -5,6 +5,7 @@ import { Roast, GreenCoffee, Order, RoastedStock } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { db, syncToCloud } from '../db';
+import { StyledSelect } from '../components/StyledSelect';
 
 interface Props {
   roasts: Roast[];
@@ -738,18 +739,15 @@ const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
                    />
                 </div>
 
-                <select 
-                  className="w-full py-3 bg-transparent border-b border-stone-300 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 font-medium transition-colors px-0 text-xl placeholder:text-stone-300 dark:text-white"
-                  value={selectedGreenCoffeeId || ''}
+                <StyledSelect 
+                  value={selectedGreenCoffeeId}
                   onChange={(e) => setSelectedGreenCoffeeId(e.target.value)}
-                >
-                  <option value="" className="dark:bg-stone-900">-- Seleccionar Origen --</option>
-                  {filteredGreenCoffees.map(coffee => (
-                    <option key={coffee.id} value={coffee.id} className="dark:bg-stone-900">
-                      {coffee.variety} - {coffee.clientName} ({coffee.quantityKg}kg)
-                    </option>
-                  ))}
-                </select>
+                  options={filteredGreenCoffees.map(coffee => ({
+                    value: coffee.id,
+                    label: `${coffee.variety} - ${coffee.clientName} (${coffee.quantityKg}kg)`
+                  }))}
+                  placeholder="-- Seleccionar Origen --"
+                />
                 {filteredGreenCoffees.length === 0 && (
                    <p className="text-xs text-red-500 mt-1">No se encontraron cafés que coincidan con la búsqueda.</p>
                 )}

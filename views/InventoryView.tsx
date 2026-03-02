@@ -6,6 +6,7 @@ import { RoastedStock, RetailBagStock, Roast, ProductionItem } from '../types';
 import { ShoppingBag, CheckCircle, XCircle, Tag, Layers, Plus, Settings2, AlertCircle, Pencil, X, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { StyledSelect } from '../components/StyledSelect';
 
 interface Props {
   stocks: RoastedStock[];
@@ -771,19 +772,15 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                     Bolsa
                   </label>
-                  <select
-                    required
-                    className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all appearance-none rounded-none"
+                  <StyledSelect
                     value={selectedBagItemId}
                     onChange={e => setSelectedBagItemId(e.target.value)}
-                  >
-                    <option value="">Selecciona una bolsa</option>
-                    {bagItems.map(item => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} {item.format ? `(${item.format})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                    options={bagItems.map(item => ({
+                      value: item.id,
+                      label: `${item.name} ${item.format ? `(${item.format})` : ''}`
+                    }))}
+                    placeholder="Selecciona una bolsa"
+                  />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
@@ -856,8 +853,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                       Tipo
                     </p>
-                    <select
-                      className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white"
+                    <StyledSelect
                       value={prodForm.type}
                       onChange={e =>
                         setProdForm(prev => ({
@@ -865,10 +861,11 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                           type: e.target.value as 'unit' | 'rechargeable'
                         }))
                       }
-                    >
-                      <option value="unit">Unidad</option>
-                      <option value="rechargeable">Recargable</option>
-                    </select>
+                      options={[
+                        { value: 'unit', label: 'Unidad' },
+                        { value: 'rechargeable', label: 'Recargable' }
+                      ]}
+                    />
                   </div>
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
@@ -912,8 +909,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                         Formato
                       </p>
-                      <select
-                        className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold text-black dark:text-white"
+                      <StyledSelect
                         value={prodForm.format || ''}
                         onChange={e =>
                           setProdForm(prev => ({
@@ -925,12 +921,13 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                               | undefined
                           }))
                         }
-                      >
-                        <option value="">Sin formato</option>
-                        <option value="250g">250g</option>
-                        <option value="500g">500g</option>
-                        <option value="1kg">1kg</option>
-                      </select>
+                        options={[
+                          { value: '', label: 'Sin formato' },
+                          { value: '250g', label: '250g' },
+                          { value: '500g', label: '500g' },
+                          { value: '1kg', label: '1kg' }
+                        ]}
+                      />
                     </div>
                   )}
                 </div>
@@ -1444,38 +1441,36 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                 <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                   Café tostado
                 </label>
-                <select
-                  required
-                  className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all appearance-none rounded-none"
+                <StyledSelect
                   value={selectedRoastedStockId}
                   onChange={e => setSelectedRoastedStockId(e.target.value)}
-                >
-                  <option value="">Selecciona un lote tostado</option>
-                  {stocks
-                    .filter(s => s.remainingQtyKg > 0.001)
-                    .map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.clientName} — {s.variety} — Disp: {s.remainingQtyKg.toFixed(2)} Kg
-                      </option>
-                    ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Selecciona un lote tostado' },
+                    ...stocks
+                      .filter(s => s.remainingQtyKg > 0.001)
+                      .map(s => ({
+                        value: s.id,
+                        label: `${s.clientName} — ${s.variety} — Disp: ${s.remainingQtyKg.toFixed(2)} Kg`
+                      }))
+                  ]}
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                     Tipo de bolsa
                   </label>
-                  <select
-                    className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all appearance-none rounded-none"
+                  <StyledSelect
                     value={selectedBagType}
                     onChange={e =>
                       setSelectedBagType(e.target.value as '250g' | '500g' | '1kg')
                     }
-                  >
-                    <option value="250g">250 g</option>
-                    <option value="500g">500 g</option>
-                    <option value="1kg">1 kg</option>
-                  </select>
+                    options={[
+                      { value: '250g', label: '250 g' },
+                      { value: '500g', label: '500 g' },
+                      { value: '1kg', label: '1 kg' }
+                    ]}
+                  />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">

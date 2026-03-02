@@ -5,6 +5,7 @@ import { db, syncToCloud } from '../db';
 import { Order, Roast, RoastedStock, ProductionActivity } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { FileText, CheckCircle, Search, X, Printer, Download, Coffee, Scale, DollarSign, Receipt, ArrowRight, Calendar, Filter, ChevronLeft, ChevronRight, BarChart } from 'lucide-react';
+import { StyledSelect } from '../components/StyledSelect';
 import ExpensesView from './ExpensesView';
 
 interface Props {
@@ -593,15 +594,16 @@ const InvoicingView: React.FC<Props> = ({ orders, roasts, stocks }) => {
               </div>
 
               {/* Type Filter */}
-              <select
+              <StyledSelect
                 value={historyType}
                 onChange={(e) => setHistoryType(e.target.value as any)}
-                className="pl-4 pr-8 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-48 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
-              >
-                <option value="all">Todos los Servicios</option>
-                <option value="service">Servicio de Tueste</option>
-                <option value="sale">Venta Café Tostado</option>
-              </select>
+                options={[
+                  { value: 'all', label: 'Todos los Servicios' },
+                  { value: 'service', label: 'Servicio de Tueste' },
+                  { value: 'sale', label: 'Venta Café Tostado' }
+                ]}
+                className="w-full lg:w-48"
+              />
             </div>
 
             {/* Report Buttons */}

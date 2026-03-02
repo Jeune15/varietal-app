@@ -27,6 +27,7 @@ import {
   Plus,
   AlertCircle
 } from 'lucide-react';
+import { StyledSelect } from '../components/StyledSelect';
 
 interface ModeCardProps {
   title: string;
@@ -500,9 +501,10 @@ const ProductionView: React.FC<Props> = ({
                       {['Armado de Pedido', 'Despacho de Pedido'].includes(activeMode) && (
                         <div className="space-y-3">
                           <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Seleccionar Pedido</label>
-                          <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)}>
-                            <option value="">-- Elija un pedido activo --</option>
-                            {orders.filter(o => {
+                          <StyledSelect
+                            value={selectedOrderId}
+                            onChange={e => setSelectedOrderId(e.target.value)}
+                            options={orders.filter(o => {
                               if (activeMode === 'Despacho de Pedido') {
                                 const hasPackagingForSale = o.type === 'Venta Café Tostado' && (o.bagsUsed || 0) > 0;
                                 if (o.type === 'Venta Café Tostado') {
@@ -517,12 +519,12 @@ const ProductionView: React.FC<Props> = ({
                                 return o.status === 'En Producción' || o.status === 'Pendiente';
                               }
                               return false;
-                            }).map(o => (
-                              <option key={o.id} value={o.id}>
-                                {o.clientName} — {o.orderLines && o.orderLines.length > 0 ? 'Múltiples cafés' : o.variety} ({o.quantityKg}Kg) — {o.type === 'Servicio de Tueste' ? 'Servicio' : 'Venta'} — [{o.status}]
-                              </option>
-                            ))}
-                          </select>
+                            }).map(o => ({
+                              value: o.id,
+                              label: `${o.clientName} — ${o.orderLines && o.orderLines.length > 0 ? 'Múltiples cafés' : o.variety} (${o.quantityKg}Kg) — ${o.type === 'Servicio de Tueste' ? 'Servicio' : 'Venta'} — [${o.status}]`
+                            }))}
+                            placeholder="-- Elija un pedido activo --"
+                          />
                           {stocks.filter(s => s.remainingQtyKg > 0).filter(s => {
                             if (activeMode === 'Armado de Pedido' && selectedOrderId) {
                               const order = orders.find(o => o.id === selectedOrderId);
@@ -627,9 +629,10 @@ const ProductionView: React.FC<Props> = ({
                       {['Selección de Café', 'Armado de Bolsas Retail', 'Armado de Pedido'].includes(activeMode) && (
                         <div className="space-y-3">
                           <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Existencias de Café (Origen)</label>
-                          <select required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={selectedStockId} onChange={e => setSelectedStockId(e.target.value)}>
-                            <option value="">-- Elija un lote tostado --</option>
-                            {stocks
+                          <StyledSelect
+                            value={selectedStockId}
+                            onChange={e => setSelectedStockId(e.target.value)}
+                            options={stocks
                               .filter(s => s.remainingQtyKg > 0)
                               .filter(s => {
                                 if (activeMode === 'Armado de Pedido' && selectedOrderId) {
@@ -637,13 +640,12 @@ const ProductionView: React.FC<Props> = ({
                                 }
                                 return true;
                               })
-                              .map(s => (
-                              <option key={s.id} value={s.id}>
-                                {s.clientName} — {s.variety} — Disp: {s.remainingQtyKg.toFixed(2)} Kg
-                                {s.isSelected ? ' [Seleccionado]' : ''}
-                              </option>
-                            ))}
-                          </select>
+                              .map(s => ({
+                                value: s.id,
+                                label: `${s.clientName} — ${s.variety} — Disp: ${s.remainingQtyKg.toFixed(2)} Kg${s.isSelected ? ' [Seleccionado]' : ''}`
+                              }))}
+                            placeholder="-- Elija un lote tostado --"
+                          />
                         </div>
                       )}
                       
@@ -752,9 +754,18 @@ const ProductionView: React.FC<Props> = ({
                       )}
                       {activeMode === 'Armado de Bolsas Retail' && (
                         <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato Bolsa</label><select className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={additionalInfo.bagType} onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}>
-                            <option value="250g">250g</option><option value="500g">500g</option><option value="1kg">1kg</option>
-                          </select></div>
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato Bolsa</label>
+                            <StyledSelect
+                              value={additionalInfo.bagType}
+                              onChange={e => setAdditionalInfo({...additionalInfo, bagType: e.target.value as any})}
+                              options={[
+                                { value: '250g', label: '250g' },
+                                { value: '500g', label: '500g' },
+                                { value: '1kg', label: '1kg' }
+                              ]}
+                            />
+                          </div>
                           <div className="space-y-3"><label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Unidades</label><input type="number" min="1" step="1" required className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-stone-500" value={productionValue} onChange={e => setProductionValue(parseInt(e.target.value) || 0)} /></div>
                         </div>
                       )}
@@ -1099,14 +1110,14 @@ const ProductionView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Tipo de Stock</label>
-                  <select 
-                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white"
+                  <StyledSelect
                     value={prodForm.type}
                     onChange={e => setProdForm({...prodForm, type: e.target.value as 'unit' | 'rechargeable'})}
-                  >
-                    <option value="unit">Unidades (Cant)</option>
-                    <option value="rechargeable">Recargable (%)</option>
-                  </select>
+                    options={[
+                      { value: 'unit', label: 'Unidades (Cant)' },
+                      { value: 'rechargeable', label: 'Recargable (%)' }
+                    ]}
+                  />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Alerta Mínima</label>
@@ -1123,16 +1134,16 @@ const ProductionView: React.FC<Props> = ({
               {prodForm.type === 'unit' && (
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">Formato (Opcional)</label>
-                  <select 
-                    className="w-full px-5 py-4 bg-white border border-stone-200 focus:border-black outline-none text-sm font-bold transition-all appearance-none rounded-none dark:bg-stone-900 dark:border-stone-800 dark:focus:border-stone-500 dark:text-white"
+                  <StyledSelect
                     value={prodForm.format || ''}
                     onChange={e => setProdForm({...prodForm, format: e.target.value as any || undefined})}
-                  >
-                    <option value="">Ninguno (Genérico)</option>
-                    <option value="250g">Bolsa 250g</option>
-                    <option value="500g">Bolsa 500g</option>
-                    <option value="1kg">Bolsa 1kg</option>
-                  </select>
+                    options={[
+                      { value: '', label: 'Ninguno (Genérico)' },
+                      { value: '250g', label: 'Bolsa 250g' },
+                      { value: '500g', label: 'Bolsa 500g' },
+                      { value: '1kg', label: 'Bolsa 1kg' }
+                    ]}
+                  />
                   <p className="text-[10px] text-stone-400 font-bold uppercase tracking-wider ml-1">Si selecciona un formato, el stock se descontará automáticamente al producir bolsas retail.</p>
                 </div>
               )}

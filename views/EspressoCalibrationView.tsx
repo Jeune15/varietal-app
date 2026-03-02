@@ -22,12 +22,70 @@ import {
   ThumbsDown,
   Trash2,
   Eye,
-  Gamepad2
+  Gamepad2,
+  Minus,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { line, curveMonotoneX } from 'd3-shape';
 import { EspressoSession, EspressoShot, SensoryAnalysis } from '../types';
 import { useToast } from '../contexts/ToastContext';
+
+import { StyledSelect } from '../components/StyledSelect';
+
+const ESPRESSO_DESCRIPTORS = {
+  positive: {
+    label: 'Buenos (Deseables)',
+    groups: {
+      sabor: ['Chocolate', 'Caramelo', 'Frutal', 'Floral', 'Nuez', 'Vainilla', 'Cítrico'],
+      tactil: ['Cremoso', 'Sedoso', 'Redondo', 'Jugoso', 'Mantequilloso'],
+      general: ['Dulce', 'Balanceado', 'Limpio', 'Brillante', 'Complejo']
+    }
+  },
+  negative: {
+    label: 'Malos (Defectos)',
+    groups: {
+      sabor: ['Quemado', 'Ceniza', 'Papel'],
+      tactil: ['Seco', 'Astringente', 'Arenoso', 'Aguado', 'Áspero'],
+      general: ['Agrio', 'Amargo', 'Salado', 'Plano', 'Rancio', 'Vegetal']
+    }
+  }
+};
+
+const getRecommendation = (extraction: number, intensity: number, balance: number) => {
+  const recommendations: string[] = [];
+
+  // Extraction (1=Sub, 5=Over)
+  if (extraction <= 2) {
+    recommendations.push('Posible Sub-extracción: Intenta moler más fino o aumentar el ratio.');
+  } else if (extraction >= 4) {
+    recommendations.push('Posible Sobre-extracción: Intenta moler más grueso o reducir el ratio.');
+  }
+
+  // Intensity (1=Low, 5=High)
+  if (intensity <= 2) {
+    recommendations.push('Intensidad Baja: Intenta aumentar la dosis o reducir el ratio (menos agua).');
+  } else if (intensity >= 4) {
+    recommendations.push('Intensidad Alta: Intenta reducir la dosis o aumentar el ratio (más agua).');
+  }
+
+  // Balance (1=Bad/Sour, 5=Bad/Bitter? Usually Balance is subjective, assuming 3 is optimal)
+  // If user treats 1 as Sour and 5 as Bitter for Balance slider (common in some forms), logic applies.
+  // If user treats 1 as "Unbalanced" and 5 as "Balanced", logic differs.
+  // Given "Balance" context in simulator: "Victory condition requires Extraction 0, Intensity +/-1, Balance +/-1".
+  // Let's assume 3 is balanced.
+  if (balance <= 2) {
+    recommendations.push('Desbalanceado: Revisa la distribución (WDT) y nivelación del puck.');
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('Parámetros equilibrados. ¡Buen trabajo!');
+  }
+
+  return recommendations;
+};
+
+
 
 const TechniqueSection = () => {
   const tools = [
@@ -100,7 +158,7 @@ const TechniqueSection = () => {
         <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200 flex items-center gap-2">
           <Settings className="w-5 h-5" /> Herramientas Necesarias
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {tools.map((tool, idx) => (
             <div key={idx} className="flex gap-3 p-3 bg-white dark:bg-stone-900 rounded-lg border border-stone-100 dark:border-stone-800">
               <div className="mt-1 w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
@@ -839,7 +897,11 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
     yieldOut: 36,
     timeSeconds: 28,
     waterTempCelsius: 93,
-    extraction: 50,
+    extraction: 3,
+    intensity: 3,
+    balance: 3,
+    nextAction: [],
+    sensoryDescriptors: [],
     tasteBalance: [],
     acidityScore: 3,
     sweetnessScore: 3,
@@ -883,6 +945,10 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
       yieldOut: Number(currentShot.yieldOut),
       timeSeconds: Number(currentShot.timeSeconds),
       extraction: Number(currentShot.extraction),
+      intensity: Number(currentShot.intensity),
+      balance: Number(currentShot.balance),
+      nextAction: currentShot.nextAction || [],
+      sensoryDescriptors: currentShot.sensoryDescriptors || [],
       tasteBalance: currentShot.tasteBalance || [],
       sensory: currentShot.sensory as SensoryAnalysis,
       notes: currentShot.notes,
@@ -923,6 +989,11 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
       // Keep previous dose/yield/grind as starting point
       notes: '',
       tasteBalance: [],
+      extraction: 3,
+      intensity: 3,
+      balance: 3,
+      nextAction: [],
+      sensoryDescriptors: [],
       acidityScore: newShot.acidityScore,
       sweetnessScore: newShot.sweetnessScore,
       bitternessScore: newShot.bitternessScore,
@@ -1109,18 +1180,18 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
               </div>
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">Proceso</label>
-                <select
+                <StyledSelect
                   value={sessionData.coffeeProcess}
                   onChange={e => setSessionData({...sessionData, coffeeProcess: e.target.value})}
-                  className="w-full p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                >
-                  <option value="">Selecciona proceso</option>
-                  <option value="lavado">Lavado</option>
-                  <option value="natural">Natural</option>
-                  <option value="honey">Honey</option>
-                  <option value="anaerobico">Anaeróbico</option>
-                  <option value="experimental">Experimental</option>
-                </select>
+                  options={[
+                    { value: 'lavado', label: 'Lavado' },
+                    { value: 'natural', label: 'Natural' },
+                    { value: 'honey', label: 'Honey' },
+                    { value: 'anaerobico', label: 'Anaeróbico' },
+                    { value: 'experimental', label: 'Experimental' }
+                  ]}
+                  placeholder="Selecciona proceso"
+                />
               </div>
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">Fecha (tueste o lote)</label>
@@ -1370,316 +1441,280 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Tampeo</label>
-                      <select
+                      <StyledSelect
                         value={currentShot.tamping || ''}
                         onChange={e => setCurrentShot({...currentShot, tamping: e.target.value === '' ? undefined : e.target.value as 'soft' | 'normal' | 'firm'})}
-                        className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-center font-bold"
-                      >
-                        <option value="">Selecciona</option>
-                        <option value="soft">Suave</option>
-                        <option value="normal">Normal</option>
-                        <option value="firm">Firme</option>
-                      </select>
+                        options={[
+                          { value: 'soft', label: 'Suave' },
+                          { value: 'normal', label: 'Normal' },
+                          { value: 'firm', label: 'Firme' }
+                        ]}
+                        placeholder="Selecciona"
+                        className="text-center"
+                      />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* 1. Descripción Sensorial */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                    Perfil sensorial
+                    Descripción Sensorial
                   </label>
-                  <div className="bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg p-4">
-                    <svg viewBox="-4 -4 168 48" className="w-full h-24 overflow-visible">
-                      <line
-                        x1={0}
-                        y1={20}
-                        x2={160}
-                        y2={20}
-                        stroke="#e5e7eb"
-                        strokeDasharray="4 4"
-                      />
-                      {tastePath && (
-                        <path
-                          d={tastePath}
-                          fill="none"
-                          stroke="#000000"
-                          strokeWidth={3}
-                          strokeLinecap="round"
-                        />
-                      )}
-                      {tasteData.map((d, i) => {
-                        const x = (i / (tasteData.length - 1)) * 160;
-                        const y = 40 - (d.value / 5) * 40;
-                        return (
-                          <circle
-                            key={d.label}
-                            cx={x}
-                            cy={y}
-                            r={4}
-                            fill="#000000"
-                            stroke="#ffffff"
-                            strokeWidth={1}
-                          />
-                        );
-                      })}
-                    </svg>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                      Inicio
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.temporalProfileStart ?? 5}
-                        onChange={e =>
-                          setCurrentShot({
-                            ...currentShot,
-                            temporalProfileStart: Number(e.target.value)
-                          })
-                        }
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.temporalProfileStart ?? 5).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.temporalProfileStartNotes || ''}
-                      onChange={e =>
-                        setCurrentShot({
-                          ...currentShot,
-                          temporalProfileStartNotes: e.target.value
-                        })
-                      }
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Análisis del inicio..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                      Medio
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.temporalProfileMiddle ?? 5}
-                        onChange={e =>
-                          setCurrentShot({
-                            ...currentShot,
-                            temporalProfileMiddle: Number(e.target.value)
-                          })
-                        }
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.temporalProfileMiddle ?? 5).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.temporalProfileMiddleNotes || ''}
-                      onChange={e =>
-                        setCurrentShot({
-                          ...currentShot,
-                          temporalProfileMiddleNotes: e.target.value
-                        })
-                      }
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Análisis de la parte media..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                      Final
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.temporalProfileEnd ?? 5}
-                        onChange={e =>
-                          setCurrentShot({
-                            ...currentShot,
-                            temporalProfileEnd: Number(e.target.value)
-                          })
-                        }
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.temporalProfileEnd ?? 5).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.temporalProfileEndNotes || ''}
-                      onChange={e =>
-                        setCurrentShot({
-                          ...currentShot,
-                          temporalProfileEndNotes: e.target.value
-                        })
-                      }
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Análisis del final..."
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Acidez</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.acidityScore ?? 0}
-                        onChange={e => setCurrentShot({...currentShot, acidityScore: Number(e.target.value)})}
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.acidityScore ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.acidityDescriptors || ''}
-                      onChange={e => setCurrentShot({...currentShot, acidityDescriptors: e.target.value})}
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Descriptores de acidez (ej. cítrico, jugoso...)"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Dulzor</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.sweetnessScore ?? 0}
-                        onChange={e => setCurrentShot({...currentShot, sweetnessScore: Number(e.target.value)})}
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.sweetnessScore ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.sweetnessDescriptors || ''}
-                      onChange={e => setCurrentShot({...currentShot, sweetnessDescriptors: e.target.value})}
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Descriptores de dulzor (ej. caramelo, miel...)"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Amargor</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.bitternessScore ?? 0}
-                        onChange={e => setCurrentShot({...currentShot, bitternessScore: Number(e.target.value)})}
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.bitternessScore ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.bitternessDescriptors || ''}
-                      onChange={e => setCurrentShot({...currentShot, bitternessDescriptors: e.target.value})}
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Descriptores de amargor (ej. cacao, tánico...)"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Cuerpo</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.bodyScore ?? 0}
-                        onChange={e => setCurrentShot({...currentShot, bodyScore: Number(e.target.value)})}
-                        className="flex-1 accent-black dark:accent-white"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.bodyScore ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.bodyDescriptors || ''}
-                      onChange={e => setCurrentShot({...currentShot, bodyDescriptors: e.target.value})}
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Descriptores de cuerpo (ej. sedoso, pesado...)"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Claridad</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.25"
-                        value={currentShot.clarityScore ?? 0}
-                        onChange={e => setCurrentShot({...currentShot, clarityScore: Number(e.target.value)})}
-                        className="flex-1"
-                      />
-                      <span className="w-10 text-xs font-mono text-right">
-                        {(currentShot.clarityScore ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={currentShot.clarityDescriptors || ''}
-                      onChange={e => setCurrentShot({...currentShot, clarityDescriptors: e.target.value})}
-                      className="w-full mt-1 p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Descriptores de claridad (ej. limpio, turbio...)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Notas específicas</label>
                   <textarea
                     value={currentShot.sensorySubnotes || ''}
                     onChange={e => setCurrentShot({...currentShot, sensorySubnotes: e.target.value})}
-                    className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg min-h-[60px]"
-                    placeholder="Ej. Fresa madura, flor de azahar, cacao 70%..."
+                    className="w-full p-4 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl min-h-[100px] text-sm"
+                    placeholder="Describe cómo se siente el café (aroma, sabor, cuerpo, final)..."
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Anotaciones</label>
-                  <textarea
-                    value={currentShot.notes || ''}
-                    onChange={e => setCurrentShot({...currentShot, notes: e.target.value})}
-                    className="w-full p-3 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg min-h-[80px]"
-                    placeholder="Notas adicionales sobre esta extracción..."
-                  />
+                {/* 2. Barras Interactivas (Extracción, Intensidad, Balance) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Extracción */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                      <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Extracción</label>
+                      <span className="text-xs font-mono font-bold text-brand">
+                        {currentShot.extraction ? (currentShot.extraction <= 2 ? 'Sub-extraído' : currentShot.extraction >= 4 ? 'Sobre-extraído' : 'Óptimo') : '-'}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={currentShot.extraction || 3}
+                      onChange={e => setCurrentShot({...currentShot, extraction: Number(e.target.value)})}
+                      className="w-full accent-brand h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] uppercase text-stone-400 font-bold tracking-wider">
+                      <span>Ácido</span>
+                      <span>Balance</span>
+                      <span>Amargo</span>
+                    </div>
+                  </div>
+
+                  {/* Intensidad */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                      <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Intensidad</label>
+                      <span className="text-xs font-mono font-bold text-brand">{currentShot.intensity}/5</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={currentShot.intensity || 3}
+                      onChange={e => setCurrentShot({...currentShot, intensity: Number(e.target.value)})}
+                      className="w-full accent-brand h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] uppercase text-stone-400 font-bold tracking-wider">
+                      <span>Baja</span>
+                      <span>Media</span>
+                      <span>Alta</span>
+                    </div>
+                  </div>
+
+                  {/* Balance */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                      <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Balance</label>
+                      <span className="text-xs font-mono font-bold text-brand">{currentShot.balance}/5</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={currentShot.balance || 3}
+                      onChange={e => setCurrentShot({...currentShot, balance: Number(e.target.value)})}
+                      className="w-full accent-brand h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] uppercase text-stone-400 font-bold tracking-wider">
+                      <span>Malo</span>
+                      <span>Regular</span>
+                      <span>Bueno</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Variables a Modificar y Recomendaciones */}
+                <div className="space-y-6">
+                  {/* Recomendaciones */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> Recomendaciones IA
+                    </h4>
+                    <ul className="space-y-1">
+                      {getRecommendation(currentShot.extraction || 3, currentShot.intensity || 3, currentShot.balance || 3).map((rec, i) => (
+                        <li key={i} className="text-xs text-stone-700 dark:text-stone-300 flex items-start gap-2">
+                          <span className="mt-1 w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Selector de Variables */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
+                      ¿Qué ajustar para la siguiente receta?
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {[
+                        { id: 'dose', label: 'Dosis' },
+                        { id: 'ratio', label: 'Ratio' },
+                        { id: 'grind', label: 'Molienda' },
+                        ...(level === 'advanced' ? [
+                          { id: 'preinfusion', label: 'Preinfusión' },
+                          { id: 'temp', label: 'Temperatura' }
+                        ] : [])
+                      ].map(variable => {
+                        const incAction = `${variable.id}_inc`;
+                        const decAction = `${variable.id}_dec`;
+                        const isInc = currentShot.nextAction?.includes(incAction);
+                        const isDec = currentShot.nextAction?.includes(decAction);
+
+                        return (
+                          <div key={variable.id} className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl">
+                            <span className="text-xs font-bold uppercase text-stone-600 dark:text-stone-400 pl-1">{variable.label}</span>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = currentShot.nextAction || [];
+                                  let updated = [...current];
+                                  if (isDec) {
+                                    updated = updated.filter(a => a !== decAction);
+                                  } else {
+                                    updated = [...updated.filter(a => a !== incAction), decAction];
+                                  }
+                                  setCurrentShot({...currentShot, nextAction: updated});
+                                }}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                                  isDec 
+                                    ? 'bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 shadow-sm' 
+                                    : 'bg-white dark:bg-stone-800 text-stone-400 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
+                                }`}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              
+                              <div className="w-px h-4 bg-stone-200 dark:bg-stone-700" />
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = currentShot.nextAction || [];
+                                  let updated = [...current];
+                                  if (isInc) {
+                                    updated = updated.filter(a => a !== incAction);
+                                  } else {
+                                    updated = [...updated.filter(a => a !== decAction), incAction];
+                                  }
+                                  setCurrentShot({...currentShot, nextAction: updated});
+                                }}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                                  isInc
+                                    ? 'bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 shadow-sm' 
+                                    : 'bg-white dark:bg-stone-800 text-stone-400 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
+                                }`}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Descriptores */}
+                <div className="space-y-4 pt-4 border-t border-stone-200 dark:border-stone-800">
+                  <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
+                    Descriptores
+                  </label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Positivos */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase flex items-center gap-2">
+                        <ThumbsUp className="w-3 h-3" /> Buenos
+                      </h4>
+                      {Object.entries(ESPRESSO_DESCRIPTORS.positive.groups).map(([group, items]) => (
+                        <div key={group} className="space-y-1">
+                          <span className="text-[10px] font-bold text-stone-400 uppercase">{group}</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {items.map(item => {
+                              const isSelected = currentShot.sensoryDescriptors?.includes(item);
+                              return (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  onClick={() => {
+                                    const current = currentShot.sensoryDescriptors || [];
+                                    const updated = current.includes(item)
+                                      ? current.filter(i => i !== item)
+                                      : [...current, item];
+                                    setCurrentShot({...currentShot, sensoryDescriptors: updated});
+                                  }}
+                                  className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${
+                                    isSelected
+                                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+                                      : 'bg-stone-50 dark:bg-stone-900 text-stone-500 border-stone-100 dark:border-stone-800 hover:bg-white'
+                                  }`}
+                                >
+                                  {item}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Negativos */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-red-600 dark:text-red-500 uppercase flex items-center gap-2">
+                        <ThumbsDown className="w-3 h-3" /> Malos / Defectos
+                      </h4>
+                      {Object.entries(ESPRESSO_DESCRIPTORS.negative.groups).map(([group, items]) => (
+                        <div key={group} className="space-y-1">
+                          <span className="text-[10px] font-bold text-stone-400 uppercase">{group}</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {items.map(item => {
+                              const isSelected = currentShot.sensoryDescriptors?.includes(item);
+                              return (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  onClick={() => {
+                                    const current = currentShot.sensoryDescriptors || [];
+                                    const updated = current.includes(item)
+                                      ? current.filter(i => i !== item)
+                                      : [...current, item];
+                                    setCurrentShot({...currentShot, sensoryDescriptors: updated});
+                                  }}
+                                  className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${
+                                    isSelected
+                                      ? 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
+                                      : 'bg-stone-50 dark:bg-stone-900 text-stone-500 border-stone-100 dark:border-stone-800 hover:bg-white'
+                                  }`}
+                                >
+                                  {item}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -1778,50 +1813,62 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
                     </div>
                   </div>
                   <div className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                    shot.extraction < 40 ? 'bg-blue-100 text-blue-700' :
-                    shot.extraction > 60 ? 'bg-red-100 text-red-700' :
+                    shot.extraction <= 2 ? 'bg-blue-100 text-blue-700' :
+                    shot.extraction >= 4 ? 'bg-red-100 text-red-700' :
                     'bg-green-100 text-green-700'
                   }`}>
-                    {shot.extraction < 40 ? 'Sub' : shot.extraction > 60 ? 'Sobre' : 'Bien'} ({Math.round(shot.extraction)}%)
+                    {shot.extraction <= 2 ? 'Sub' : shot.extraction >= 4 ? 'Sobre' : 'Bien'} ({shot.extraction}/5)
                   </div>
                 </div>
 
-                {/* Taste Balance */}
-                {shot.tasteBalance && shot.tasteBalance.length > 0 && (
-                   <div className="flex flex-wrap gap-1">
-                     {shot.tasteBalance.map(t => (
-                       <span key={t} className="text-xs uppercase font-bold px-2 py-0.5 bg-stone-200 dark:bg-stone-700 rounded text-stone-600 dark:text-stone-300">
-                         {t === 'sour' ? 'Ácido' : t === 'sweet' ? 'Dulce' : t === 'balanced' ? 'Balance' : 'Amargo'}
-                       </span>
-                     ))}
-                   </div>
+                {/* Sensory Description */}
+                {shot.sensorySubnotes && (
+                  <div className="text-sm text-stone-600 dark:text-stone-400 italic bg-stone-100 dark:bg-stone-800/50 p-3 rounded-lg mt-2">
+                    "{shot.sensorySubnotes}"
+                  </div>
                 )}
-                
-                {/* Sensory Analysis Summary */}
-                {shot.sensory && (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-stone-500 mt-2 border-t border-stone-200 dark:border-stone-700 pt-3">
-                     {shot.sensory.crema && (
-                       <div><span className="font-bold text-stone-700 dark:text-stone-300">Crema:</span> {shot.sensory.crema}</div>
-                     )}
-                     {shot.sensory.acidity?.quality && (
-                       <div><span className="font-bold text-stone-700 dark:text-stone-300">Acidez:</span> {shot.sensory.acidity.quality === 'positive' ? 'Positiva' : 'Negativa'} {shot.sensory.acidity.description && `(${shot.sensory.acidity.description})`}</div>
-                     )}
-                     {shot.sensory.sweetness?.present !== null && (
-                       <div><span className="font-bold text-stone-700 dark:text-stone-300">Dulzor:</span> {shot.sensory.sweetness.present ? 'Sí' : 'No'} {shot.sensory.sweetness.intensity && `(${shot.sensory.sweetness.intensity})`}</div>
-                     )}
-                     {shot.sensory.bitterness?.quality && (
-                       <div><span className="font-bold text-stone-700 dark:text-stone-300">Amargor:</span> {shot.sensory.bitterness.quality === 'positive' ? 'Positiva' : 'Negativa'} {shot.sensory.bitterness.description && `(${shot.sensory.bitterness.description})`}</div>
-                     )}
-                     {shot.sensory.body && (
-                       <div><span className="font-bold text-stone-700 dark:text-stone-300">Cuerpo:</span> {shot.sensory.body}</div>
-                     )}
-                     {shot.sensory.aftertaste?.duration && (
-                       <div><span className="font-bold text-stone-700 dark:text-stone-300">Postgusto:</span> {
-                         shot.sensory.aftertaste.duration === 'quick' ? 'Rápido' : 
-                         shot.sensory.aftertaste.duration === 'semi-prolonged' ? 'Semiprolongado' : 'Prolongado'
-                       } {shot.sensory.aftertaste.description && `(${shot.sensory.aftertaste.description})`}</div>
-                     )}
-                   </div>
+
+                {/* Sliders Summary */}
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  <div className="bg-white dark:bg-stone-800 p-2 rounded border border-stone-200 dark:border-stone-700 text-center">
+                    <span className="block text-[10px] uppercase font-bold text-stone-500">Extracción</span>
+                    <span className="font-mono font-bold text-brand">{shot.extraction}/5</span>
+                  </div>
+                  <div className="bg-white dark:bg-stone-800 p-2 rounded border border-stone-200 dark:border-stone-700 text-center">
+                    <span className="block text-[10px] uppercase font-bold text-stone-500">Intensidad</span>
+                    <span className="font-mono font-bold text-brand">{shot.intensity || '-'}/5</span>
+                  </div>
+                  <div className="bg-white dark:bg-stone-800 p-2 rounded border border-stone-200 dark:border-stone-700 text-center">
+                    <span className="block text-[10px] uppercase font-bold text-stone-500">Balance</span>
+                    <span className="font-mono font-bold text-brand">{shot.balance || '-'}/5</span>
+                  </div>
+                </div>
+
+                {/* Next Action */}
+                {shot.nextAction && shot.nextAction.length > 0 && (
+                  <div className="mt-2 text-xs">
+                    <span className="font-bold text-stone-500 uppercase tracking-widest mr-2">Próximo ajuste:</span>
+                    <span className="text-stone-800 dark:text-stone-200 font-medium">
+                      {shot.nextAction.map(a => 
+                        a === 'dose' ? 'Dosis' : 
+                        a === 'ratio' ? 'Ratio' : 
+                        a === 'grind' ? 'Molienda' : 
+                        a === 'preinfusion' ? 'Preinfusión' : 
+                        a === 'temp' ? 'Temperatura' : a
+                      ).join(', ')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Descriptors */}
+                {shot.sensoryDescriptors && shot.sensoryDescriptors.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {shot.sensoryDescriptors.map(d => (
+                      <span key={d} className="text-[10px] uppercase font-bold px-2 py-1 bg-stone-200 dark:bg-stone-700 rounded text-stone-600 dark:text-stone-300">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
                 )}
 
                 {shot.sensoryTimelineOffsets && shot.sensoryTimelineOffsets.length >= 3 && (

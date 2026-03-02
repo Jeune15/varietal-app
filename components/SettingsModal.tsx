@@ -5,6 +5,7 @@ import { initSupabase, db, syncToCloud, getSupabase, pushToCloud, pullFromCloud,
 import { useLiveQuery } from 'dexie-react-hooks';
 import { UserProfile, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { StyledSelect } from './StyledSelect';
 
 interface Props {
   isOpen: boolean;
@@ -241,15 +242,16 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, darkMode, toggleDarkM
                                 <p className="text-[10px] text-stone-500 capitalize">{p.role}</p>
                             </div>
                             {p.id !== user?.id && (
-                                <select 
-                                    className="text-[10px] border border-stone-200 p-1 bg-stone-50 uppercase font-bold"
+                                <StyledSelect 
+                                    className="w-32"
                                     value={p.role}
                                     onChange={(e) => handleUpdateUser(p, { role: e.target.value as UserRole })}
-                                >
-                                    <option value="viewer">Visualizador</option>
-                                    <option value="editor">Editor</option>
-                                    <option value="admin">Admin</option>
-                                </select>
+                                    options={[
+                                        { value: 'viewer', label: 'Visualizador' },
+                                        { value: 'editor', label: 'Editor' },
+                                        { value: 'admin', label: 'Admin' }
+                                    ]}
+                                />
                             )}
                         </div>
                     ))}

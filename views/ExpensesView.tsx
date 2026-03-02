@@ -5,6 +5,7 @@ import { db, syncToCloud } from '../db';
 import { Expense } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Trash2, Search, Filter, DollarSign, FileText, Calendar, CheckCircle, X, User } from 'lucide-react';
+import { StyledSelect } from '../components/StyledSelect';
 
 export const ExpensesView = () => {
   const { canEdit } = useAuth();
@@ -294,14 +295,14 @@ export const ExpensesView = () => {
                 {formData.type === 'compra' && (
                   <div>
                     <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Tipo Doc.</label>
-                    <select
+                    <StyledSelect
                       value={formData.documentType}
                       onChange={e => setFormData({...formData, documentType: e.target.value as 'Factura' | 'Boleta'})}
-                      className="w-full p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white focus:ring-0 transition-all text-sm font-bold dark:text-white"
-                    >
-                      <option value="Factura">Factura</option>
-                      <option value="Boleta">Boleta</option>
-                    </select>
+                      options={[
+                        { value: 'Factura', label: 'Factura' },
+                        { value: 'Boleta', label: 'Boleta' }
+                      ]}
+                    />
                   </div>
                 )}
               </div>

@@ -6,6 +6,7 @@ import { CuppingForm, CuppingSession, RoastedStock, FreeCuppingSample, CuppingSe
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Coffee, User as UserIcon, ClipboardList, SlidersHorizontal, X, ArrowLeft, ArrowRight, Check, Plus, Minus, Calendar } from 'lucide-react';
+import { StyledSelect } from '../components/StyledSelect';
 import { SessionDetailModal } from '../components/CuppingSessionDetail';
 import { gsap } from 'gsap';
 
@@ -592,17 +593,18 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
                 </div>
                 <div className="space-y-2">
                    <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Tipo de Tueste</label>
-                   <select
+                   <StyledSelect
                       value={freeSamples[currentSampleIndex].roastType}
                       onChange={(e) => updateFreeSample(currentSampleIndex, 'roastType', e.target.value)}
-                      className="w-full p-3 border border-stone-200 dark:border-stone-700 bg-transparent text-sm font-medium focus:border-black dark:focus:border-white outline-none"
-                   >
-                      <option value="">Seleccionar...</option>
-                      <option value="Filtro">Filtro</option>
-                      <option value="Espresso">Espresso</option>
-                      <option value="Omni">Omni</option>
-                      <option value="Cata">Cata</option>
-                   </select>
+                      placeholder="Seleccionar..."
+                      options={[
+                        { value: 'Filtro', label: 'Filtro' },
+                        { value: 'Espresso', label: 'Espresso' },
+                        { value: 'Omni', label: 'Omni' },
+                        { value: 'Cata', label: 'Cata' }
+                      ]}
+                      className="w-full"
+                   />
                 </div>
                 <div className="space-y-2">
                    <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Fecha de Tostado</label>
@@ -685,18 +687,16 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <div className="space-y-1">
                          <label className="text-[9px] font-bold uppercase tracking-widest text-stone-500">Café</label>
-                         <select
+                         <StyledSelect
                            value={selectedStockId}
                            onChange={e => setSelectedStockId(e.target.value)}
-                           className="w-full bg-transparent border-b border-stone-300 dark:border-stone-700 py-1 text-sm font-bold focus:border-black outline-none"
-                         >
-                           <option value="">Seleccionar lote...</option>
-                           {availableStocks.map(stock => (
-                             <option key={stock.id} value={stock.id}>
-                               {stock.variety} ({stock.clientName})
-                             </option>
-                           ))}
-                         </select>
+                           placeholder="Seleccionar lote..."
+                           options={availableStocks.map(stock => ({
+                             value: stock.id,
+                             label: `${stock.variety} (${stock.clientName})`
+                           }))}
+                           className="w-full"
+                         />
                        </div>
                        <div className="space-y-1">
                           <label className="text-[9px] font-bold uppercase tracking-widest text-stone-500">Catador</label>

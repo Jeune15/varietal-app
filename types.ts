@@ -120,6 +120,10 @@ export interface EspressoShot {
   yieldOut: number;
   timeSeconds: number;
   extraction: number; // 0-100 slider value
+  intensity?: number; // 0-100 or 0-5 slider value
+  balance?: number; // 0-100 or 0-5 slider value
+  nextAction?: string[]; // Variables to change for next shot
+  sensoryDescriptors?: string[]; // Selected descriptors from grid
   tasteBalance: string[]; // Multi-select ['sour', 'bitter', 'balanced', etc.]
   sensory: SensoryAnalysis;
   notes?: string;

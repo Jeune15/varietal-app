@@ -3,6 +3,7 @@ import { EspressoView } from './EspressoCalibrationView';
 import { MilkTextureView } from '../components/MilkTextureView';
 import { SensoryTrainingView } from './SensoryTrainingView';
 import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain } from 'lucide-react';
+import { StyledSelect } from '../components/StyledSelect';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
 import { FilterSession, FilterPour, FilterRecipe, FilterRecipePhase, BrewMethod } from '../types';
@@ -1817,17 +1818,12 @@ const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                         Método
                       </span>
-                      <select
+                      <StyledSelect
                         value={current.method}
                         onChange={e => updateCurrent({ method: e.target.value as BrewMethod })}
-                        className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      >
-                        {brewMethodOptions.map(opt => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                        options={brewMethodOptions}
+                        className="w-full"
+                      />
                     </div>
                     <div className="space-y-1">
                       <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
@@ -2134,21 +2130,16 @@ const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                           Tipo de vertido
                         </span>
-                        <select
+                        <StyledSelect
                           value={phase.pourType}
                           onChange={e =>
                             handleUpdatePhase(phase.id, {
                               pourType: e.target.value as any
                             })
                           }
-                          className="w-full p-1.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                        >
-                          {pourTypeOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
+                          options={pourTypeOptions}
+                          className="w-full"
+                        />
                       </div>
                     </div>
                   ))}

@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
 import { Order, OrderType, OrderLine, ProductionActivity, RoastedStock, RetailBagStock, ProductionItem, ProductionActivityType } from '../types';
 import { Plus, Clock, User, X, Truck, DollarSign, AlertTriangle, Trash2, Activity, ShoppingBag, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { StyledSelect } from '../components/StyledSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -1195,18 +1196,19 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                     />
                   </div>
                   <div>
-                    <select
+                    <StyledSelect
                       value={historyType}
                       onChange={e => {
                         setHistoryType(e.target.value as any);
                         setHistoryPage(1);
                       }}
-                      className="pl-4 pr-8 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:ring-0 w-full lg:w-48 transition-colors dark:bg-stone-900 dark:border-stone-800 dark:text-white dark:focus:border-white"
-                    >
-                      <option value="all">Todos los tipos</option>
-                      <option value="service">Servicio de Tueste</option>
-                      <option value="sale">Venta Café Tostado</option>
-                    </select>
+                      options={[
+                        { value: 'all', label: 'Todos los tipos' },
+                        { value: 'service', label: 'Servicio de Tueste' },
+                        { value: 'sale', label: 'Venta Café Tostado' }
+                      ]}
+                      className="w-full lg:w-48"
+                    />
                   </div>
                 </div>
               </div>
@@ -1462,8 +1464,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em]">Tipo</label>
-                      <select 
-                        className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold transition-colors text-black dark:text-white"
+                      <StyledSelect
                         value={formData.type}
                         onChange={e => {
                           const nextType = e.target.value as OrderType;
@@ -1472,10 +1473,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                             setServiceUnitMode('green');
                           }
                         }}
-                      >
-                        <option value="Venta Café Tostado">Venta Café Tostado</option>
-                        <option value="Servicio de Tueste">Servicio de Tueste</option>
-                      </select>
+                        options={[
+                          { value: 'Venta Café Tostado', label: 'Venta Café Tostado' },
+                          { value: 'Servicio de Tueste', label: 'Servicio de Tueste' }
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -1661,15 +1663,16 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                               }
                             }}
                           />
-                          <select
-                            className="w-full py-3 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-medium transition-colors text-black dark:text-white"
+                          <StyledSelect
                             value={lineBagSizeGrams}
                             onChange={e => setLineBagSizeGrams(parseInt(e.target.value, 10) || 1000)}
-                          >
-                            <option value={250}>250 g</option>
-                            <option value={500}>500 g</option>
-                            <option value={1000}>1 Kg</option>
-                          </select>
+                            options={[
+                              { value: 250, label: '250 g' },
+                              { value: 500, label: '500 g' },
+                              { value: 1000, label: '1 Kg' }
+                            ]}
+                            className="border-b border-stone-200 dark:border-stone-700 rounded-none"
+                          />
                         </div>
                       </div>
                     )}
@@ -2099,22 +2102,19 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                               Existencias de café tostado
                             </p>
-                            <select
-                              required
-                              className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold transition-all appearance-none text-black dark:text-white"
+                            <StyledSelect
                               value={selectedStockId}
                               onChange={e => setSelectedStockId(e.target.value)}
-                            >
-                              <option value="">-- Elija un lote tostado --</option>
-                              {stocks
-                                .filter(s => s.remainingQtyKg > 0)
-                                .map(s => (
-                                  <option key={s.id} value={s.id}>
-                                    {s.clientName} — {s.variety} — Disp:{' '}
-                                    {s.remainingQtyKg.toFixed(2)} Kg
-                                  </option>
-                                ))}
-                            </select>
+                              options={[
+                                { value: '', label: '-- Elija un lote tostado --' },
+                                ...stocks
+                                  .filter(s => s.remainingQtyKg > 0)
+                                  .map(s => ({
+                                    value: s.id,
+                                    label: `${s.clientName} — ${s.variety} — Disp: ${s.remainingQtyKg.toFixed(2)} Kg`
+                                  }))
+                              ]}
+                            />
                           </div>
                         )}
 
@@ -2147,8 +2147,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                                   Formato bolsa
                                 </p>
-                                <select
-                                  className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold appearance-none text-black dark:text-white"
+                                <StyledSelect
                                   value={additionalInfo.bagType}
                                   onChange={e =>
                                     setAdditionalInfo({
@@ -2156,34 +2155,34 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                                       bagType: e.target.value as '250g' | '500g' | '1kg'
                                     })
                                   }
-                                >
-                                  <option value="250g">250g</option>
-                                  <option value="500g">500g</option>
-                                  <option value="1kg">1kg</option>
-                                </select>
+                                  options={[
+                                    { value: '250g', label: '250g' },
+                                    { value: '500g', label: '500g' },
+                                    { value: '1kg', label: '1kg' }
+                                  ]}
+                                />
                               </div>
                               <div className="space-y-2">
                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                                   Café de retail
                                 </p>
-                                <select
-                                  className="w-full px-4 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 focus:border-black dark:focus:border-white outline-none text-sm font-bold appearance-none text-black dark:text-white"
+                                <StyledSelect
                                   value={selectedRetailBagId}
                                   onChange={e => setSelectedRetailBagId(e.target.value)}
-                                >
-                                  <option value="">-- Elija un café en retail --</option>
-                                  {retailBags
-                                    .filter(
-                                      b =>
-                                        b.quantity > 0 &&
-                                        b.type === additionalInfo.bagType
-                                    )
-                                    .map(b => (
-                                      <option key={b.id} value={b.id}>
-                                        {b.coffeeName} • {b.type} • {b.quantity} bolsas
-                                      </option>
-                                    ))}
-                                </select>
+                                  options={[
+                                    { value: '', label: '-- Elija un café en retail --' },
+                                    ...retailBags
+                                      .filter(
+                                        b =>
+                                          b.quantity > 0 &&
+                                          b.type === additionalInfo.bagType
+                                      )
+                                      .map(b => ({
+                                        value: b.id,
+                                        label: `${b.coffeeName} • ${b.type} • ${b.quantity} bolsas`
+                                      }))
+                                  ]}
+                                />
                               </div>
                             </div>
 
