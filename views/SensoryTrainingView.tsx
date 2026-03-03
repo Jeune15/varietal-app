@@ -402,7 +402,7 @@ const Simulator: React.FC = () => {
                                 key={opt.id}
                                 onClick={() => handleDescriptorCheck(opt.name)}
                                 disabled={!!feedback}
-                                className={`p-6 rounded-xl text-sm font-bold uppercase tracking-wider transition-all border-2 ${buttonStyle}`}
+                                className={`p-6 rounded-xl text-sm font-bold uppercase tracking-wider transition-all border-2 w-full flex items-center justify-center text-center break-words hyphens-auto ${buttonStyle}`}
                             >
                                 {opt.name}
                             </button>
@@ -539,7 +539,7 @@ const Education: React.FC = () => (
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {[
           {
             title: 'Triangulación de Ácidos',

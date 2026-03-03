@@ -28,7 +28,7 @@ const LandingPage: React.FC<Props> = ({ onMenuOpen }) => {
           <div className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black text-black uppercase tracking-tight sm:tracking-normal md:tracking-[0.1em] leading-none md:leading-[0.9]">
             {renderWord('Desarrolladores', 'desarrolladores')}
           </div>
-          <div className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-black uppercase tracking-widest md:tracking-[0.1em] leading-none md:leading-[0.9]">
+          <div className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black text-black uppercase tracking-widest md:tracking-[0.1em] leading-none md:leading-[0.9]">
             {renderWord('De', 'de')}&nbsp;{renderWord('Café', 'cafe')}
           </div>
           <p className="text-sm md:text-lg font-serif italic text-black tracking-[0.2em] md:tracking-[0.3em] mt-4 md:mt-6 ml-0.5">

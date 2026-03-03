@@ -158,7 +158,7 @@ const TechniqueSection = () => {
         <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200 flex items-center gap-2">
           <Settings className="w-5 h-5" /> Herramientas Necesarias
         </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {tools.map((tool, idx) => (
             <div key={idx} className="flex gap-3 p-3 bg-white dark:bg-stone-900 rounded-lg border border-stone-100 dark:border-stone-800">
               <div className="mt-1 w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
