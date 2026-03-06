@@ -290,7 +290,7 @@ const Simulator: React.FC = () => {
   if (!target) return null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+    <div className="w-full space-y-8 animate-fade-in">
       {/* Header & Streak */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-stone-400">
@@ -364,7 +364,7 @@ const Simulator: React.FC = () => {
                           key={cat.id}
                           onClick={() => handleCategoryCheck(cat.id)}
                           disabled={!!feedback || !!selectedCategory}
-                          className={`p-6 rounded-xl text-sm font-bold uppercase tracking-wider transition-all border-2 ${buttonStyle}`}
+                          className={`p-6 rounded-xl text-sm font-bold uppercase tracking-wider transition-all border-2 w-full flex items-center justify-center text-center ${buttonStyle}`}
                       >
                           {cat.label}
                       </button>
@@ -429,7 +429,7 @@ const Simulator: React.FC = () => {
 };
 
 const Dictionary: React.FC = () => (
-  <div className="space-y-16 animate-fade-in max-w-4xl mx-auto">
+  <div className="space-y-16 animate-fade-in w-full">
     {CATEGORIES.map(cat => {
       const catAttributes = ATTRIBUTES.filter(a => a.category === cat.id);
       const positives = catAttributes.filter(a => a.type === 'positive');
@@ -490,7 +490,7 @@ const Dictionary: React.FC = () => (
 );
 
 const Education: React.FC = () => (
-  <div className="space-y-12 animate-fade-in max-w-3xl mx-auto">
+  <div className="space-y-12 animate-fade-in w-full">
     
     {/* Description Guide */}
     <section className="space-y-6">
@@ -539,7 +539,7 @@ const Education: React.FC = () => (
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {[
           {
             title: 'Triangulación de Ácidos',
@@ -598,15 +598,21 @@ const Education: React.FC = () => (
 
 interface Props {
   onBack: () => void;
+  isEmbedded?: boolean;
+  headerOffset?: string;
 }
 
-export const SensoryTrainingView: React.FC<Props> = ({ onBack }) => {
+export const SensoryTrainingView: React.FC<Props> = ({ onBack, isEmbedded = false, headerOffset = '0px' }) => {
   const [activeTab, setActiveTab] = useState<'simulator' | 'dictionary' | 'education'>('simulator');
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800">
+      <div 
+        className="sticky z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200"
+        style={{ top: isEmbedded ? headerOffset : 0 }}
+      >
+        {!isEmbedded && (
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -625,6 +631,7 @@ export const SensoryTrainingView: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
