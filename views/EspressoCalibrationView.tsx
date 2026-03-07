@@ -24,7 +24,9 @@ import {
   Eye,
   Gamepad2,
   Minus,
-  Sparkles
+  Sparkles,
+  Coffee,
+  Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { line, curveMonotoneX } from 'd3-shape';
@@ -194,6 +196,9 @@ const TechniqueSection = () => {
 
 const CommonProblemsSection = () => {
   const [openItem, setOpenItem] = useState<string | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  const isActive = (id: string) => openItem === id || hoveredItem === id;
 
   const problems = [
     {
@@ -230,7 +235,7 @@ const CommonProblemsSection = () => {
     {
       id: 'acidic-bitter',
       code: 'C',
-      title: 'Espresso ácido y amargo al mismo tiempo',
+      title: 'Espresso ácido y amargo a la vez',
       symptoms: ['Sabor confuso', 'Acidez agria + final seco', 'Poca claridad'],
       causeLabel: 'Causa',
       cause: 'Canalización (Channeling). El agua pasa rápido por grietas (ácido) y sobreextrae esas zonas (amargo).',
@@ -269,65 +274,86 @@ const CommonProblemsSection = () => {
   ];
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       <h3 className="text-lg font-bold text-stone-800 dark:text-stone-200">Diagnóstico y Soluciones</h3>
-      {problems.map(item => (
-        <div key={item.id} className="border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-stone-900 overflow-hidden">
-          <button
-            onClick={() => setOpenItem(openItem === item.id ? null : item.id)}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {problems.map(item => (
+          <div
+            key={item.id}
+            className={`border rounded-xl overflow-hidden cursor-pointer transition-colors ${
+              isActive(item.id)
+                ? 'bg-black text-white border-black'
+                : 'bg-white dark:bg-stone-900/80 border-stone-200 dark:border-stone-800'
+            }`}
+            onClick={() => setOpenItem(prev => (prev === item.id ? null : item.id))}
+            onMouseEnter={() => setHoveredItem(item.id)}
+            onMouseLeave={() => setHoveredItem(prev => (prev === item.id ? null : prev))}
           >
-            <div className="flex items-center gap-4">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
-                item.id === 'acidic' ? 'bg-yellow-100 text-yellow-700' :
-                item.id === 'bitter' ? 'bg-stone-800 text-white' :
-                'bg-red-100 text-red-700'
+            <div className="px-5 py-6 space-y-3 text-sm min-h-[260px] md:min-h-[280px] flex flex-col items-center justify-center text-center">
+              
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mx-auto mb-2 transition-colors ${
+                 isActive(item.id) ? 'bg-stone-800 text-white border-stone-700 border' :
+                 item.id === 'acidic' ? 'bg-yellow-100 text-yellow-700' :
+                 item.id === 'bitter' ? 'bg-stone-800 text-white' :
+                 'bg-red-100 text-red-700'
               }`}>
                 {item.code}
               </div>
-              <span className="font-bold text-sm text-stone-900 dark:text-stone-100">{item.title}</span>
-            </div>
-            {openItem === item.id ? <ChevronUp className="w-5 h-5 text-stone-400" /> : <ChevronDown className="w-5 h-5 text-stone-400" />}
-          </button>
-          
-          {openItem === item.id && (
-            <div className="p-4 bg-stone-50 dark:bg-stone-950 border-t border-stone-100 dark:border-stone-800">
-              {item.symptoms && (
-                <div className="mb-3">
-                  <span className="text-xs font-bold uppercase text-stone-500">Síntomas</span>
-                  <ul className="mt-1 list-disc list-inside text-sm text-stone-600 dark:text-stone-400 space-y-1">
-                    {item.symptoms.map((symptom: string) => (
-                      <li key={symptom}>{symptom}</li>
-                    ))}
-                  </ul>
+
+              <p
+                className={`text-[11px] md:text-xs font-bold uppercase tracking-widest mb-3 ${
+                  isActive(item.id)
+                    ? 'text-stone-200'
+                    : 'text-stone-700 dark:text-stone-200'
+                }`}
+              >
+                {isActive(item.id) ? 'Soluciones' : item.title}
+              </p>
+
+              {!isActive(item.id) && (
+                <div className="space-y-3 text-stone-600 dark:text-stone-300 w-full mt-2">
+                  {item.cause && (
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-red-500 block mb-1">Causa</span>
+                      <p className="text-xs">{item.cause}</p>
+                    </div>
+                  )}
+                  {item.symptoms && (
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-stone-400 block mb-1">Síntomas</span>
+                      <p className="text-xs italic">{item.symptoms.join(' • ')}</p>
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="mb-3">
-                <span className="text-xs font-bold uppercase text-red-500">
-                  {item.causeLabel || 'Causa'}
-                </span>
-                <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.cause}</p>
-              </div>
-              <div className="mb-2">
-                <span className="text-xs font-bold uppercase text-green-600">
-                  {item.solutionsLabel || 'Soluciones'}
-                </span>
-                <ul className="mt-1 list-disc list-inside text-sm text-stone-600 dark:text-stone-400 space-y-1">
-                  {item.solutions.map((solution: string) => (
-                    <li key={solution}>{solution}</li>
-                  ))}
-                </ul>
-              </div>
-              {item.avoid && (
-                <div className="mt-2">
-                  <span className="text-xs font-bold uppercase text-amber-600">Evita</span>
-                  <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{item.avoid}</p>
+
+              {isActive(item.id) && (
+                <div className="space-y-4 text-sm text-white w-full mt-2">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-green-400 block mb-2">
+                      {item.solutionsLabel || 'Soluciones'}
+                    </span>
+                    <div className="flex flex-col items-center">
+                      <ul className="text-xs text-left list-disc list-inside space-y-1.5 inline-block text-stone-200">
+                        {item.solutions.map((sol: string, idx: number) => (
+                          <li key={idx} className="leading-snug">{sol}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  {item.avoid && (
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-amber-400 block mb-1">Evita</span>
+                      <p className="text-xs text-stone-300">{item.avoid}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1302,14 +1328,23 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
           )}
 
           {/* Current Shot Form */}
-          <div className="bg-white dark:bg-stone-900 p-6 rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
-            <h3 className="text-xl font-black mb-6 flex items-center gap-2">
-              <Plus className="w-6 h-6 text-brand" />
-              Nueva Receta
-            </h3>
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand to-brand/80 flex items-center justify-center shadow-lg shadow-brand/20">
+                <Plus className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-2xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
+                Configurar Receta {shots.length + 1}
+              </h3>
+            </div>
 
             <div className="space-y-6">
+              {/* 1. Base Variables Card */}
+              <div className="bg-white dark:bg-stone-900 p-6 md:p-8 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-stone-900 dark:bg-stone-500" />
+                <h4 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-stone-400" /> Parámetros Base
+                </h4>
               {/* Recipe Header */}
               <div className="flex justify-between items-center pb-4 border-b border-stone-200 dark:border-stone-800">
                 <h3 className="text-lg font-black text-stone-900 dark:text-stone-100">
@@ -1398,17 +1433,24 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                   </div>
                   <div />
                 </div>
+                </div>
               </div>
 
+              {/* 2. Advanced Variables Card */}
               <AnimatePresence initial={false}>
                 {level === 'advanced' && (
                   <motion.div
-                    className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-white dark:bg-stone-900 p-6 md:p-8 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm relative overflow-hidden"
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     transition={{ duration: 0.25 }}
                   >
+                    <div className="absolute top-0 left-0 w-1 h-full bg-stone-900 dark:bg-stone-500" />
+                    <h4 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-stone-400" /> Variables Avanzadas
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Preinfusión (s)</label>
                       <input
@@ -1453,11 +1495,18 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                         className="text-center"
                       />
                     </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="space-y-6">
+              {/* 3. Sensory Card */}
+              <div className="bg-white dark:bg-stone-900 p-6 md:p-8 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
+                <h4 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
+                  <Coffee className="w-4 h-4 text-brand" /> Evaluación Sensorial
+                </h4>
+                <div className="space-y-8">
                 {/* 1. Descripción Sensorial */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
@@ -1541,101 +1590,9 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                     </div>
                   </div>
                 </div>
-
-                {/* 3. Variables a Modificar y Recomendaciones */}
-                <div className="space-y-6">
-                  {/* Recomendaciones */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> Recomendaciones IA
-                    </h4>
-                    <ul className="space-y-1">
-                      {getRecommendation(currentShot.extraction || 3, currentShot.intensity || 3, currentShot.balance || 3).map((rec, i) => (
-                        <li key={i} className="text-xs text-stone-700 dark:text-stone-300 flex items-start gap-2">
-                          <span className="mt-1 w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Selector de Variables */}
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                      ¿Qué ajustar para la siguiente receta?
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {[
-                        { id: 'dose', label: 'Dosis' },
-                        { id: 'ratio', label: 'Ratio' },
-                        { id: 'grind', label: 'Molienda' },
-                        ...(level === 'advanced' ? [
-                          { id: 'preinfusion', label: 'Preinfusión' },
-                          { id: 'temp', label: 'Temperatura' }
-                        ] : [])
-                      ].map(variable => {
-                        const incAction = `${variable.id}_inc`;
-                        const decAction = `${variable.id}_dec`;
-                        const isInc = currentShot.nextAction?.includes(incAction);
-                        const isDec = currentShot.nextAction?.includes(decAction);
-
-                        return (
-                          <div key={variable.id} className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl">
-                            <span className="text-xs font-bold uppercase text-stone-600 dark:text-stone-400 pl-1">{variable.label}</span>
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const current = currentShot.nextAction || [];
-                                  let updated = [...current];
-                                  if (isDec) {
-                                    updated = updated.filter(a => a !== decAction);
-                                  } else {
-                                    updated = [...updated.filter(a => a !== incAction), decAction];
-                                  }
-                                  setCurrentShot({...currentShot, nextAction: updated});
-                                }}
-                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                                  isDec 
-                                    ? 'bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 shadow-sm' 
-                                    : 'bg-white dark:bg-stone-800 text-stone-400 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
-                                }`}
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              
-                              <div className="w-px h-4 bg-stone-200 dark:bg-stone-700" />
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const current = currentShot.nextAction || [];
-                                  let updated = [...current];
-                                  if (isInc) {
-                                    updated = updated.filter(a => a !== incAction);
-                                  } else {
-                                    updated = [...updated.filter(a => a !== decAction), incAction];
-                                  }
-                                  setCurrentShot({...currentShot, nextAction: updated});
-                                }}
-                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                                  isInc
-                                    ? 'bg-stone-800 text-white dark:bg-stone-100 dark:text-stone-900 shadow-sm' 
-                                    : 'bg-white dark:bg-stone-800 text-stone-400 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
-                                }`}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
+                
                 {/* 4. Descriptores */}
-                <div className="space-y-4 pt-4 border-t border-stone-200 dark:border-stone-800">
+                <div className="space-y-4 pt-8 border-t border-stone-200 dark:border-stone-800">
                   <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
                     Descriptores
                   </label>
@@ -1716,36 +1673,121 @@ const CalibrationSessionForm: React.FC<{ onCancel: () => void; onSave: () => voi
                     </div>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Diagnóstico sugerido</label>
-                  <motion.ul
-                    className="text-xs text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg p-3 space-y-1"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {diagnosisMessages.map((msg, idx) => (
-                      <motion.li
-                        key={idx}
-                        initial={{ opacity: 0, x: -4 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.03 }}
-                      >
-                        • {msg}
-                      </motion.li>
-                    ))}
-                  </motion.ul>
-                </div>
+              </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddShot}
-                className="w-full py-4 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-bold rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-700 hover:border-brand hover:text-brand transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" /> Añadir Receta a la Sesión
-              </button>
+              {/* 4. Action Card */}
+              <div className="bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 md:p-8 rounded-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+                <h4 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-blue-500" /> Análisis y Próximos Pasos
+                </h4>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                  {/* Selector de Variables */}
+                  <div className="space-y-4">
+                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
+                      ¿Qué ajustar para la siguiente receta?
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { id: 'dose', label: 'Dosis' },
+                        { id: 'ratio', label: 'Ratio' },
+                        { id: 'grind', label: 'Molienda' },
+                        ...(level === 'advanced' ? [
+                          { id: 'preinfusion', label: 'Preinfusión' },
+                          { id: 'temp', label: 'Temperatura' }
+                        ] : [])
+                      ].map(variable => {
+                        const incAction = `${variable.id}_inc`;
+                        const decAction = `${variable.id}_dec`;
+                        const isInc = currentShot.nextAction?.includes(incAction);
+                        const isDec = currentShot.nextAction?.includes(decAction);
+
+                        return (
+                          <div key={variable.id} className="flex items-center justify-between p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl shadow-sm">
+                            <span className="text-[11px] font-bold uppercase text-stone-600 dark:text-stone-400 pl-1">{variable.label}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = currentShot.nextAction || [];
+                                  let updated = [...current];
+                                  if (isDec) {
+                                    updated = updated.filter(a => a !== decAction);
+                                  } else {
+                                    updated = [...updated.filter(a => a !== incAction), decAction];
+                                  }
+                                  setCurrentShot({...currentShot, nextAction: updated});
+                                }}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                                  isDec 
+                                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-md' 
+                                    : 'bg-stone-50 dark:bg-stone-900 text-stone-400 border border-stone-200 dark:border-stone-800 hover:bg-stone-200 dark:hover:bg-stone-800'
+                                }`}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = currentShot.nextAction || [];
+                                  let updated = [...current];
+                                  if (isInc) {
+                                    updated = updated.filter(a => a !== incAction);
+                                  } else {
+                                    updated = [...updated.filter(a => a !== decAction), incAction];
+                                  }
+                                  setCurrentShot({...currentShot, nextAction: updated});
+                                }}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                                  isInc
+                                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-md' 
+                                    : 'bg-stone-50 dark:bg-stone-900 text-stone-400 border border-stone-200 dark:border-stone-800 hover:bg-stone-200 dark:hover:bg-stone-800'
+                                }`}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Recomendaciones */}
+                  <div className="space-y-4 flex flex-col h-full">
+                    <label className="text-xs font-bold uppercase tracking-widest text-stone-500">
+                      Diagnóstico y Sugerencias
+                    </label>
+                    <div className="bg-white dark:bg-stone-950 p-5 rounded-xl border border-blue-100 dark:border-blue-900/30 flex-1 shadow-inner relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-400/5 blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2 relative z-10">
+                        <Sparkles className="w-4 h-4" /> Recomendaciones IA
+                      </h4>
+                      <ul className="space-y-3 relative z-10">
+                        {getRecommendation(currentShot.extraction || 3, currentShot.intensity || 3, currentShot.balance || 3).map((rec, i) => (
+                          <li key={i} className="text-sm text-stone-700 dark:text-stone-300 flex items-start gap-3">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 flex-shrink-0" />
+                            <span className="leading-relaxed">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-stone-200 dark:border-stone-800">
+                  <button
+                    type="button"
+                    onClick={handleAddShot}
+                    className="w-full py-4 bg-stone-900 hover:bg-brand dark:bg-stone-100 dark:hover:bg-brand text-white dark:text-stone-900 hover:text-white font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/10 hover:shadow-brand/20 hover:-translate-y-0.5"
+                  >
+                    <Plus className="w-5 h-5" /> Añadir a la Sesión
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1917,15 +1959,15 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
 };
 
 interface EspressoViewProps {
-  onRegisterBackHandler?: (handler: () => boolean) => void;
+  onBack: () => void;
 }
 
-export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandler }) => {
-  const [view, setView] = useState<'menu' | 'new' | 'guide' | 'simulator'>('menu');
+export const EspressoView: React.FC<EspressoViewProps> = ({ onBack }) => {
+  const [activeTab, setActiveTab] = useState<'simulator' | 'session' | 'guide' | 'problems'>('simulator');
+  const [sessionSubView, setSessionSubView] = useState<'new' | 'history'>('new');
   const [selectedSession, setSelectedSession] = useState<EspressoSession | null>(null);
   const { showToast } = useToast();
-  
-  // Filter out deleted sessions and sort by date descending
+
   const sessions = useLiveQuery(() => 
     db.espressoSessions
       .filter(s => !s.deleted)
@@ -1945,170 +1987,171 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onRegisterBackHandle
     }
   };
 
-  const MenuCard: React.FC<{ title: string; desc: string; icon: any; onClick: () => void; color?: string }> = ({ title, desc, icon: Icon, onClick, color }) => (
-    <button 
-      onClick={onClick}
-      className="flex flex-col items-start p-6 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 text-left w-full group"
-    >
-      <div className={`p-3 rounded-lg mb-4 ${color || 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'} group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6" />
-      </div>
-      <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-1">{title}</h3>
-      <p className="text-sm text-stone-500 leading-relaxed">{desc}</p>
-    </button>
-  );
-
-  useEffect(() => {
-    if (!onRegisterBackHandler) return;
-    onRegisterBackHandler(() => {
-      if (view === 'menu') {
-        return false;
-      }
-      setView('menu');
-      return true;
-    });
-  }, [view, onRegisterBackHandler]);
-
   return (
-    <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100">
-            {view === 'menu' && 'Recetas de Espresso'}
-            {view === 'new' && 'Calibraciones'}
-            {view === 'guide' && 'Guía de Calibración'}
-            {view === 'simulator' && 'Simulador de Calibración'}
-          </h1>
-          <p className="text-stone-500 mt-1">
-            {view === 'menu' && 'Gestiona tus recetas y resuelve problemas de extracción.'}
-            {view === 'new' && 'Registra una nueva sesión de calibración.'}
-            {view === 'guide' && 'Guía paso a paso para el espresso perfecto.'}
-            {view === 'simulator' && 'Entrena tu paladar y lógica de ajuste con casos prácticos.'}
-          </p>
+    <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
+            </button>
+            <div>
+              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
+                Espresso
+              </h1>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
+                Calibración, simulador y diagnóstico
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'simulator', label: 'Simulador' },
+            { id: 'session', label: 'Sesión de Calibración' },
+            { id: 'guide', label: 'Guía de Calibración' },
+            { id: 'problems', label: 'Problemas Comunes' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Menu */}
-      {view === 'menu' && (
-        <div className="space-y-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MenuCard 
-              title="Calibraciones" 
-              desc="Registra múltiples recetas para encontrar el espresso perfecto." 
-              icon={Plus} 
-              onClick={() => setView('new')}
-              color="bg-brand/10 text-brand"
-            />
-            <MenuCard 
-              title="Guía de Calibración" 
-              desc="Aprende los fundamentos y ratios recomendados." 
-              icon={BookOpen} 
-              onClick={() => setView('guide')}
-            />
-            <MenuCard 
-              title="Simulador" 
-              desc="Entrena tu lógica de ajuste con casos prácticos." 
-              icon={Gamepad2} 
-              onClick={() => setView('simulator')}
-              color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
-            />
-          </div>
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Simulator Tab */}
+        {activeTab === 'simulator' && <EspressoSimulator />}
 
-          {/* Recent History Preview */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <History className="w-5 h-5" /> Historial Reciente
-            </h2>
-            
-            {!sessions || sessions.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-stone-300 dark:border-stone-700 rounded-xl bg-stone-50 dark:bg-stone-900/50">
-                <p className="text-stone-400 font-medium">No hay sesiones registradas</p>
-                <button 
-                  onClick={() => setView('new')}
-                  className="mt-4 text-brand font-bold text-sm hover:underline"
-                >
-                  Registrar la primera sesión
-                </button>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {sessions.slice(0, 5).map(session => (
-                  <div key={session.id} className="bg-white dark:bg-stone-900 p-4 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between group hover:border-brand/50 transition-colors">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-stone-900 dark:text-stone-100">{session.coffeeName}</span>
-                        <span className="text-xs text-stone-500 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full">
-                          {session.shots?.length || 0} recetas
-                        </span>
-                      </div>
-                      <p className="text-xs text-stone-500 flex items-center gap-3">
-                        <span>{new Date(session.date).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span>{session.baristaName}</span>
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="text-right hidden sm:block">
-                         <p className="text-[10px] uppercase text-stone-400 font-bold">Última Molienda</p>
-                         <span className="text-xl font-black text-stone-200 dark:text-stone-800 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
-                           {session.shots && session.shots.length > 0 ? session.shots[session.shots.length-1].grindSetting : '-'}
-                         </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setSelectedSession(session)}
-                          className="p-2 text-stone-400 hover:text-brand hover:bg-brand/10 rounded-lg transition-colors"
-                          title="Ver detalles"
-                        >
-                          <Eye className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSession(session)}
-                          className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Eliminar sesión"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
+        {/* Session Tab */}
+        {activeTab === 'session' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Sub-toggle: Nueva sesión / Historial */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSessionSubView('new')}
+                className={`px-4 py-2 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all border ${
+                  sessionSubView === 'new'
+                    ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
+                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+                }`}
+              >
+                <span className="flex items-center gap-2"><Plus className="w-3.5 h-3.5" /> Nueva Sesión</span>
+              </button>
+              <button
+                onClick={() => setSessionSubView('history')}
+                className={`px-4 py-2 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all border ${
+                  sessionSubView === 'history'
+                    ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
+                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+                }`}
+              >
+                <span className="flex items-center gap-2"><History className="w-3.5 h-3.5" /> Historial</span>
+              </button>
+            </div>
+
+            {sessionSubView === 'new' && (
+              <CalibrationSessionForm
+                onCancel={() => setSessionSubView('history')}
+                onSave={() => setSessionSubView('history')}
+              />
+            )}
+
+            {sessionSubView === 'history' && (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3">
+                  <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
+                    Historial de Calibraciones
+                  </h2>
+                  <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
+                    Tus sesiones de calibración anteriores. Revisa los parámetros y resultados de cada sesión.
+                  </p>
+                </div>
+
+                {!sessions || sessions.length === 0 ? (
+                  <div className="text-center py-12 border border-dashed border-stone-300 dark:border-stone-700 rounded-xl bg-stone-50 dark:bg-stone-900/50">
+                    <p className="text-stone-400 font-medium">No hay sesiones registradas</p>
+                    <button 
+                      onClick={() => setSessionSubView('new')}
+                      className="mt-4 text-brand font-bold text-sm hover:underline"
+                    >
+                      Registrar la primera sesión
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  <div className="grid gap-4">
+                    {sessions.map(session => (
+                      <div key={session.id} className="bg-white dark:bg-stone-900 p-4 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between group hover:border-brand/50 transition-colors">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-stone-900 dark:text-stone-100">{session.coffeeName}</span>
+                            <span className="text-xs text-stone-500 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full">
+                              {session.shots?.length || 0} recetas
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-500 flex items-center gap-3">
+                            <span>{new Date(session.date).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>{session.baristaName}</span>
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <div className="text-right hidden sm:block">
+                             <p className="text-[10px] uppercase text-stone-400 font-bold">Última Molienda</p>
+                             <span className="text-xl font-black text-stone-200 dark:text-stone-800 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
+                               {session.shots && session.shots.length > 0 ? session.shots[session.shots.length-1].grindSetting : '-'}
+                             </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedSession(session)}
+                              className="p-2 text-stone-400 hover:text-brand hover:bg-brand/10 rounded-lg transition-colors"
+                              title="Ver detalles"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSession(session)}
+                              className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                              title="Eliminar sesión"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Sub Views */}
-      {view === 'new' && <CalibrationSessionForm onCancel={() => setView('menu')} onSave={() => setView('menu')} />}
-      {view === 'guide' && (
-        <div className="space-y-6">
-          <button 
-            onClick={() => setView('menu')}
-            className="flex items-center gap-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors mb-4 p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-bold">Volver al menú</span>
-          </button>
-          <CalibrationGuide />
-        </div>
-      )}
-      {view === 'simulator' && (
-        <div className="space-y-6">
-          <button 
-            onClick={() => setView('menu')}
-            className="flex items-center gap-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors mb-4 p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-bold">Volver al menú</span>
-          </button>
-          <EspressoSimulator />
-        </div>
-      )}
-      
+        {/* Guide Tab */}
+        {activeTab === 'guide' && <CalibrationGuide />}
+
+        {/* Problems Tab */}
+        {activeTab === 'problems' && <CommonProblemsSection />}
+      </div>
+
       {/* Detail Modal */}
       {selectedSession && (
         <EspressoSessionDetailModal 

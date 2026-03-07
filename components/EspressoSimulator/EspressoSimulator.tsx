@@ -234,10 +234,10 @@ export const EspressoSimulator: React.FC = () => {
     }
   };
 
-  if (!state) return null;
-
   const currentPreset = presets.find(p => p.id === selectedPresetId);
   const isAdvancedMode = selectedDifficulty === 'advanced';
+
+  if (!state) return null;
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 p-4 md:p-8">
@@ -271,7 +271,7 @@ export const EspressoSimulator: React.FC = () => {
         </div>
 
         {/* Coach */}
-        {showAdvisor && (
+        {showAdvisor && state && (
           <div className="mb-6 p-4 border border-stone-200 dark:border-stone-800 rounded-lg">
             <h4 className="font-bold text-stone-900 dark:text-stone-100 mb-2 flex items-center gap-2 text-sm uppercase tracking-widest">
               <Lightbulb size={14} /> Coach

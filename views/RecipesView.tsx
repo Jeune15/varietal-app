@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { EspressoView } from './EspressoCalibrationView';
 import { MilkTextureView } from '../components/MilkTextureView';
 import { SensoryTrainingView } from './SensoryTrainingView';
-import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain } from 'lucide-react';
+import { GreenCoffeeToolView } from './GreenCoffeeToolView';
+import { RoastingToolView } from './RoastingToolView';
+import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
@@ -1234,75 +1236,84 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
             <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 leading-relaxed max-w-3xl">
               Modelo causa–efecto y ajustes por objetivo.
             </p>
-            <div className="mt-4 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-stone-50/60 dark:bg-stone-900">
-              <div className="divide-y divide-stone-200 dark:divide-stone-800">
-                {profiling.map(item => (
-                  <div key={item.id} className="overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                      className={`w-full text-left px-5 py-4 min-h-[44px] text-[10px] md:text-[11px] font-bold uppercase tracking-widest flex items-center justify-between transition-colors ${
-                        openId === item.id
-                          ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900'
-                          : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'
-                      }`}
-                    >
-                      <span className="pr-4">{item.title}</span>
-                      <span className="text-[11px] font-bold">
-                        {openId === item.id ? 'Cerrar' : 'Ver'}
-                      </span>
-                    </button>
-                    <div
-                      className={`px-5 py-4 bg-stone-50/70 dark:bg-stone-950/40 transition-all duration-500 ease-in-out ${
-                        openId === item.id ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-                      }`}
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
-                          {'symptomList' in item && Array.isArray((item as any).symptomList) ? (
-                            <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                              {(item as any).symptomList.map((line: string, idx: number) => (
-                                <li key={idx}>{line}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.symptom}</p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-amber-500 mb-1">Qué te está diciendo el café</p>
-                          {'causeList' in item && Array.isArray((item as any).causeList) ? (
-                            <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                              {(item as any).causeList.map((line: string, idx: number) => (
-                                <li key={idx}>{line}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.cause}</p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-green-600 mb-1">Ajustes sugeridos</p>
-                          {'solutionList' in item && Array.isArray((item as any).solutionList) ? (
-                            <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                              {(item as any).solutionList.map((line: string, idx: number) => (
-                                <li key={idx}>{line}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.solution}</p>
-                          )}
-                        </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {profiling.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setOpenId(openId === item.id ? null : item.id)}
+                className={`relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-950 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden ${
+                  openId === item.id ? 'ring-2 ring-black dark:ring-white scale-[1.02]' : ''
+                }`}
+              >
+                <div className="w-full space-y-4 relative z-10 transition-all duration-300">
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-2">
+                    {item.title}
+                  </h3>
+                  
+                  {openId === item.id ? (
+                    <div className="space-y-4 animate-fade-in text-sm text-stone-600 dark:text-stone-400">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
+                        {'symptomList' in item && Array.isArray((item as any).symptomList) ? (
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            {(item as any).symptomList.map((line: string, idx: number) => (
+                              <li key={idx}>{line}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-[11px] leading-relaxed">{item.symptom}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1">Causa</p>
+                        {'causeList' in item && Array.isArray((item as any).causeList) ? (
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            {(item as any).causeList.map((line: string, idx: number) => (
+                              <li key={idx}>{line}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-[11px] leading-relaxed">{item.cause}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-green-600 mb-1">Solución</p>
+                        {'solutionList' in item && Array.isArray((item as any).solutionList) ? (
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            {(item as any).solutionList.map((line: string, idx: number) => (
+                              <li key={idx}>{line}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-[11px] leading-relaxed">{item.solution}</p>
+                        )}
                       </div>
                     </div>
+                  ) : (
+                    <p className="text-[11px] text-stone-500 line-clamp-3 leading-relaxed">
+                      {'symptomList' in item && Array.isArray((item as any).symptomList)
+                        ? (item as any).symptomList[0]
+                        : item.symptom}
+                    </p>
+                  )}
+                </div>
+                <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all mt-auto z-10">
+                  <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
+                    {openId === item.id ? 'Ocultar análisis' : 'Ver análisis'}
+                  </span>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${openId === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-stone-100 text-stone-400 dark:bg-stone-800'}`}>
+                    <ChevronRight className={`w-3 h-3 transition-transform ${openId === item.id ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} />
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              </button>
+            ))}
           </div>
-          <div className="pt-2 space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4">
+          
+          <div className="pt-8 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-6">
               <div className="space-y-3">
                 <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
                   Problemas comunes ({method})
@@ -1315,78 +1326,93 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                 De la cama al sorbo final
               </div>
             </div>
-            {problemSections.map(section => (
-              <div key={section.id} className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-stone-50/60 dark:bg-stone-900 mt-4">
-                <div className="px-5 py-4 border-b border-stone-200 dark:border-stone-800">
-                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+
+            {problemSections.map((section, sIdx) => (
+              <div key={section.id} className={`${sIdx > 0 ? 'mt-12' : ''}`}>
+                <div className="mb-6">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand border-l-2 border-brand pl-3">
                     {section.label}
                   </p>
-                  <p className="text-[11px] md:text-xs text-stone-500 mt-2 leading-relaxed">
+                  <p className="text-[11px] md:text-xs text-stone-500 mt-2 pl-3 leading-relaxed">
                     {section.description}
                   </p>
                 </div>
-                <div className="divide-y divide-stone-200 dark:divide-stone-800">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {section.items.map(item => (
-                    <div key={item.id} className="overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                        className={`w-full text-left px-5 py-4 min-h-[44px] text-[10px] md:text-[11px] font-bold uppercase tracking-widest flex items-center justify-between transition-colors ${
-                          openId === item.id
-                            ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900'
-                            : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        <span className="pr-4">{item.title}</span>
-                        <span className="text-[11px] font-bold">
-                          {openId === item.id ? 'Cerrar' : 'Ver'}
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setOpenId(openId === item.id ? null : item.id)}
+                      className={`relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-950 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden ${
+                        openId === item.id ? 'ring-2 ring-black dark:ring-white scale-[1.02]' : ''
+                      }`}
+                    >
+                      <div className="w-full space-y-4 relative z-10 transition-all duration-300">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
+                            <AlertTriangle className="w-4 h-4" />
+                          </div>
+                          <h3 className="text-sm font-black uppercase tracking-tight text-black dark:text-white leading-tight flex-1">
+                            {item.title}
+                          </h3>
+                        </div>
+                        
+                        {openId === item.id ? (
+                          <div className="space-y-4 animate-fade-in text-sm text-stone-600 dark:text-stone-400">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
+                              {'symptomList' in item && Array.isArray((item as any).symptomList) ? (
+                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                  {(item as any).symptomList.map((line: string, idx: number) => (
+                                    <li key={idx}>{line}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-[11px] leading-relaxed">{item.symptom}</p>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1">Causa</p>
+                              {'causeList' in item && Array.isArray((item as any).causeList) ? (
+                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                  {(item as any).causeList.map((line: string, idx: number) => (
+                                    <li key={idx}>{line}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-[11px] leading-relaxed">{item.cause}</p>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-green-600 mb-1">Solución</p>
+                              {'solutionList' in item && Array.isArray((item as any).solutionList) ? (
+                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                  {(item as any).solutionList.map((line: string, idx: number) => (
+                                    <li key={idx}>{line}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-[11px] leading-relaxed">{item.solution}</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-stone-500 line-clamp-3 leading-relaxed">
+                            {'symptomList' in item && Array.isArray((item as any).symptomList)
+                              ? (item as any).symptomList[0]
+                              : item.symptom}
+                          </p>
+                        )}
+                      </div>
+                      <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all mt-auto z-10">
+                        <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
+                          {openId === item.id ? 'Ocultar solución' : 'Ver solución'}
                         </span>
-                      </button>
-                      <div
-                        className={`px-5 py-4 bg-stone-50/70 dark:bg-stone-950/40 transition-all duration-500 ease-in-out ${
-                          openId === item.id ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-                        }`}
-                      >
-                        <div className="space-y-4">
-                          <div>
-                            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-red-500 mb-1">Síntoma</p>
-                            {'symptomList' in item && Array.isArray((item as any).symptomList) ? (
-                              <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                                {(item as any).symptomList.map((line: string, idx: number) => (
-                                  <li key={idx}>{line}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.symptom}</p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-amber-500 mb-1">Qué te está diciendo el café</p>
-                            {'causeList' in item && Array.isArray((item as any).causeList) ? (
-                              <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                                {(item as any).causeList.map((line: string, idx: number) => (
-                                  <li key={idx}>{line}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.cause}</p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-green-600 mb-1">Ajustes sugeridos</p>
-                            {'solutionList' in item && Array.isArray((item as any).solutionList) ? (
-                              <ul className="list-disc list-inside space-y-2 text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                                {(item as any).solutionList.map((line: string, idx: number) => (
-                                  <li key={idx}>{line}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.solution}</p>
-                            )}
-                          </div>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${openId === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-stone-100 text-stone-400 dark:bg-stone-800'}`}>
+                          <ChevronRight className={`w-3 h-3 transition-transform ${openId === item.id ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} />
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1433,7 +1459,7 @@ const createEmptyRecipe = (): FilterRecipe => {
   };
 };
 
-const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { showToast } = useToast();
   const [recipes, setRecipes] = useState<FilterRecipe[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1643,43 +1669,58 @@ const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
+    <div className="min-h-screen bg-stone-100 dark:bg-black font-sans selection:bg-brand/30 pb-32">
       <TopBackButton onClick={onBack} />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <button
-          type="button"
-          onClick={() => setView('recipes')}
-          className={`flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold uppercase tracking-widest ${
-            view === 'recipes'
-              ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-              : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-200'
-          }`}
-        >
-          <span>Filtrados</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setView('guide')}
-          className={`flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold uppercase tracking-widest ${
-            view === 'guide'
-              ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-              : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-200'
-          }`}
-        >
-          <span>Variables y herramientas</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setView('troubleshoot')}
-          className={`flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold uppercase tracking-widest ${
-            view === 'troubleshoot'
-              ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-              : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-200'
-          }`}
-        >
-          <span>Perfilación</span>
-        </button>
+
+      {/* Hero Section */}
+      <div className="pt-24 pb-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white flex items-center justify-center">
+              <Filter className="w-6 h-6 text-white dark:text-black" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-5xl font-black text-black dark:text-white tracking-tighter uppercase">
+                Filtrado
+              </h1>
+              <p className="text-xs md:text-sm font-bold text-stone-500 uppercase tracking-widest mt-1">
+                Recetas, variables y perfilación
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Sticky Header Tabs */}
+      <div className="sticky top-0 z-40 bg-stone-100/80 dark:bg-black/80 backdrop-blur-md border-b border-stone-200 dark:border-stone-800">
+        <div className="max-w-6xl mx-auto px-4 overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-6 min-w-max">
+            {[
+              { id: 'recipes', label: 'Sesión de Filtrado' },
+              { id: 'guide', label: 'Guía de calibración' },
+              { id: 'troubleshoot', label: 'Problemas comunes' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setView(tab.id as any)}
+                className={`py-4 text-xs font-black uppercase tracking-widest transition-colors relative ${
+                  view === tab.id
+                    ? 'text-black dark:text-white'
+                    : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                }`}
+              >
+                {tab.label}
+                {view === tab.id && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black dark:bg-white" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 pt-8 animate-fade-in">
 
       {view === 'recipes' && (
         <div className="flex flex-col lg:flex-row gap-6">
@@ -2242,6 +2283,7 @@ const FilterRecipeManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <FilterTroubleshootingGuide method={current?.method ?? 'Filtro'} />
         </div>
       )}
+      </div>
     </div>
   );
 };
@@ -2617,8 +2659,10 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
 export const RecipesView: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping' | 'greenCoffee' | 'roasting'>('none');
   const cursorRef = useRef<HTMLDivElement | null>(null);
+  const greenCoffeeCardRef = useRef<HTMLButtonElement | null>(null);
+  const roastingCardRef = useRef<HTMLButtonElement | null>(null);
   const espressoCardRef = useRef<HTMLButtonElement | null>(null);
   const filterCardRef = useRef<HTMLButtonElement | null>(null);
   const milkCardRef = useRef<HTMLButtonElement | null>(null);
@@ -2653,27 +2697,14 @@ export const RecipesView: React.FC = () => {
 
   let content: React.ReactNode = null;
 
-  if (selectedCategory === 'espresso') {
-    content = (
-      <div className="relative">
-        <TopBackButton
-          onClick={() => {
-            if (espressoBackHandlerRef.current) {
-              const handled = espressoBackHandlerRef.current();
-              if (handled) return;
-            }
-            setSelectedCategory('none');
-          }}
-        />
-        <EspressoView
-          onRegisterBackHandler={(handler) => {
-            espressoBackHandlerRef.current = handler;
-          }}
-        />
-      </div>
-    );
+  if (selectedCategory === 'greenCoffee') {
+    content = <GreenCoffeeToolView onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'roasting') {
+    content = <RoastingToolView onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'espresso') {
+    content = <EspressoView onBack={() => setSelectedCategory('none')} />;
   } else if (selectedCategory === 'filter') {
-    content = <FilterRecipeManager onBack={() => setSelectedCategory('none')} />;
+    content = <FilterView onBack={() => setSelectedCategory('none')} />;
   } else if (selectedCategory === 'milk') {
     content = <MilkTextureView onBack={() => setSelectedCategory('none')} />;
   } else if (selectedCategory === 'cupping') {
@@ -2691,123 +2722,77 @@ export const RecipesView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 1. Café Verde */}
           <button
-            ref={espressoCardRef}
-            onClick={() => setSelectedCategory('espresso')}
-            onMouseEnter={() => handleCategoryCardEnter(espressoCardRef.current)}
-            onMouseLeave={() => handleCategoryCardLeave(espressoCardRef.current)}
+            ref={greenCoffeeCardRef}
+            onClick={() => setSelectedCategory('greenCoffee')}
+            onMouseEnter={() => handleCategoryCardEnter(greenCoffeeCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(greenCoffeeCardRef.current)}
             className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
           >
             <div className="w-full space-y-4">
               <div className="flex justify-between items-start">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
-                  <Coffee className="w-6 h-6" />
+                  <Leaf className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
-                  Calibración espresso
+                  Materia prima
                 </span>
               </div>
-
               <div>
                 <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
-                  Espresso
+                  Café Verde
                 </h3>
                 <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Sesiones, calibración y diagnóstico
+                  Variedades, estándares y defectos
                 </p>
               </div>
-
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                Control total de tus variables. Registra dosis, ratios, tiempos y notas de cata para cada origen.
+                Conoce las variedades, los estándares de calidad del café verde y los defectos que afectan tu taza final.
               </p>
             </div>
-
             <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
-              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
-                Entrar
-              </span>
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
               <ChevronRight className="w-4 h-4 text-black dark:text-white" />
             </div>
           </button>
 
+          {/* 2. Tueste */}
           <button
-            ref={filterCardRef}
-            onClick={() => setSelectedCategory('filter')}
-            onMouseEnter={() => handleCategoryCardEnter(filterCardRef.current)}
-            onMouseLeave={() => handleCategoryCardLeave(filterCardRef.current)}
+            ref={roastingCardRef}
+            onClick={() => setSelectedCategory('roasting')}
+            onMouseEnter={() => handleCategoryCardEnter(roastingCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(roastingCardRef.current)}
             className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
           >
             <div className="w-full space-y-4">
               <div className="flex justify-between items-start">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
-                  <Filter className="w-6 h-6" />
+                  <Flame className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
-                  Métodos de filtrado
+                  Control de tostado
                 </span>
               </div>
-
               <div>
                 <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
-                  Filtrados
+                  Tueste
                 </h3>
                 <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Herramientas, guías y problemas comunes
+                  Variables, perfiles y diagnóstico
                 </p>
               </div>
-
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                Diseña y documenta cada vertido para tus métodos de filtrado manual, con sesiones guiadas y soporte.
+                Domina las variables del tueste, identifica etapas, perfiles y diagnostica problemas de tostado.
               </p>
             </div>
-
             <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
-              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
-                Entrar
-              </span>
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
               <ChevronRight className="w-4 h-4 text-black dark:text-white" />
             </div>
           </button>
 
-          <button
-            ref={milkCardRef}
-            onClick={() => setSelectedCategory('milk')}
-            onMouseEnter={() => handleCategoryCardEnter(milkCardRef.current)}
-            onMouseLeave={() => handleCategoryCardLeave(milkCardRef.current)}
-            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
-          >
-            <div className="w-full space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
-                  <Droplet className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
-                  Conceptos y técnica
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
-                  Leche
-                </h3>
-                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Microespuma, técnica y simuladores
-                </p>
-              </div>
-
-              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                Aprende la ciencia de la texturización, domina la técnica paso a paso y practica con simuladores interactivos.
-              </p>
-            </div>
-
-            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
-              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
-                Entrar
-              </span>
-              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
-            </div>
-          </button>
-
+          {/* 3. Cata */}
           <button
             ref={cuppingCardRef}
             onClick={() => setSelectedCategory('cupping')}
@@ -2824,7 +2809,6 @@ export const RecipesView: React.FC = () => {
                   Entrenamiento Sensorial
                 </span>
               </div>
-
               <div>
                 <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
                   Cata
@@ -2833,16 +2817,117 @@ export const RecipesView: React.FC = () => {
                   Simulador, diccionario y educación
                 </p>
               </div>
-
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
                 Entrena tu paladar con simuladores de atributos, consulta el diccionario sensorial y mejora tu técnica de cata.
               </p>
             </div>
-
             <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
-              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
-                Entrar
-              </span>
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          {/* 4. Espresso */}
+          <button
+            ref={espressoCardRef}
+            onClick={() => setSelectedCategory('espresso')}
+            onMouseEnter={() => handleCategoryCardEnter(espressoCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(espressoCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Coffee className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Calibración espresso
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Espresso
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Sesiones, calibración y diagnóstico
+                </p>
+              </div>
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Control total de tus variables. Registra dosis, ratios, tiempos y notas de cata para cada origen.
+              </p>
+            </div>
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          {/* 5. Leche */}
+          <button
+            ref={milkCardRef}
+            onClick={() => setSelectedCategory('milk')}
+            onMouseEnter={() => handleCategoryCardEnter(milkCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(milkCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Droplet className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Conceptos y técnica
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Leche
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Microespuma, técnica y simuladores
+                </p>
+              </div>
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Aprende la ciencia de la texturización, domina la técnica paso a paso y practica con simuladores interactivos.
+              </p>
+            </div>
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          {/* 6. Filtrado */}
+          <button
+            ref={filterCardRef}
+            onClick={() => setSelectedCategory('filter')}
+            onMouseEnter={() => handleCategoryCardEnter(filterCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(filterCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Filter className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Métodos de filtrado
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Filtrados
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Herramientas, guías y problemas comunes
+                </p>
+              </div>
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Diseña y documenta cada vertido para tus métodos de filtrado manual, con sesiones guiadas y soporte.
+              </p>
+            </div>
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
               <ChevronRight className="w-4 h-4 text-black dark:text-white" />
             </div>
           </button>
