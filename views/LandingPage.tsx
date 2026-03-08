@@ -1,11 +1,12 @@
 import React from 'react';
-import { PlayCircle } from 'lucide-react';
+import { PlayCircle, Calendar } from 'lucide-react';
 
 interface Props {
   onMenuOpen: () => void;
+  onCalendarOpen: () => void;
 }
 
-const LandingPage: React.FC<Props> = ({ onMenuOpen }) => {
+const LandingPage: React.FC<Props> = ({ onMenuOpen, onCalendarOpen }) => {
   const renderWord = (word: string, key: string) => (
     <span key={key} className="word-split-item">
       {word}
@@ -37,16 +38,27 @@ const LandingPage: React.FC<Props> = ({ onMenuOpen }) => {
         </div>
       </div>
 
-      <div className="w-full flex justify-center mt-8">
-        <button
-          type="button"
-          onClick={onMenuOpen}
-          aria-label="Iniciar"
-          className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] border border-black text-black text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span>Iniciar</span>
-          <PlayCircle className="w-5 h-5" />
-        </button>
+      <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-center mt-8 md:mt-16">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={onMenuOpen}
+            aria-label="Iniciar"
+            className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] border border-black text-black text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors transition-transform active:scale-95"
+          >
+            <span>Iniciar</span>
+            <PlayCircle className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onCalendarOpen}
+            aria-label="Calendario"
+            className="inline-flex items-center justify-center w-[44px] h-[44px] border border-black text-black hover:bg-black hover:text-white transition-colors transition-transform active:scale-95"
+          >
+            <Calendar className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -343,3 +343,17 @@ export interface ExamResult {
   questions: Question[];
   deleted?: boolean;
 }
+
+export interface TeamMember {
+  id: string;
+  name: string;
+}
+
+export interface ScheduleEntry {
+  id: string;
+  user_id: string;
+  type: 'check_in' | 'check_out' | 'task' | 'event';
+  date: string;
+  time: string;
+  details: any; // jsonb
+}

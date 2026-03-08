@@ -18,6 +18,7 @@ import {
   CloudOff,
   RefreshCw,
   LayoutDashboard,
+  Calendar,
   DollarSign,
   LogOut,
   Settings2
@@ -30,6 +31,7 @@ import OrdersView from './views/OrdersView';
 import InventoryView from './views/InventoryView';
 import InvoicingView from './views/InvoicingView';
 import DashboardView from './views/DashboardView';
+import CalendarPage from './views/CalendarPage';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import ModulesView from './views/ModulesView';
@@ -42,6 +44,7 @@ import Loader from './components/Loader';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { BrandLogoFull } from './components/BrandLogo';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const AppContent: React.FC = () => {
   const { user, loading, profile, refreshSession } = useAuth();
@@ -70,6 +73,7 @@ const AppContent: React.FC = () => {
   const [showAdminScrollTop, setShowAdminScrollTop] = useState(false);
   const studentContentRef = useRef<HTMLDivElement | null>(null);
   const [showStudentScrollTop, setShowStudentScrollTop] = useState(false);
+  const [isCalendarIndependent, setIsCalendarIndependent] = useState(false); // Track if calendar is accessed from landing
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -144,12 +148,18 @@ const AppContent: React.FC = () => {
     // Check session storage for existing auth
     const storedAccess = sessionStorage.getItem('varietal_access');
     const storedRole = sessionStorage.getItem('varietal_role');
+    const calendarAccess = sessionStorage.getItem('varietal_calendar');
     
     if (storedAccess === 'true' && storedRole) {
       setUserRole(storedRole as 'admin' | 'student');
       setViewState('app');
-      // If student, default to cupping immediately
-      if (storedRole === 'student') {
+      // Check if accessing calendar
+      if (calendarAccess === 'true') {
+        setActiveTab('calendar');
+        setIsCalendarIndependent(true);
+        sessionStorage.removeItem('varietal_calendar');
+      } else if (storedRole === 'student') {
+        // If student, default to cupping immediately
         setActiveTab('cupping');
       }
       setIsLoading(false);
@@ -404,10 +414,16 @@ const AppContent: React.FC = () => {
   }
 
   // Landing Page View
-  if (viewState === 'landing') {
+  if (viewState === 'landing' && !isCalendarIndependent) {
     return (
       <div className="animate-zoom-in">
-        <LandingPage onMenuOpen={() => setIsNavMenuOpen(true)} />
+        <LandingPage 
+          onMenuOpen={() => setIsNavMenuOpen(true)} 
+          onCalendarOpen={() => {
+            setIsCalendarIndependent(true);
+            setActiveTab('calendar');
+          }}
+        />
         <NavigationMenu 
           isOpen={isNavMenuOpen} 
           onClose={() => setIsNavMenuOpen(false)} 
@@ -482,6 +498,26 @@ const AppContent: React.FC = () => {
             })}
           </div>
         </nav>
+      </div>
+    );
+  }
+
+  // Independent Calendar Page (accessed from landing page)
+  if (isCalendarIndependent) {
+    const handleExitCalendar = () => {
+      setIsCalendarIndependent(false);
+      sessionStorage.removeItem('varietal_access');
+      sessionStorage.removeItem('varietal_role');
+      sessionStorage.removeItem('varietal_calendar');
+      setUserRole(null);
+      setViewState('landing');
+    };
+
+    return (
+      <div className="animate-zoom-in">
+        <ErrorBoundary>
+          <CalendarPage onExit={handleExitCalendar} />
+        </ErrorBoundary>
       </div>
     );
   }

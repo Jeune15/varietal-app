@@ -1,7 +1,7 @@
 
 import { Dexie, type EntityTable } from 'dexie';
 import { createClient } from '@supabase/supabase-js';
-import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe } from './types';
+import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe, TeamMember, ScheduleEntry } from './types';
 
 type VarietalDB = Dexie & {
   greenCoffees: EntityTable<GreenCoffee, 'id'>;
@@ -17,11 +17,13 @@ type VarietalDB = Dexie & {
   espressoSessions: EntityTable<EspressoSession, 'id'>;
   filterSessions: EntityTable<FilterSession, 'id'>;
   filterRecipes: EntityTable<FilterRecipe, 'id'>;
+  teamMembers: EntityTable<TeamMember, 'id'>;
+  scheduleEntries: EntityTable<ScheduleEntry, 'id'>;
 };
 
 const db = new Dexie('VarietalDB') as VarietalDB;
 
-db.version(8).stores({
+db.version(10).stores({
   greenCoffees: 'id, clientName, variety',
   roasts: 'id, clientName, greenCoffeeId',
   orders: 'id, clientName, status',
@@ -34,7 +36,9 @@ db.version(8).stores({
   cuppingSessions: 'id, roastStockId, tasterName, date',
   espressoSessions: 'id, date, coffeeName',
   filterSessions: 'id, date, coffeeName, method',
-  filterRecipes: 'id, method, coffeeName'
+  filterRecipes: 'id, method, coffeeName',
+  teamMembers: 'id, name',
+  scheduleEntries: 'id, user_id, type, date'
 });
 
 export { db };
@@ -118,10 +122,12 @@ const tableColumnWhitelist: Record<string, string[]> = {
     'tasting',
     'notes',
     'deleted'
-  ]
-  };
-  
-  function sanitizeRecord(table: string, record: any) {
+  ],
+  teamMembers: ['id', 'name'],
+  scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'details']
+};
+
+function sanitizeRecord(table: string, record: any) {
   const allowed = tableColumnWhitelist[table];
   if (!allowed) return record;
   const sanitized: any = {};
@@ -139,6 +145,8 @@ export const initSupabase = (url: string, key: string) => {
   return supabase;
 };
 
+export const getSupabase = () => supabase;
+
 // Auto-initialize if env vars are present
 const envUrl = import.meta.env.VITE_SUPABASE_URL;
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -146,8 +154,6 @@ const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 if (envUrl && envKey) {
   initSupabase(envUrl, envKey);
 }
-
-export const getSupabase = () => supabase;
 
 export async function syncToCloud(table: string, data: any) {
   if (!supabase) return;
@@ -208,7 +214,7 @@ export async function pullFromCloud() {
     console.error('Error checking for reset signal:', err);
   }
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
   let success = true;
 
   for (const table of tables) {
@@ -247,7 +253,7 @@ export async function pullFromCloud() {
 
 export async function pushToCloud(): Promise<{ success: boolean; message?: string }> {
   if (!supabase) return { success: false, message: 'No hay conexión con Supabase' };
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
   let success = true;
   let errorMessage = '';
 
@@ -291,6 +297,8 @@ export async function exportDatabaseToJson() {
     espressoSessions: await db.espressoSessions.toArray(),
     filterSessions: await db.filterSessions.toArray(),
     filterRecipes: await db.filterRecipes.toArray(),
+    teamMembers: await db.teamMembers.toArray(),
+    scheduleEntries: await db.scheduleEntries.toArray(),
     exportDate: new Date().toISOString()
   };
   return JSON.stringify(data, null, 2);
@@ -327,6 +335,8 @@ export async function importDatabaseFromJson(jsonString: string) {
       if (data.espressoSessions) await db.espressoSessions.bulkAdd(data.espressoSessions);
       if (data.filterSessions) await db.filterSessions.bulkAdd(data.filterSessions);
       if (data.filterRecipes) await db.filterRecipes.bulkAdd(data.filterRecipes);
+      if (data.teamMembers) await db.teamMembers.bulkAdd(data.teamMembers);
+      if (data.scheduleEntries) await db.scheduleEntries.bulkAdd(data.scheduleEntries);
     });
     return true;
   } catch (error) {
@@ -338,7 +348,7 @@ export async function importDatabaseFromJson(jsonString: string) {
 export function subscribeToChanges() {
   if (!supabase) return () => {};
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
 
   const channel = supabase.channel('db-changes')
     .on(
@@ -374,9 +384,9 @@ export function subscribeToChanges() {
 }
 
 export async function resetDatabase(excludeUserId?: string) {
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
   
-  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes], async () => {
+  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -390,6 +400,8 @@ export async function resetDatabase(excludeUserId?: string) {
       await db.espressoSessions.clear();
       await db.filterSessions.clear();
       await db.filterRecipes.clear();
+      await db.teamMembers.clear();
+      await db.scheduleEntries.clear();
   });
 
   // Clear Cloud DB if connected

@@ -197,7 +197,8 @@ export const EspressoSimulator: React.FC = () => {
       return level === 1 ? 'Intenso' : 'Muy Intenso';
     }
     if (type === 'balance') {
-      return level < 0 ? 'Desbalanc.' : 'Desbalanc.';
+      if (level < 0) return level === -1 ? 'Acido' : 'Muy Acido';
+      return level === 1 ? 'Amargo' : 'Muy Amargo';
     }
     return '';
   };
@@ -237,8 +238,6 @@ export const EspressoSimulator: React.FC = () => {
   const currentPreset = presets.find(p => p.id === selectedPresetId);
   const isAdvancedMode = selectedDifficulty === 'advanced';
 
-  if (!state) return null;
-
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -271,13 +270,13 @@ export const EspressoSimulator: React.FC = () => {
         </div>
 
         {/* Coach */}
-        {showAdvisor && state && (
+        {showAdvisor && (
           <div className="mb-6 p-4 border border-stone-200 dark:border-stone-800 rounded-lg">
             <h4 className="font-bold text-stone-900 dark:text-stone-100 mb-2 flex items-center gap-2 text-sm uppercase tracking-widest">
               <Lightbulb size={14} /> Coach
             </h4>
             <p className="text-sm text-stone-600 dark:text-stone-400">
-              {getAdvice(state)}
+              {getAdvice(state!)}
             </p>
           </div>
         )}
@@ -333,15 +332,15 @@ export const EspressoSimulator: React.FC = () => {
                 Descripción General
               </h3>
               <p className="text-lg md:text-xl font-bold text-stone-900 dark:text-stone-100 italic">
-                "{describeShot(state)}"
+                "{describeShot(state!)}"
               </p>
             </div>
             {/* Métricas */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {[
-                { label: 'Extracción', value: state.extraction, type: 'extraction' as const },
-                { label: 'Intensidad', value: state.intensity, type: 'intensity' as const },
-                { label: 'Balance', value: state.balance, type: 'balance' as const },
+                { label: 'Extracción', value: state!.extraction, type: 'extraction' as const },
+                { label: 'Intensidad', value: state!.intensity, type: 'intensity' as const },
+                { label: 'Balance', value: state!.balance, type: 'balance' as const },
               ].map((metric) => (
                 <div key={metric.label} className="border border-stone-200 dark:border-stone-800 p-5 rounded-lg">
                   <div className="flex justify-between items-center mb-3">

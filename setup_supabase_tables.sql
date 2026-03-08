@@ -123,3 +123,30 @@ create table if not exists "profiles" (
 );
 alter table "profiles" enable row level security;
 create policy "Enable all access for profiles" on "profiles" for all using (true) with check (true);
+
+-- 10. Team Members
+create table if not exists "team_members" (
+  "id" text primary key,
+  "name" text
+);
+alter table "team_members" enable row level security;
+create policy "Enable all access for team_members" on "team_members" for all using (true) with check (true);
+
+-- 11. Schedule Entries
+create table if not exists "schedule_entries" (
+  "id" text primary key,
+  "user_id" text,
+  "type" text, -- 'check_in', 'check_out', 'task', 'event'
+  "date" text,
+  "time" text,
+  "details" jsonb
+);
+alter table "schedule_entries" enable row level security;
+create policy "Enable all access for schedule_entries" on "schedule_entries" for all using (true) with check (true);
+
+-- Insert team members
+insert into "team_members" ("id", "name") values
+  ('isai', 'Isai'),
+  ('alejandro', 'Alejandro'),
+  ('anthony', 'Anthony')
+on conflict ("id") do nothing;
