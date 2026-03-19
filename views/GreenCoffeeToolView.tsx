@@ -140,9 +140,9 @@ const VARIETIES: Variety[] = [
     id: 'castillo',
     name: 'Castillo',
     origin: 'Colombia (cruce Caturra × Híbrido de Timor, CENICAFÉ, 2005)',
-    species: 'Arábica (con introgresión de Robusta vía Híbrido de Timor)',
+    species: 'Arábica (híbrido con genes de resistencia)',
     altitude: '1,200 – 2,000 msnm',
-    description: 'Variedad desarrollada por CENICAFÉ (Colombia) como evolución de la Colombia. Combina resistencia a roya (por la genética Robusta del Híbrido de Timor) con calidad en taza mejorada respecto a generaciones anteriores. Es la variedad más promovida por la FNC.',
+    description: 'Variedad desarrollada por CENICAFÉ como evolución de la Colombia. Combina resistencia a roya (vía Híbrido de Timor) con calidad en taza mejorada.',
     sensoryProfile: 'Cuerpo medio, dulzor a panela y caramelo, acidez media (cítrica suave), notas a nuez y chocolate, perfil limpio aunque históricamente criticado por falta de complejidad vs variedades tradicionales.',
     characteristics: ['Resistente a roya de café', 'Cruce con Híbrido de Timor', 'Promovida por la FNC', 'Alta productividad', 'Variantes regionales']
   },
@@ -150,7 +150,7 @@ const VARIETIES: Variety[] = [
     id: 'colombia',
     name: 'Variedad Colombia',
     origin: 'Colombia (cruce Caturra × Híbrido de Timor, CENICAFÉ, ~1980s)',
-    species: 'Arábica (con introgresión Robusta)',
+    species: 'Arábica (híbrido con genes de resistencia)',
     altitude: '1,200 – 2,000 msnm',
     description: 'Predecesora del Castillo, desarrollada por CENICAFÉ como respuesta a la epidemia de roya de los 1980s. Primera variedad colombiana con resistencia a roya. Fue reemplazada gradualmente por Castillo que tiene mejor calidad en taza.',
     sensoryProfile: 'Cuerpo medio, notas a chocolate y nuez, acidez moderada, dulzor medio, perfil funcional pero con menor complejidad aromática que variedades tradicionales.',
@@ -160,7 +160,7 @@ const VARIETIES: Variety[] = [
     id: 'ruiru11',
     name: 'Ruiru 11',
     origin: 'Kenia (desarrollada en Ruiru Research Station, 1985)',
-    species: 'Arábica (compuesto con Robusta vía Híbrido de Timor)',
+    species: 'Arábica (compuesto con genes de resistencia)',
     altitude: '1,500 – 1,900 msnm',
     description: 'Variedad compuesta desarrollada en Kenia como respuesta a la CBD (Coffee Berry Disease). Combina múltiples líneas para lograr resistencia a enfermedades. Porte muy compacto. Históricamente criticada por calidad inferior a SL28/SL34, pero generaciones recientes han mejorado.',
     sensoryProfile: 'Cuerpo medio, acidez moderada (menos vibrante que SL28/SL34), notas a frutas suaves, nuez y chocolate, dulzor medio, perfil limpio pero sin la complejidad de las SL.',
@@ -180,9 +180,9 @@ const VARIETIES: Variety[] = [
     id: 'catimor',
     name: 'Catimor',
     origin: 'Portugal (cruce Caturra × Híbrido de Timor, CIFC, 1959)',
-    species: 'Arábica (con introgresión Robusta)',
+    species: 'Arábica (híbrido con genes de resistencia)',
     altitude: '700 – 1,500 msnm',
-    description: 'Cruce entre Caturra y el Híbrido de Timor (cruce natural de Arábica × Robusta). Desarrollado en Portugal (CIFC). Altamente resistente a roya y muy productivo. Es la base genética de muchas variedades resistentes como Castillo, Colombia, Ruiru 11.',
+    description: 'Cruce entre Caturra y el Híbrido de Timor. Altamente resistente a roya y muy productivo; base genética de muchas variedades modernas resistentes.',
     sensoryProfile: 'Cuerpo medio-alto, acidez baja, notas a nuez oscura y cereal, puede tener notas astringentes o medicinales en altitudes bajas, mejor perfil en altitudes altas, postgusto corto con final ligeramente áspero.',
     characteristics: ['Cruce Caturra × Híbrido de Timor', 'Alta resistencia a roya', 'Muy productivo', 'Calidad de taza variable', 'Base genética de muchas variedades modernas']
   },
@@ -190,7 +190,7 @@ const VARIETIES: Variety[] = [
     id: 'sarchimor',
     name: 'Sarchimor',
     origin: 'Costa Rica (cruce Villa Sarchi × Híbrido de Timor, CIFC/CATIE)',
-    species: 'Arábica (con introgresión Robusta)',
+    species: 'Arábica (híbrido con genes de resistencia)',
     altitude: '1,000 – 1,800 msnm',
     description: 'Cruce entre Villa Sarchi y el Híbrido de Timor. Similar al Catimor pero con Villa Sarchi como madre en lugar de Caturra. Generalmente produce mejor calidad en taza que Catimor gracias a la genética del Villa Sarchi.',
     sensoryProfile: 'Acidez media, cuerpo medio, dulzor a panela y chocolate, notas más limpias que Catimor, perfil equilibrado en altitudes medias-altas, postgusto medio y limpio.',
@@ -319,8 +319,8 @@ const VARIETIES: Variety[] = [
   {
     id: 'icatu',
     name: 'Icatu',
-    origin: 'Brasil (híbridos Arábica × Robusta)',
-    species: 'Arábica (con introgresión de Robusta)',
+    origin: 'Brasil (híbridos arábica con genes de resistencia)',
+    species: 'Arábica (híbrido con genes de resistencia)',
     altitude: '900 – 1,700 msnm',
     description: 'Familia de híbridos creada para resistencia y vigor. En buenas condiciones puede dar tazas limpias con cuerpo marcado.',
     sensoryProfile: 'Cuerpo medio-alto, dulzor a cacao y caramelo, acidez baja-media, notas a nuez, final persistente.',
@@ -365,6 +365,146 @@ const VARIETIES: Variety[] = [
     description: 'Variedad cultivada en México con buena adaptación en altura. Puede producir tazas dulces y balanceadas con postcosecha cuidada.',
     sensoryProfile: 'Dulzor a panela, cacao, acidez media cítrica suave, cuerpo medio, notas a nuez y fruta madura.',
     characteristics: ['Buena adaptación en México', 'Perfil balanceado', 'Mejor en altura', 'Respuesta fuerte a proceso', 'Productividad media']
+  },
+  {
+    id: 'yellow-bourbon',
+    name: 'Bourbon Amarillo (Yellow Bourbon)',
+    origin: 'Brasil (selecciones históricas; ampliamente cultivado)',
+    species: 'Arábica',
+    altitude: '900 – 1,600 msnm',
+    description: 'Selección de Bourbon de cereza amarilla. Muy usado en Brasil por su dulzor y consistencia.',
+    sensoryProfile: 'Dulzor alto (miel, caramelo), acidez media cítrica suave, cuerpo medio, cacao y fruta amarilla.',
+    characteristics: ['Cereza amarilla', 'Dulzor alto', 'Perfil fácil de perfilar', 'Muy común en Brasil', 'Responde bien a natural/honey']
+  },
+  {
+    id: 'acaia',
+    name: 'Acaiá',
+    origin: 'Brasil (derivado de Mundo Novo; muy común en Minas Gerais)',
+    species: 'Arábica',
+    altitude: '900 – 1,500 msnm',
+    description: 'Selección brasileña conocida por buen rendimiento y grano grande.',
+    sensoryProfile: 'Chocolate, nuez, dulzor medio-alto, acidez baja-media, cuerpo medio-alto.',
+    characteristics: ['Buen rendimiento', 'Grano grande', 'Vigor alto', 'Perfil clásico brasileño', 'Común en Minas Gerais']
+  },
+  {
+    id: 'topazio',
+    name: 'Topázio',
+    origin: 'Brasil (IAC; línea productiva)',
+    species: 'Arábica',
+    altitude: '900 – 1,600 msnm',
+    description: 'Variedad moderna usada por uniformidad y productividad. Muy presente en Brasil.',
+    sensoryProfile: 'Caramelo, chocolate, acidez media-baja, cuerpo medio, notas a fruta amarilla.',
+    characteristics: ['Uniformidad', 'Productiva', 'Buen rendimiento', 'Perfil estable', 'Común en Brasil']
+  },
+  {
+    id: 'catucai',
+    name: 'Catucaí',
+    origin: 'Brasil (cruces tipo Catuaí × Icatu)',
+    species: 'Arábica (híbrido con genes de resistencia)',
+    altitude: '900 – 1,700 msnm',
+    description: 'Híbrido muy usado en Brasil por rendimiento y sanidad. Su taza mejora en altura.',
+    sensoryProfile: 'Chocolate, frutos secos, acidez media-baja, cuerpo medio-alto, dulzor a caramelo.',
+    characteristics: ['Productivo', 'Mejor sanidad', 'Consistente', 'Mejora en altura', 'Muy común en Brasil']
+  },
+  {
+    id: 'iapar59',
+    name: 'IAPAR 59',
+    origin: 'Brasil (IAPAR; usado en Paraná y otras zonas)',
+    species: 'Arábica (híbrido con genes de resistencia)',
+    altitude: '900 – 1,600 msnm',
+    description: 'Material seleccionado para resistencia y estabilidad agronómica.',
+    sensoryProfile: 'Cacao, caramelo, acidez baja-media, cuerpo medio, perfil limpio.',
+    characteristics: ['Resistente', 'Estable', 'Buen rendimiento', 'Perfil clásico', 'Mejor en altura media']
+  },
+  {
+    id: 'ipr100',
+    name: 'IPR 100',
+    origin: 'Brasil (IAPAR; selección productiva)',
+    species: 'Arábica (híbrido con genes de resistencia)',
+    altitude: '900 – 1,700 msnm',
+    description: 'Selección brasileña enfocada en productividad y sanidad. Muy usada en sistemas tecnificados.',
+    sensoryProfile: 'Chocolate, nuez, dulzor medio, acidez baja-media, cuerpo medio.',
+    characteristics: ['Productivo', 'Estable', 'Buen desempeño en finca', 'Perfil consistente', 'Común en Brasil']
+  },
+  {
+    id: 'cenicafe1',
+    name: 'Cenicafé 1',
+    origin: 'Colombia (CENICAFÉ; línea moderna)',
+    species: 'Arábica (híbrido con genes de resistencia)',
+    altitude: '1,200 – 2,000 msnm',
+    description: 'Variedad colombiana moderna que busca resistencia y buena calidad en taza con manejo correcto.',
+    sensoryProfile: 'Dulzor a panela, acidez media cítrica, cuerpo medio, cacao y frutas suaves.',
+    characteristics: ['Resistente a roya', 'Buena productividad', 'Consistencia', 'Mejora con altura', 'Diseñada para Colombia']
+  },
+  {
+    id: 'cenicafe2',
+    name: 'Cenicafé 2',
+    origin: 'Colombia (CENICAFÉ; nuevas selecciones)',
+    species: 'Arábica (híbrido con genes de resistencia)',
+    altitude: '1,200 – 2,100 msnm',
+    description: 'Líneas recientes enfocadas en estabilidad agronómica y calidad más limpia.',
+    sensoryProfile: 'Perfil balanceado, dulzor medio-alto, acidez media, cuerpo medio, final limpio.',
+    characteristics: ['Resistente a roya', 'Estable', 'Productiva', 'Mejor en altura', 'Calidad más limpia']
+  },
+  {
+    id: 'chiroso',
+    name: 'Chiroso',
+    origin: 'Colombia (Antioquia; selecciones locales)',
+    species: 'Arábica',
+    altitude: '1,500 – 2,200 msnm',
+    description: 'Selección local colombiana valorada por su fragancia y claridad cuando se cultiva en altura.',
+    sensoryProfile: 'Floral, fruta de hueso, acidez brillante, cuerpo medio-ligero, dulzor alto.',
+    characteristics: ['Muy aromática', 'Mejor en altura', 'Microlotes', 'Alta claridad', 'Sensibles a proceso']
+  },
+  {
+    id: 'papayo',
+    name: 'Papayo',
+    origin: 'Colombia (selecciones regionales)',
+    species: 'Arábica',
+    altitude: '1,500 – 2,200 msnm',
+    description: 'Nombre local asociado a materiales de alta fragancia. En microlotes destaca por su perfil frutal.',
+    sensoryProfile: 'Tropical (papaya, mango), floral suave, acidez jugosa, cuerpo medio, dulzor alto.',
+    characteristics: ['Microlotes', 'Perfil tropical', 'Alta fragancia', 'Mejor en altura', 'Calidad depende del proceso']
+  },
+  {
+    id: 'bourbon-aji',
+    name: 'Bourbon Ají',
+    origin: 'Colombia (selecciones; difundido en Andes)',
+    species: 'Arábica',
+    altitude: '1,600 – 2,200 msnm',
+    description: 'Selección tipo Bourbon apreciada por su carácter aromático y dulzor cuando se maneja con precisión.',
+    sensoryProfile: 'Fruta roja, especia suave, acidez media-alta, cuerpo medio, dulzor a miel.',
+    characteristics: ['Alta fragancia', 'Microlotes', 'Mejor en altura', 'Sensibilidad a proceso', 'Perfil distintivo']
+  },
+  {
+    id: 'san-ramon',
+    name: 'San Ramón',
+    origin: 'América Latina (mutación en linajes Typica; difundida en Andes y Centroamérica)',
+    species: 'Arábica',
+    altitude: '1,100 – 1,800 msnm',
+    description: 'Mutación compacta asociada a porte bajo. Permite mayor densidad de siembra.',
+    sensoryProfile: 'Dulzor medio, acidez media, cuerpo medio, cacao y nuez, perfil limpio.',
+    characteristics: ['Porte bajo', 'Alta densidad de siembra', 'Producción media', 'Perfil clásico', 'Común en fincas tradicionales']
+  },
+  {
+    id: 'pache',
+    name: 'Pache',
+    origin: 'Guatemala (mutación de Typica)',
+    species: 'Arábica',
+    altitude: '1,200 – 1,900 msnm',
+    description: 'Mutación de Typica de porte más compacto. Se cultiva por adaptación y rendimiento estable.',
+    sensoryProfile: 'Cítrico suave, caramelo, cuerpo medio, acidez media, perfil limpio.',
+    characteristics: ['Mutación de Typica', 'Adaptable', 'Perfil balanceado', 'Común en Guatemala', 'Mejor en altura']
+  },
+  {
+    id: 'oro-azteca',
+    name: 'Oro Azteca',
+    origin: 'México (programas de selección; muy usado en zonas cafetaleras)',
+    species: 'Arábica',
+    altitude: '1,100 – 1,900 msnm',
+    description: 'Selección mexicana orientada a desempeño en campo y perfiles limpios cuando se procesa bien.',
+    sensoryProfile: 'Panela, cacao, acidez media cítrica, cuerpo medio, notas a nuez.',
+    characteristics: ['Buena adaptación', 'Perfil limpio', 'Mejor en altura', 'Común en México', 'Consistencia']
   }
 ];
 
@@ -548,6 +688,194 @@ const TECH_STANDARDS: TechStandard[] = [
     definition: 'La SCA define los grados de calidad basándose en defectos encontrados en una muestra de 350g de café verde. Un defecto de Categoría 1 (grano negro, hongo, etc.) descalifica automáticamente el lote como "especialidad".',
     roasterImpact: 'Defectos en verde = defectos en taza. Un quaker (inmaduro) no carameliza y aporta sabor a maní/paja. Un grano con broca se quema localmente. Un café limpio permite tostar con confianza y repetibilidad.',
     baristaImpact: 'Aunque no seleccionas en verde, entender defectos te ayuda a diagnosticar problemas en taza. Si detectas notas a moho, fermentado o vegetal crudo, probablemente el verde tenía defectos que el tueste no puede corregir.'
+  }
+];
+
+interface GeoRegion {
+  id: string;
+  group: 'Perú' | 'Colombia' | 'Brasil' | 'México' | 'Indonesia' | 'África' | 'Centroamérica';
+  name: string;
+  conditions: string;
+  growthImpact: string;
+  typicalTraits: string;
+}
+
+const GEO_REGIONS: GeoRegion[] = [
+  {
+    id: 'peru-cajamarca',
+    group: 'Perú',
+    name: 'Cajamarca',
+    conditions: 'Altitudes altas con noches frías; suelos de montaña; lluvias estacionales.',
+    growthImpact: 'Maduración más lenta y mayor densidad del grano; la sombra y la humedad controlan estrés hídrico.',
+    typicalTraits: 'Mayor dulzor y estructura, acidez cítrica/málica media-alta, notas a cacao y fruta amarilla.'
+  },
+  {
+    id: 'peru-junin',
+    group: 'Perú',
+    name: 'Junín (Selva Central)',
+    conditions: 'Clima húmedo de selva alta; nubosidad frecuente; buena disponibilidad de agua.',
+    growthImpact: 'Crecimiento vegetativo vigoroso; requiere control de sombra y manejo sanitario por humedad.',
+    typicalTraits: 'Cuerpo medio, dulzor a panela, acidez media, notas a chocolate y fruta madura.'
+  },
+  {
+    id: 'peru-cusco',
+    group: 'Perú',
+    name: 'Cusco (Convención)',
+    conditions: 'Altitud variable; microclimas con días templados y noches frías.',
+    growthImpact: 'Amplitud térmica favorece acumulación de azúcares y densidad; floración puede ser escalonada.',
+    typicalTraits: 'Acidez más brillante, perfiles florales/frutales en lotes altos, final largo y limpio.'
+  },
+  {
+    id: 'colombia-huila',
+    group: 'Colombia',
+    name: 'Huila',
+    conditions: 'Altitud media-alta; radiación solar alta; suelos volcánicos en muchas zonas.',
+    growthImpact: 'Buena fotosíntesis y maduración estable; el manejo de sombra define velocidad de maduración.',
+    typicalTraits: 'Dulzor alto, acidez cítrica jugosa, cuerpo medio, notas a frutas rojas y caramelo.'
+  },
+  {
+    id: 'colombia-narino',
+    group: 'Colombia',
+    name: 'Nariño',
+    conditions: 'Altitudes muy altas; noches frías; laderas andinas con gran amplitud térmica.',
+    growthImpact: 'Maduración lenta y granos muy densos; mayor concentración de compuestos aromáticos.',
+    typicalTraits: 'Acidez brillante y limpia, alta claridad, perfiles florales y cítricos, cuerpo medio.'
+  },
+  {
+    id: 'colombia-sierra-nevada',
+    group: 'Colombia',
+    name: 'Sierra Nevada de Santa Marta',
+    conditions: 'Montaña costera; humedad del Caribe; variación de altitud con brisas.',
+    growthImpact: 'Humedad y brisa influyen en estrés y sanidad; sombra ayuda a estabilizar maduración.',
+    typicalTraits: 'Cuerpo medio, dulzor a panela, acidez media, notas a cacao, nuez y fruta madura.'
+  },
+  {
+    id: 'brasil-cerrado',
+    group: 'Brasil',
+    name: 'Cerrado Mineiro',
+    conditions: 'Estación seca marcada; altitudes moderadas; alta mecanización.',
+    growthImpact: 'Floración más uniforme con inicio de lluvias; maduración pareja si se controla riego/estrés.',
+    typicalTraits: 'Chocolate, nuez, caramelo; acidez media-baja; cuerpo medio-alto y perfil muy consistente.'
+  },
+  {
+    id: 'brasil-sul-de-minas',
+    group: 'Brasil',
+    name: 'Sul de Minas / Mantiqueira',
+    conditions: 'Montañas con altitud; noches más frías; microclimas y laderas.',
+    growthImpact: 'Mayor densidad del grano; maduración más lenta que en zonas planas; selección por lote es clave.',
+    typicalTraits: 'Más acidez y dulzor que otros brasiles, notas a caramelo, cacao y fruta amarilla, cuerpo medio.'
+  },
+  {
+    id: 'brasil-mogiana',
+    group: 'Brasil',
+    name: 'Mogiana (São Paulo)',
+    conditions: 'Altitud moderada; clima más templado; suelos fértiles.',
+    growthImpact: 'Crecimiento estable y buena uniformidad; el secado postcosecha define claridad final.',
+    typicalTraits: 'Cacao, almendra, caramelo; acidez suave; textura redonda y final dulce.'
+  },
+  {
+    id: 'mexico-chiapas',
+    group: 'México',
+    name: 'Chiapas',
+    conditions: 'Montañas húmedas; alta biodiversidad; sombra frecuente.',
+    growthImpact: 'Sombra regula temperatura y protege de estrés; alta humedad requiere control de fermentación/secado.',
+    typicalTraits: 'Dulzor a panela, cacao, acidez media, cuerpo medio, notas a fruta madura y especias suaves.'
+  },
+  {
+    id: 'mexico-oaxaca',
+    group: 'México',
+    name: 'Oaxaca (Sierra Sur / Pluma)',
+    conditions: 'Altitud; vientos y microclimas; suelos de montaña.',
+    growthImpact: 'Maduración más lenta en altura; el viento reduce humedad pero puede estresar la planta.',
+    typicalTraits: 'Acidez más brillante, notas florales y cítricas en lotes altos, cuerpo medio y final limpio.'
+  },
+  {
+    id: 'mexico-veracruz',
+    group: 'México',
+    name: 'Veracruz (Coatepec y alrededores)',
+    conditions: 'Alta humedad y nubosidad; suelos volcánicos en zonas cafetaleras.',
+    growthImpact: 'Baja radiación directa favorece maduración más lenta; humedad exige buen manejo sanitario.',
+    typicalTraits: 'Cuerpo medio, dulzor medio-alto, acidez media, cacao y frutos secos; perfil balanceado.'
+  },
+  {
+    id: 'indonesia-gayo',
+    group: 'Indonesia',
+    name: 'Sumatra (Gayo/Aceh)',
+    conditions: 'Clima húmedo; montañas; procesos tradicionales y diversidad de microclimas.',
+    growthImpact: 'Humedad alta aumenta presión de enfermedades; cosecha y secado deben ser muy controlados.',
+    typicalTraits: 'Cuerpo alto, menor acidez, notas terrosas/especiadas y cacao; textura densa.'
+  },
+  {
+    id: 'indonesia-java',
+    group: 'Indonesia',
+    name: 'Java',
+    conditions: 'Zonas volcánicas; clima templado; producción histórica.',
+    growthImpact: 'Suelos volcánicos aportan buen vigor; manejo de sombra y drenaje define sanidad.',
+    typicalTraits: 'Cuerpo medio-alto, cacao, especias suaves, acidez media-baja, final largo.'
+  },
+  {
+    id: 'indonesia-bali',
+    group: 'Indonesia',
+    name: 'Bali (Kintamani)',
+    conditions: 'Altitud moderada; suelos volcánicos; brisas y buena radiación.',
+    growthImpact: 'Maduración relativamente uniforme; buen drenaje reduce estrés por exceso de agua.',
+    typicalTraits: 'Más cítrico y limpio que otros indonesios, dulzor medio-alto, cuerpo medio.'
+  },
+  {
+    id: 'africa-ethiopia-yirgacheffe',
+    group: 'África',
+    name: 'Etiopía (Yirgacheffe/Sidama/Guji)',
+    conditions: 'Altitudes altas; bosques y sombra natural; micro-lotes muy diversos.',
+    growthImpact: 'Maduración lenta y alta densidad; diversidad genética y suelos favorecen complejidad aromática.',
+    typicalTraits: 'Floral y cítrico, frutas de hueso/berries, acidez brillante y alta claridad.'
+  },
+  {
+    id: 'africa-kenya-central',
+    group: 'África',
+    name: 'Kenia (Nyeri/Kirinyaga)',
+    conditions: 'Altitud; noches frías; manejo cooperativo y lavados muy consistentes.',
+    growthImpact: 'Maduración lenta y alta concentración de ácidos orgánicos; selección y beneficio elevan limpieza.',
+    typicalTraits: 'Acidez jugosa tipo grosella/cítrico, fruta roja, cuerpo medio y final largo.'
+  },
+  {
+    id: 'africa-rwanda',
+    group: 'África',
+    name: 'Ruanda (Lago Kivu / Nyamasheke)',
+    conditions: 'Altitud; influencia lacustre; clima templado con lluvias estacionales.',
+    growthImpact: 'Crecimiento estable y maduración uniforme; el secado controlado es clave por humedad.',
+    typicalTraits: 'Dulzor alto, acidez media-alta, frutas rojas y notas florales suaves; cuerpo medio.'
+  },
+  {
+    id: 'ca-guatemala-huehue',
+    group: 'Centroamérica',
+    name: 'Guatemala (Huehuetenango)',
+    conditions: 'Altitudes altas; clima seco para la altura; suelos de montaña.',
+    growthImpact: 'Noches frías favorecen densidad; clima más seco facilita secado y limpieza.',
+    typicalTraits: 'Acidez brillante, dulzor alto, fruta y cacao, cuerpo medio; taza muy limpia.'
+  },
+  {
+    id: 'ca-guatemala-antigua',
+    group: 'Centroamérica',
+    name: 'Guatemala (Antigua)',
+    conditions: 'Suelos volcánicos; clima templado; buena radiación.',
+    growthImpact: 'Vigor y nutrición consistentes; maduración estable; buen potencial de desarrollo en tueste.',
+    typicalTraits: 'Chocolate y especias suaves, acidez media, cuerpo medio-alto y final largo.'
+  },
+  {
+    id: 'ca-costa-rica-tarrazu',
+    group: 'Centroamérica',
+    name: 'Costa Rica (Tarrazú)',
+    conditions: 'Altitudes altas; noches frías; clima más seco en cosecha.',
+    growthImpact: 'Granos densos y maduros; secado más controlable aporta limpieza.',
+    typicalTraits: 'Acidez brillante, dulzor alto, fruta y caramelo; cuerpo medio y alta claridad.'
+  },
+  {
+    id: 'ca-honduras-santa-barbara',
+    group: 'Centroamérica',
+    name: 'Honduras (Santa Bárbara)',
+    conditions: 'Altitud; microclimas con neblina; suelos de montaña.',
+    growthImpact: 'Neblina regula temperatura; maduración lenta; manejo de sombra reduce estrés y mejora uniformidad.',
+    typicalTraits: 'Dulzor medio-alto, acidez media, cacao y fruta; cuerpo medio con final limpio.'
   }
 ];
 
@@ -993,6 +1321,94 @@ const DefectsTab: React.FC = () => {
   );
 };
 
+const GeographicInfluenceTab: React.FC = () => {
+  const groups: GeoRegion['group'][] = ['Perú', 'Colombia', 'Brasil', 'México', 'Indonesia', 'África', 'Centroamérica'];
+  const [activeGroup, setActiveGroup] = useState<GeoRegion['group']>('Perú');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const regions = GEO_REGIONS.filter(r => r.group === activeGroup);
+  const selected = GEO_REGIONS.find(r => r.id === selectedId) || null;
+
+  useEffect(() => {
+    const first = regions[0]?.id ?? null;
+    setSelectedId(first);
+  }, [activeGroup]);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
+          Influencia Geográfica
+        </h2>
+        <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
+          La región cambia temperatura, radiación, suelos y ritmo de maduración. Eso impacta densidad del grano, sanidad de la planta y el perfil típico en taza.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {groups.map(g => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setActiveGroup(g)}
+            className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+              activeGroup === g
+                ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
+                : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+            }`}
+          >
+            {g}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {regions.map(r => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => setSelectedId(selectedId === r.id ? null : r.id)}
+            className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+              selectedId === r.id
+                ? 'bg-brand text-white border-brand'
+                : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-brand hover:text-brand dark:hover:border-brand dark:hover:text-brand'
+            }`}
+          >
+            {r.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="min-h-[200px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
+        {selected ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Condiciones comunes</p>
+                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.conditions}</p>
+              </div>
+              <div>
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Impacto en el crecimiento</p>
+                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.growthImpact}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Rasgos típicos que aporta</p>
+                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed italic">{selected.typicalTraits}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+            Selecciona una región para ver sus condiciones, cómo impacta el crecimiento y qué rasgos suele aportar.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ─── Main View ───────────────────────────────────────────────────────────────
 
 interface Props {
@@ -1000,7 +1416,7 @@ interface Props {
 }
 
 export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'simulator' | 'varieties' | 'tech' | 'defects'>('simulator');
+  const [activeTab, setActiveTab] = useState<'simulator' | 'varieties' | 'tech' | 'defects' | 'geo'>('simulator');
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
@@ -1019,7 +1435,7 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
                 Café Verde
               </h1>
               <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
-                Variedades, estándares y defectos
+                Variedades, estándares y origen
               </p>
             </div>
           </div>
@@ -1031,7 +1447,8 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
             { id: 'simulator', label: 'Simulador' },
             { id: 'varieties', label: 'Variedades' },
             { id: 'tech', label: 'Datos Técnicos' },
-            { id: 'defects', label: 'Defectos' }
+            { id: 'defects', label: 'Defectos' },
+            { id: 'geo', label: 'Influencia geográfica' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1054,6 +1471,7 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
         {activeTab === 'varieties' && <VarietiesTab />}
         {activeTab === 'tech' && <TechStandardsTab />}
         {activeTab === 'defects' && <DefectsTab />}
+        {activeTab === 'geo' && <GeographicInfluenceTab />}
       </div>
     </div>
   );
