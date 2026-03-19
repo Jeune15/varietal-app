@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { EspressoView } from './EspressoCalibrationView';
 import { MilkTextureView } from '../components/MilkTextureView';
 import { SensoryTrainingView } from './SensoryTrainingView';
 import { GreenCoffeeToolView } from './GreenCoffeeToolView';
 import { RoastingToolView } from './RoastingToolView';
-import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle } from 'lucide-react';
+import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle, Eye, Trash2, X, FileDown } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
@@ -19,10 +20,16 @@ const brewMethodOptions: { value: BrewMethod; label: string }[] = [
 ];
 
 const pourTypeOptions = [
-  { value: 'continuous', label: 'Continuo' },
-  { value: 'pulsed', label: 'Pulsado' },
-  { value: 'circular', label: 'Circular' },
-  { value: 'direct', label: 'Directo' }
+  { value: 'espiral', label: 'Espiral' },
+  { value: 'central', label: 'Central' },
+  { value: 'pulsar', label: 'Pulsar' },
+  { value: 'lluvia', label: 'Lluvia' }
+];
+
+const aeropressPressureOptions = [
+  { value: 'suave', label: 'Suave' },
+  { value: 'moderada', label: 'Moderada' },
+  { value: 'fuerte', label: 'Fuerte' }
 ];
 
 const parseRatio = (value: string): number | null => {
@@ -50,30 +57,7 @@ const formatRatio = (waterPerGram: number): string => {
   return `1:${rounded}`;
 };
 
-interface TopBackButtonProps {
-  onClick?: () => void;
-}
 
-const TopBackButton: React.FC<TopBackButtonProps> = ({ onClick }) => {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (typeof window !== 'undefined' && window.history.length > 1) {
-      window.history.back();
-    }
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      className="fixed top-4 md:top-6 left-4 md:left-8 z-[200] inline-flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm rounded-lg border border-stone-200 dark:border-stone-800 shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-[11px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300"
-      aria-label="Volver"
-    >
-      <ArrowLeft className="w-4 h-4" />
-      <span>Volver</span>
-    </button>
-  );
-};
 
 const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) => {
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
@@ -792,7 +776,7 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
   const selectedVariable = variablesAndTechniques.find(item => item.id === selectedVariableId) || null;
 
   return (
-    <div className="bg-stone-100 dark:bg-stone-900/40 p-6 md:p-10 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-8">
+    <div className="bg-white dark:bg-stone-900 p-6 md:p-10 rounded-xl border border-stone-200 dark:border-stone-800 space-y-8">
       <div className="flex flex-col gap-3">
         <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
           Variables y herramientas ({method})
@@ -821,17 +805,17 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
                   setSelectedMethodId(selectedMethodId === item.id ? null : item.id);
                   setSelectedToolId(null);
                 }}
-                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-xl border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
                   selectedMethodId === item.id
-                    ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+                    ? 'bg-brand text-white border-brand'
+                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-brand dark:hover:border-brand'
                 }`}
               >
                 {item.name}
               </button>
             ))}
           </div>
-          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
+          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 p-5 md:p-6">
             {selectedMethod ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -886,17 +870,17 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
                   setSelectedToolId(selectedToolId === item.id ? null : item.id);
                   setSelectedMethodId(null);
                 }}
-                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-xl border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
                   selectedToolId === item.id
-                    ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+                    ? 'bg-brand text-white border-brand'
+                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-brand dark:hover:border-brand'
                 }`}
               >
                 {item.name}
               </button>
             ))}
           </div>
-          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
+          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 p-5 md:p-6">
             {selectedTool ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -951,17 +935,17 @@ const FilterCalibrationGuide: React.FC<{ method: BrewMethod }> = ({ method }) =>
                 key={variable.id}
                 type="button"
                 onClick={() => setSelectedVariableId(selectedVariableId === variable.id ? null : variable.id)}
-                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-xl border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
                   selectedVariableId === variable.id
-                    ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+                    ? 'bg-brand text-white border-brand'
+                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-brand dark:hover:border-brand'
                 }`}
               >
                 {variable.name}
               </button>
             ))}
           </div>
-          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
+          <div className="min-h-[140px] rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/60 p-5 md:p-6">
             {selectedVariable ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -1226,7 +1210,7 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
     .find(item => item.id === openId) || null;
 
   return (
-    <div className="border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-900/90 p-6 lg:p-10 space-y-10">
+    <div className="border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-stone-900 p-6 lg:p-10 space-y-10">
       <div className="space-y-8">
         <div className="space-y-4">
           <div className="space-y-3">
@@ -1244,8 +1228,8 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                 key={item.id}
                 type="button"
                 onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                className={`relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-950 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden ${
-                  openId === item.id ? 'ring-2 ring-black dark:ring-white scale-[1.02]' : ''
+                className={`relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50 dark:bg-stone-950 hover:border-brand dark:hover:border-brand transition-all duration-300 h-full text-left overflow-hidden ${
+                  openId === item.id ? 'ring-2 ring-brand dark:ring-brand scale-[1.01]' : ''
                 }`}
               >
                 <div className="w-full space-y-4 relative z-10 transition-all duration-300">
@@ -1304,7 +1288,7 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                   <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
                     {openId === item.id ? 'Ocultar análisis' : 'Ver análisis'}
                   </span>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${openId === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-stone-100 text-stone-400 dark:bg-stone-800'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${openId === item.id ? 'bg-brand text-white' : 'bg-stone-100 text-stone-400 dark:bg-stone-800'}`}>
                     <ChevronRight className={`w-3 h-3 transition-transform ${openId === item.id ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} />
                   </div>
                 </div>
@@ -1343,8 +1327,8 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                       key={item.id}
                       type="button"
                       onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                      className={`relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-950 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden ${
-                        openId === item.id ? 'ring-2 ring-black dark:ring-white scale-[1.02]' : ''
+                      className={`relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-stone-950 hover:border-brand dark:hover:border-brand transition-all duration-300 h-full text-left overflow-hidden ${
+                        openId === item.id ? 'ring-2 ring-brand dark:ring-brand scale-[1.01]' : ''
                       }`}
                     >
                       <div className="w-full space-y-4 relative z-10 transition-all duration-300">
@@ -1408,7 +1392,7 @@ const FilterTroubleshootingGuide: React.FC<{ method: BrewMethod }> = ({ method }
                         <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">
                           {openId === item.id ? 'Ocultar solución' : 'Ver solución'}
                         </span>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${openId === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-stone-100 text-stone-400 dark:bg-stone-800'}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${openId === item.id ? 'bg-brand text-white' : 'bg-stone-100 text-stone-400 dark:bg-stone-800'}`}>
                           <ChevronRight className={`w-3 h-3 transition-transform ${openId === item.id ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} />
                         </div>
                       </div>
@@ -1436,6 +1420,7 @@ const createEmptyRecipe = (): FilterRecipe => {
     method: 'Filtro',
     coffeeName: '',
     coffeeOrigin: '',
+    coffeeProcess: '',
     coffeeDate: new Date().toISOString().split('T')[0],
     doseGrams: 15,
     waterTempCelsius: 92,
@@ -1452,7 +1437,14 @@ const createEmptyRecipe = (): FilterRecipe => {
       flavor: '',
       aroma: '',
       body: '',
-      acidity: ''
+      acidity: '',
+      extraction: 5,
+      intensity: 5,
+      balance: 5,
+      clarity: 5,
+      selectedNotes: [],
+      perceivedNotes: '',
+      observations: ''
     },
     notes: '',
     deleted: false
@@ -1466,7 +1458,8 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [dirty, setDirty] = useState(false);
   const [view, setView] = useState<'recipes' | 'guide' | 'troubleshoot'>('recipes');
   const [sessionStage, setSessionStage] = useState<'coffee' | 'recipes'>('recipes');
-  const recipeItemRefs = useRef<HTMLButtonElement[]>([]);
+  const [summaryRecipe, setSummaryRecipe] = useState<FilterRecipe | null>(null);
+  const recipeItemRefs = useRef<HTMLDivElement[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1559,22 +1552,28 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     showToast('Receta duplicada', 'success');
   };
 
-  const handleDeleteRecipe = async () => {
-    if (!current) return;
-    if (!window.confirm('¿Seguro que quieres eliminar esta receta?')) {
+  const handleDeleteRecipe = async (recipe?: FilterRecipe) => {
+    const target = recipe || current;
+    if (!target) return;
+    
+    if (!window.confirm(`¿Seguro que quieres eliminar la receta "${target.name}"?`)) {
       return;
     }
 
     try {
       const updated: FilterRecipe = {
-        ...current,
+        ...target,
         deleted: true,
         updatedAt: new Date().toISOString()
       };
       await db.filterRecipes.put(updated);
-      const nextRecipes = recipes.filter(r => r.id !== current.id);
+      const nextRecipes = recipes.filter(r => r.id !== target.id);
       setRecipes(nextRecipes);
-      setSelectedId(nextRecipes.length > 0 ? nextRecipes[0].id : null);
+      
+      if (selectedId === target.id) {
+        setSelectedId(nextRecipes.length > 0 ? nextRecipes[0].id : null);
+      }
+      
       setDirty(false);
       showToast('Receta eliminada', 'success');
     } catch (err) {
@@ -1597,7 +1596,9 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       startTimeSeconds: lastEnd,
       endTimeSeconds: lastEnd + 30,
       volumeMl: Math.round((current.totalWaterMl || 0) / Math.max(nextOrder, 1)),
-      pourType: 'continuous'
+      pourType: 'espiral',
+      agitation: false,
+      spinCount: 0
     };
     updateCurrent({ phases: [...current.phases, phase] });
   };
@@ -1609,12 +1610,13 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     });
   };
 
-  const handleExportPdf = () => {
-    if (!current) return;
+  const handleExportPdf = (recipe?: FilterRecipe) => {
+    const target = recipe || current;
+    if (!target) return;
     const w = window.open('', '_blank');
     if (!w) return;
-    const title = current.name;
-    const rows = current.phases
+    const title = target.name;
+    const rows = target.phases
       .map(
         p =>
           `<tr><td>${p.order}</td><td>${p.startTimeSeconds}</td><td>${p.endTimeSeconds}</td><td>${p.volumeMl}</td><td>${p.pourType}</td></tr>`
@@ -1635,18 +1637,18 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </head>
         <body>
           <h1>${title}</h1>
-          <p><strong>Método:</strong> ${current.method}</p>
-          <p><strong>Café:</strong> ${current.coffeeName} (${current.coffeeOrigin})</p>
-          <p><strong>Fecha café:</strong> ${current.coffeeDate}</p>
-          <p><strong>Dosis:</strong> ${current.doseGrams} g | <strong>Agua:</strong> ${current.totalWaterMl} ml | <strong>Ratio:</strong> ${current.ratio}</p>
-          <p><strong>Tiempo total:</strong> ${current.totalTimeSeconds} s | <strong>Temperatura:</strong> ${current.waterTempCelsius.toFixed(1)} °C</p>
-          <p><strong>Modelo de molino:</strong> ${current.grinderModel} | <strong>Clicks:</strong> ${current.grinderClicks ?? ''}</p>
-          <p><strong>Marca de agua:</strong> ${current.waterBrand}</p>
+          <p><strong>Método:</strong> ${target.method}</p>
+          <p><strong>Café:</strong> ${target.coffeeName} (${target.coffeeOrigin})</p>
+          <p><strong>Fecha café:</strong> ${target.coffeeDate}</p>
+          <p><strong>Dosis:</strong> ${target.doseGrams} g | <strong>Agua:</strong> ${target.totalWaterMl} ml | <strong>Ratio:</strong> ${target.ratio}</p>
+          <p><strong>Tiempo total:</strong> ${target.totalTimeSeconds} s | <strong>Temperatura:</strong> ${target.waterTempCelsius.toFixed(1)} °C</p>
+          <p><strong>Modelo de molino:</strong> ${target.grinderModel} | <strong>Clicks:</strong> ${target.grinderClicks ?? ''}</p>
+          <p><strong>Marca de agua:</strong> ${target.waterBrand}</p>
           <h2>Notas de degustación</h2>
-          <p><strong>Sabor:</strong> ${current.tasting.flavor}</p>
-          <p><strong>Aroma:</strong> ${current.tasting.aroma}</p>
-          <p><strong>Cuerpo:</strong> ${current.tasting.body}</p>
-          <p><strong>Acidez:</strong> ${current.tasting.acidity}</p>
+          <p><strong>Sabor:</strong> ${target.tasting.flavor}</p>
+          <p><strong>Aroma:</strong> ${target.tasting.aroma}</p>
+          <p><strong>Cuerpo:</strong> ${target.tasting.body}</p>
+          <p><strong>Acidez:</strong> ${target.tasting.acidity}</p>
           <h2>Fases de vertido</h2>
           <table>
             <thead>
@@ -1670,61 +1672,54 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-black font-sans selection:bg-brand/30 pb-32">
-      <TopBackButton onClick={onBack} />
-
-      {/* Hero Section */}
-      <div className="pt-24 pb-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white flex items-center justify-center">
-              <Filter className="w-6 h-6 text-white dark:text-black" />
-            </div>
+      {/* Header & Tabs Container - Sticky */}
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
+            </button>
             <div>
-              <h1 className="text-3xl md:text-5xl font-black text-black dark:text-white tracking-tighter uppercase">
+              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
                 Filtrado
               </h1>
-              <p className="text-xs md:text-sm font-bold text-stone-500 uppercase tracking-widest mt-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
                 Recetas, variables y perfilación
               </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Sticky Header Tabs */}
-      <div className="sticky top-0 z-40 bg-stone-100/80 dark:bg-black/80 backdrop-blur-md border-b border-stone-200 dark:border-stone-800">
-        <div className="max-w-6xl mx-auto px-4 overflow-x-auto hide-scrollbar">
-          <div className="flex items-center gap-6 min-w-max">
-            {[
-              { id: 'recipes', label: 'Sesión de Filtrado' },
-              { id: 'guide', label: 'Guía de calibración' },
-              { id: 'troubleshoot', label: 'Problemas comunes' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setView(tab.id as any)}
-                className={`py-4 text-xs font-black uppercase tracking-widest transition-colors relative ${
-                  view === tab.id
-                    ? 'text-black dark:text-white'
-                    : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
-                }`}
-              >
-                {tab.label}
-                {view === tab.id && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black dark:bg-white" />
-                )}
-              </button>
-            ))}
-          </div>
+        {/* Tabs */}
+        <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'recipes', label: 'Sesión de Filtrado' },
+            { id: 'guide', label: 'Guía de calibración' },
+            { id: 'troubleshoot', label: 'Problemas comunes' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setView(tab.id as any)}
+              className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                view === tab.id
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 pt-8 animate-fade-in">
+      <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
 
       {view === 'recipes' && (
         <div className="flex flex-col lg:flex-row gap-6">
-        <div className="w-full lg:w-72 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex flex-col">
+        <div className="w-full lg:w-72 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex flex-col lg:h-[calc(100vh-200px)] lg:sticky lg:top-24">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-black uppercase tracking-[0.25em] text-stone-500">
               Recetas
@@ -1732,7 +1727,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <button
               type="button"
               onClick={handleStartSession}
-              className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg bg-black text-white dark:bg-stone-100 dark:text-stone-900"
+              className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900"
             >
               Nueva sesión
             </button>
@@ -1744,13 +1739,8 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             )}
             {recipes.map((r, index) => (
-              <button
+              <div
                 key={r.id}
-                type="button"
-                onClick={() => {
-                  setSelectedId(r.id);
-                  setSessionStage('recipes');
-                }}
                 ref={el => {
                   if (el) {
                     recipeItemRefs.current[index] = el;
@@ -1758,17 +1748,58 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 }}
                 onMouseEnter={() => handleRecipeHoverEnter(index)}
                 onMouseLeave={() => handleRecipeHoverLeave(index)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs border ${
+                className={`group relative w-full text-left px-4 py-3 rounded-xl border transition-all ${
                   r.id === selectedId
-                    ? 'bg-black text-white border-black dark:bg-stone-100 dark:text-stone-900'
-                    : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-200'
+                    ? 'bg-stone-100 border-brand dark:bg-stone-800'
+                    : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-brand/50'
                 }`}
               >
-                <div className="font-bold truncate">{r.name}</div>
-                <div className="text-[10px] text-stone-400">
-                  {r.method} • {r.ratio}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(r.id);
+                    setSessionStage('recipes');
+                  }}
+                  className="w-full flex items-center justify-between"
+                >
+                  <div className="flex-1 min-w-0 pr-8">
+                    <div className="font-bold text-xs text-stone-900 dark:text-stone-100 truncate">
+                      {r.coffeeOrigin || 'Sin variedad'} 
+                      {r.coffeeProcess && <span className="font-normal text-stone-500"> • {r.coffeeProcess}</span>}
+                    </div>
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5 truncate">
+                      {r.coffeeName || 'Sin marca'}
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 text-right shrink-0 group-hover:opacity-0 transition-opacity">
+                    {r.filterType || r.method}
+                  </div>
+                </button>
+                
+                {/* Action Buttons */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm pl-2 py-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSummaryRecipe(r);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors"
+                    title="Ver resumen"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteRecipe(r);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                    title="Eliminar sesión"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -1786,7 +1817,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                       Marca / café
                     </span>
@@ -1794,11 +1825,11 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       type="text"
                       value={current.coffeeName}
                       onChange={e => updateCurrent({ coffeeName: e.target.value })}
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Marca, finca o lote"
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                       Variedad / origen
                     </span>
@@ -1806,11 +1837,23 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       type="text"
                       value={current.coffeeOrigin}
                       onChange={e => updateCurrent({ coffeeOrigin: e.target.value })}
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                      placeholder="Ej. Caturra, Colombia, finca, región"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                      placeholder="Ej. Caturra, Colombia"
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                      Proceso
+                    </span>
+                    <input
+                      type="text"
+                      value={current.coffeeProcess || ''}
+                      onChange={e => updateCurrent({ coffeeProcess: e.target.value })}
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                      placeholder="Ej. Lavado, Natural"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                       Fecha (tueste o lote)
                     </span>
@@ -1818,17 +1861,17 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       type="date"
                       value={current.coffeeDate}
                       onChange={e => updateCurrent({ coffeeDate: e.target.value })}
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                     />
                   </div>
-                  <div className="space-y-1 md:col-span-2">
+                  <div className="space-y-2 md:col-span-2">
                     <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                       Notas estimadas y detalles
                     </span>
                     <textarea
                       value={current.notes ?? ''}
                       onChange={e => updateCurrent({ notes: e.target.value })}
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs min-h-[80px]"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs min-h-[80px] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Altura, proceso, notas sensoriales esperadas, información adicional..."
                     />
                   </div>
@@ -1837,7 +1880,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <button
                     type="button"
                     onClick={() => setSessionStage('recipes')}
-                    className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg bg-black text-white dark:bg-stone-100 dark:text-stone-900"
+                    className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
                   >
                     Continuar a recetas
                   </button>
@@ -1874,7 +1917,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         type="text"
                         value={current.coffeeName}
                         onChange={e => updateCurrent({ coffeeName: e.target.value })}
-                        className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                        className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                         placeholder="Origen, finca o lote"
                       />
                     </div>
@@ -1897,55 +1940,25 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           }
                           updateCurrent(patch);
                         }}
-                        className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                        className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       />
                     </div>
                     <div className="space-y-1">
                       <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                        Ratio
+                        Modelo de filtro
                       </span>
                       <input
                         type="text"
-                        value={current.ratio}
-                        onChange={e => {
-                          const nextRatio = e.target.value;
-                          const patch: Partial<FilterRecipe> = { ratio: nextRatio };
-                          const waterPerGram = parseRatio(nextRatio);
-                          if (waterPerGram && current.doseGrams > 0) {
-                            patch.totalWaterMl = Math.round(current.doseGrams * waterPerGram);
-                          }
-                          updateCurrent(patch);
-                        }}
-                        className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
-                        placeholder="1:15, 1:16..."
+                        value={current.filterType || ''}
+                        onChange={e => updateCurrent({ filterType: e.target.value })}
+                        className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                        placeholder="Ej. V60 02, Kalita 185"
                       />
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <button
-                    type="button"
-                    onClick={handleDuplicateRecipe}
-                    className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700"
-                  >
-                    Duplicar
-                  </button>
-              <button
-                type="button"
-                onClick={handleDeleteRecipe}
-                className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
-              >
-                Eliminar
-              </button>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleExportPdf}
-                      className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700"
-                    >
-                      PDF
-                    </button>
-                  </div>
+                  {/* Actions moved to list view or summary */}
                 </div>
               </div>
 
@@ -1969,7 +1982,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       }
                       updateCurrent(patch);
                     }}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1986,7 +1999,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       if (!validateNumeric(val, 10, 1200)) return;
                       updateCurrent({ totalTimeSeconds: val });
                     }}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                   />
                 </div>
                 <div className="space-y-1">
@@ -2004,7 +2017,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       if (!validateNumeric(val, 60, 100)) return;
                       updateCurrent({ waterTempCelsius: val });
                     }}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                   />
                 </div>
                 <div className="space-y-1">
@@ -2021,7 +2034,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       if (val !== null && !validateNumeric(val, 0, 20)) return;
                       updateCurrent({ pressureBars: val });
                     }}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                   />
                 </div>
               </div>
@@ -2035,7 +2048,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     type="text"
                     value={current.grinderModel}
                     onChange={e => updateCurrent({ grinderModel: e.target.value })}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                     placeholder="Marca y modelo del molino"
                   />
                 </div>
@@ -2053,7 +2066,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       if (val !== null && !validateNumeric(val, 0, 500)) return;
                       updateCurrent({ grinderClicks: val });
                     }}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                   />
                 </div>
                 <div className="space-y-1">
@@ -2064,7 +2077,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     type="text"
                     value={current.filterType}
                     onChange={e => updateCurrent({ filterType: e.target.value })}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                     placeholder="V60 02, Kalita 185..."
                   />
                 </div>
@@ -2076,7 +2089,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     type="text"
                     value={current.waterBrand}
                     onChange={e => updateCurrent({ waterBrand: e.target.value })}
-                    className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                    className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                     placeholder="Ej. filtrada, embotellada"
                   />
                 </div>
@@ -2093,7 +2106,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <button
                     type="button"
                     onClick={handleAddPhase}
-                    className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg bg-black text-white dark:bg-stone-100 dark:text-stone-900"
+                    className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
                   >
                     Añadir fase
                   </button>
@@ -2107,7 +2120,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   {current.phases.map(phase => (
                     <div
                       key={phase.id}
-                      className="border border-stone-200 dark:border-stone-700 rounded-lg p-3 text-xs space-y-2"
+                      className="border border-stone-200 dark:border-stone-700 rounded-xl p-3 text-xs space-y-2"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-stone-700 dark:text-stone-200">
@@ -2129,7 +2142,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 startTimeSeconds: Number(e.target.value)
                               })
                             }
-                            className="w-full p-1.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                            className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                           />
                         </div>
                         <div className="space-y-1">
@@ -2146,7 +2159,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 endTimeSeconds: Number(e.target.value)
                               })
                             }
-                            className="w-full p-1.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                            className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                           />
                         </div>
                         <div className="space-y-1">
@@ -2163,7 +2176,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 volumeMl: Number(e.target.value)
                               })
                             }
-                            className="w-full p-1.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
+                            className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                           />
                         </div>
                       </div>
@@ -2203,7 +2216,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           tasting: { ...current.tasting, flavor: e.target.value }
                         })
                       }
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs min-h-[60px]"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs min-h-[60px] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Descriptores de sabor predominantes"
                     />
                   </div>
@@ -2218,7 +2231,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           tasting: { ...current.tasting, aroma: e.target.value }
                         })
                       }
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs min-h-[60px]"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs min-h-[60px] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Aromas percibidos en seco y en caliente"
                     />
                   </div>
@@ -2233,7 +2246,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           tasting: { ...current.tasting, body: e.target.value }
                         })
                       }
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs min-h-[60px]"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs min-h-[60px] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Sensación en boca, textura"
                     />
                   </div>
@@ -2248,7 +2261,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           tasting: { ...current.tasting, acidity: e.target.value }
                         })
                       }
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs min-h-[60px]"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs min-h-[60px] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Tipo de acidez, intensidad, carácter"
                     />
                   </div>
@@ -2259,7 +2272,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <textarea
                       value={current.notes ?? ''}
                       onChange={e => updateCurrent({ notes: e.target.value })}
-                      className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg text-xs min-h-[60px]"
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs min-h-[60px] focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                       placeholder="Observaciones generales, ajustes futuros sugeridos"
                     />
                   </div>
@@ -2282,6 +2295,103 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="w-full">
           <FilterTroubleshootingGuide method={current?.method ?? 'Filtro'} />
         </div>
+      )}
+
+      {summaryRecipe && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSummaryRecipe(null)}
+        >
+          <div
+            className="bg-white dark:bg-stone-900 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
+                  {summaryRecipe.name}
+                </h2>
+                <p className="text-xs font-bold text-stone-500 mt-1">
+                  {summaryRecipe.method} • {summaryRecipe.coffeeOrigin}
+                </p>
+              </div>
+              <button
+                onClick={() => setSummaryRecipe(null)}
+                className="p-2 bg-stone-100 dark:bg-stone-800 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+              >
+                <X size={20} className="text-stone-600 dark:text-stone-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-stone-50 dark:bg-stone-800/50 p-4 rounded-xl">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">Café</p>
+                  <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                    {summaryRecipe.coffeeName || 'Sin marca'}
+                  </p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">
+                    {summaryRecipe.coffeeOrigin || 'Sin variedad'}
+                    {summaryRecipe.coffeeProcess ? ` • ${summaryRecipe.coffeeProcess}` : ''}
+                  </p>
+                </div>
+                <div className="bg-stone-50 dark:bg-stone-800/50 p-4 rounded-xl">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">Ratio</p>
+                  <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{summaryRecipe.ratio}</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">
+                    {summaryRecipe.doseGrams}g café • {summaryRecipe.totalWaterMl}ml agua
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-stone-200 dark:border-stone-800 pt-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-3">Fases de Vertido</p>
+                {summaryRecipe.phases.length === 0 ? (
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    Esta receta aún no tiene fases registradas.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {summaryRecipe.phases
+                      .slice()
+                      .sort((a, b) => a.order - b.order)
+                      .map(phase => (
+                        <div
+                          key={phase.id}
+                          className="flex justify-between gap-3 text-xs py-2 border-b border-stone-100 dark:border-stone-800 last:border-0"
+                        >
+                          <span className="font-medium text-stone-900 dark:text-stone-200">
+                            {phase.order}. {phase.action === 'presion' ? 'Presión' : 'Vertido'} • {phase.pourType}
+                          </span>
+                          <span className="text-stone-500 shrink-0">
+                            {phase.startTimeSeconds}-{phase.endTimeSeconds}s • {phase.volumeMl}ml
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {summaryRecipe.notes && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">
+                    Notas
+                  </p>
+                  <p className="text-sm text-stone-700 dark:text-stone-300 italic">"{summaryRecipe.notes}"</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => handleExportPdf(summaryRecipe)}
+                className="w-full py-3 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <FileDown size={16} />
+                Exportar PDF
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
       </div>
     </div>
@@ -2437,33 +2547,39 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <>
-      <TopBackButton onClick={onBack} />
-      <div className="max-w-4xl mx-auto pb-32 animate-fade-in px-4 pt-8">
-
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 mb-2 flex items-center gap-3">
-            <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-stone-900 dark:bg-stone-100">
-              <Filter className="w-5 h-5 text-white dark:text-stone-900" />
-            </span>
-            Recetas de Filtrado
-          </h1>
-          <p className="text-stone-500 text-sm">
-            Registra cada vertido con tiempo exacto y volumen para replicar tus filtrados.
-          </p>
+    <div className="max-w-4xl mx-auto pb-32 animate-fade-in px-4 pt-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10">
+        <div className="space-y-4">
+          <button 
+            onClick={onBack}
+            className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-brand transition-colors"
+          >
+            <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+            Volver
+          </button>
+          <div>
+            <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 mb-2 flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand text-white">
+                <Filter className="w-5 h-5" />
+              </span>
+              Recetas de Filtrado
+            </h1>
+            <p className="text-stone-500 text-sm max-w-lg leading-relaxed">
+              Registra cada vertido con tiempo exacto y volumen para replicar tus filtrados con precisión profesional.
+            </p>
+          </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-2 bg-stone-50 dark:bg-stone-900/50 p-4 rounded-xl border border-stone-200 dark:border-stone-800">
           <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-stone-400">
             Volumen total
           </span>
-          <div className="px-4 py-2 rounded-full bg-black text-white dark:bg-stone-100 dark:text-stone-900 text-sm font-black tracking-widest">
-            {totalVolume} ml
+          <div className="text-2xl font-black tracking-tight text-brand">
+            {totalVolume} <span className="text-xs font-bold text-stone-400 ml-1">ml</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-5 space-y-4">
             <h2 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100">
@@ -2478,7 +2594,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   type="text"
                   value={sessionData.coffeeName}
                   onChange={e => setSessionData({ ...sessionData, coffeeName: e.target.value })}
-                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm"
+                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm"
                   placeholder="Origen, finca o lote"
                 />
               </div>
@@ -2490,7 +2606,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   type="text"
                   value={sessionData.method}
                   onChange={e => setSessionData({ ...sessionData, method: e.target.value })}
-                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm"
+                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm"
                   placeholder="V60, Kalita, Chemex..."
                 />
               </div>
@@ -2502,7 +2618,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   type="text"
                   value={sessionData.brewerName}
                   onChange={e => setSessionData({ ...sessionData, brewerName: e.target.value })}
-                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm"
+                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm"
                   placeholder="Opcional"
                 />
               </div>
@@ -2513,7 +2629,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <textarea
                   value={sessionData.notes}
                   onChange={e => setSessionData({ ...sessionData, notes: e.target.value })}
-                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm min-h-[72px] resize-none"
+                  className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm min-h-[72px] resize-none"
                   placeholder="Comentarios sobre temperatura, receta base o sensaciones en taza"
                 />
               </div>
@@ -2534,7 +2650,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   min={0}
                   value={formState.minutes}
                   onChange={e => setFormState({ ...formState, minutes: e.target.value })}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm"
+                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -2547,7 +2663,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   max={59}
                   value={formState.seconds}
                   onChange={e => setFormState({ ...formState, seconds: e.target.value })}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm"
+                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -2559,7 +2675,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   min={1}
                   value={formState.volumeMl}
                   onChange={e => setFormState({ ...formState, volumeMl: e.target.value })}
-                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg focus:ring-2 focus:ring-brand outline-none text-sm"
+                  className="w-full p-2 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm"
                 />
               </div>
             </div>
@@ -2568,14 +2684,14 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <button
                 type="button"
                 onClick={handleSubmitPour}
-                className="flex-1 inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-black text-white dark:bg-stone-100 dark:text-stone-900 text-xs font-black uppercase tracking-[0.25em] hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+                className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900 text-xs font-black uppercase tracking-[0.25em] hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
               >
                 {editingId ? 'Actualizar vertido' : 'Añadir vertido'}
               </button>
               <button
                 type="button"
                 onClick={handleClearTimeline}
-                className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-stone-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-stone-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
                 Reiniciar
               </button>
@@ -2585,9 +2701,9 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <button
             type="button"
             onClick={handleSaveSession}
-            className="w-full mt-2 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 text-xs font-black uppercase tracking-[0.3em] hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors shadow-lg"
+            className="w-full mt-2 inline-flex items-center justify-center px-4 py-4 rounded-xl bg-brand text-white text-xs font-black uppercase tracking-[0.3em] hover:bg-rose-600 transition-colors"
           >
-            Guardar sesión de filtrado
+            Guardar sesión
           </button>
         </div>
 
@@ -2617,10 +2733,10 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         .reduce((sum, p) => sum + p.volumeMl, 0);
                       return (
                         <div key={pour.id} className="relative pl-8">
-                          <div className="absolute left-0 top-2 w-3 h-3 rounded-full bg-black dark:bg-stone-100 border-2 border-white dark:border-stone-900" />
+                          <div className="absolute left-0 top-2 w-3 h-3 rounded-full bg-brand border-2 border-white dark:border-stone-900" />
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-stone-50 dark:bg-stone-900/40 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="text-[11px] font-mono bg-white dark:bg-stone-800 px-2 py-1 rounded-lg border border-stone-200 dark:border-stone-700">
+                              <div className="text-[11px] font-mono bg-white dark:bg-stone-800 px-2 py-1 rounded-xl border border-stone-200 dark:border-stone-700">
                                 {formatTime(pour.timeSeconds)}
                               </div>
                               <div>
@@ -2636,7 +2752,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                               <button
                                 type="button"
                                 onClick={() => handleEditPour(pour)}
-                                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-stone-800 hover:text-brand dark:hover:text-brand transition-colors"
                               >
                                 Editar
                               </button>
@@ -2653,13 +2769,13 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
       </div>
     </div>
-    </>
   );
 };
 
 
 export const RecipesView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping' | 'greenCoffee' | 'roasting'>('none');
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const greenCoffeeCardRef = useRef<HTMLButtonElement | null>(null);
   const roastingCardRef = useRef<HTMLButtonElement | null>(null);
@@ -2668,6 +2784,28 @@ export const RecipesView: React.FC = () => {
   const milkCardRef = useRef<HTMLButtonElement | null>(null);
   const cuppingCardRef = useRef<HTMLButtonElement | null>(null);
   const espressoBackHandlerRef = useRef<(() => boolean) | null>(null);
+
+  useEffect(() => {
+    const getScrollableParent = (node: HTMLElement | null): HTMLElement | null => {
+      let el: HTMLElement | null = node;
+      while (el && el !== document.body && el !== document.documentElement) {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
+    };
+
+    const scrollParent = getScrollableParent(rootRef.current);
+    if (scrollParent) {
+      scrollParent.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [selectedCategory]);
 
   useEffect(() => {
     const handleMove = (e: MouseEvent) => {
@@ -2937,7 +3075,7 @@ export const RecipesView: React.FC = () => {
   }
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       {content}
       <div
         ref={cursorRef}

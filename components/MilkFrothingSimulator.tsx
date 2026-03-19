@@ -549,11 +549,11 @@ export const MilkFrothingSimulator: React.FC = () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-4">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100">
-            Texturización <span className="text-brand dark:text-brand-light">de Leche</span>
-          </h1>
+          <h2 className="text-2xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100">
+            Simulador <span className="text-brand dark:text-brand-light">Interactivo</span>
+          </h2>
           <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mt-1">
-            Simulador · Vista semicenital
+            Vista semicenital · Control de flujo
           </p>
         </div>
         <div className="px-3 py-1 bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-stone-500">
@@ -564,7 +564,7 @@ export const MilkFrothingSimulator: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* CONTROLS (Left) */}
-        <div className="space-y-6 bg-white dark:bg-stone-900 p-6 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm">
+        <div className="space-y-6 bg-white dark:bg-stone-900 p-6 rounded-xl border border-stone-200 dark:border-stone-800">
           <h2 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 flex items-center gap-2">
             ⚙ Controles
           </h2>
@@ -667,7 +667,7 @@ export const MilkFrothingSimulator: React.FC = () => {
              <canvas 
                 ref={canvasRef} 
                 width={CW} height={CH} 
-                className="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full shadow-2xl touch-none"
+                className="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full shadow-lg touch-none border-4 border-white dark:border-stone-800"
                 onPointerDown={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const x = e.clientX - rect.left;
@@ -705,7 +705,7 @@ export const MilkFrothingSimulator: React.FC = () => {
         </div>
 
         {/* METRICS (Right) */}
-        <div className="space-y-6 bg-white dark:bg-stone-900 p-6 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm">
+        <div className="space-y-6 bg-white dark:bg-stone-900 p-6 rounded-xl border border-stone-200 dark:border-stone-800">
            <h2 className="text-sm font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 flex items-center gap-2">
             📊 Análisis en vivo
           </h2>
@@ -764,7 +764,7 @@ export const MilkFrothingSimulator: React.FC = () => {
             ) : (
                 uiState.history.map((h) => (
                     <div key={h.n} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-3 relative overflow-hidden group hover:border-brand transition-colors">
-                        <div className={`absolute top-0 left-0 right-0 h-1 ${h.grade === 'S' ? 'bg-green-500' : h.grade === 'A' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                        <div className={`absolute top-0 left-0 right-0 h-1 ${h.grade === 'S' ? 'bg-green-500' : h.grade === 'A' ? 'bg-yellow-400' : h.grade === 'B' ? 'bg-orange-400' : 'bg-red-400'}`} />
                         <div className="flex justify-between items-start mb-2">
                              <span className="text-[9px] font-bold text-stone-400 uppercase">#{h.n}</span>
                              <span className={`text-xs font-black ${h.grade === 'S' ? 'text-green-500' : 'text-stone-900 dark:text-stone-100'}`}>{h.grade}</span>

@@ -73,7 +73,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
             setActiveOption(null);
             onClose();
           }}
-          className="absolute top-6 right-6 z-20 p-2 text-white hover:text-white/70 transition-colors"
+          className="absolute top-6 right-6 z-20 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-white/70 transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
@@ -104,7 +104,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
                   <div className="mt-6 animate-fade-in-up">
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-white/80">Contraseña de Acceso</label>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-white/80 text-center block">Contraseña de Acceso</label>
                         <input 
                           type="password"
                           autoFocus
@@ -160,7 +160,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
                   <div className="mt-6 animate-fade-in-up">
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-white/80">Contraseña de Acceso</label>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-white/80 text-center block">Contraseña de Acceso</label>
                         <input 
                           type="password"
                           autoFocus

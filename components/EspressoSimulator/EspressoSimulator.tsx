@@ -32,16 +32,6 @@ export const EspressoSimulator: React.FC = () => {
     return (
       <div className="min-h-screen bg-white dark:bg-stone-950 p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-4xl">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-4">
-              Calibración
-            </h1>
-            <h2 className="text-2xl md:text-3xl font-bold text-stone-600 dark:text-stone-400">
-              Espresso
-            </h2>
-          </div>
-
           {/* Botones principales */}
           <div className="space-y-4 mb-8">
             {/* Casos Aleatorios */}

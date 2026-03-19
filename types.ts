@@ -200,7 +200,11 @@ export interface FilterRecipePhase {
   startTimeSeconds: number;
   endTimeSeconds: number;
   volumeMl: number;
-  pourType: 'continuous' | 'pulsed' | 'circular' | 'direct';
+  pourType: 'espiral' | 'central' | 'pulsar' | 'lluvia' | 'continuous' | 'pulsed' | 'circular' | 'direct'; // Added new options, kept old for safety
+  agitation?: boolean;
+  spinCount?: number;
+  action?: 'vertido' | 'presion'; // Aeropress specific
+  pressureProfile?: 'suave' | 'moderada' | 'fuerte'; // Aeropress specific
 }
 
 export interface FilterTastingNotes {
@@ -208,6 +212,13 @@ export interface FilterTastingNotes {
   aroma: string;
   body: string;
   acidity: string;
+  extraction?: number; // 0-10
+  intensity?: number; // 0-10
+  balance?: number; // 0-10
+  clarity?: number; // 0-10
+  selectedNotes?: string[];
+  perceivedNotes?: string;
+  observations?: string;
 }
 
 export interface FilterRecipe {
@@ -218,6 +229,7 @@ export interface FilterRecipe {
   method: BrewMethod;
   coffeeName: string;
   coffeeOrigin: string;
+  coffeeProcess?: string; // New field
   coffeeDate: string;
   doseGrams: number;
   waterTempCelsius: number;
@@ -229,6 +241,8 @@ export interface FilterRecipe {
   pressureBars: number | null;
   filterType: string;
   waterBrand: string;
+  aeropressPressureProfile?: 'suave' | 'moderada' | 'fuerte'; // Aeropress specific
+  aeropressPressTimeSeconds?: number; // Aeropress specific
   phases: FilterRecipePhase[];
   tasting: FilterTastingNotes;
   notes?: string;

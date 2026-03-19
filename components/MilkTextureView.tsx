@@ -181,32 +181,7 @@ const commonProblems = [
   }
 ];
 
-interface TopBackButtonProps {
-  onClick?: () => void;
-}
-
-const TopBackButton: React.FC<TopBackButtonProps> = ({ onClick }) => {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (typeof window !== 'undefined' && window.history.length > 1) {
-      window.history.back();
-    }
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      className="fixed top-4 md:top-6 left-4 md:left-8 z-[200] inline-flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm rounded-lg border border-stone-200 dark:border-stone-800 shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-[11px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 touch-target"
-      aria-label="Volver"
-    >
-      <ArrowLeft className="w-4 h-4" />
-      <span>Volver</span>
-    </button>
-  );
-};
-
-export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const MilkTextureView: React.FC<{ onBack: () => void; isEmbedded?: boolean; headerOffset?: string }> = ({ onBack, isEmbedded = false, headerOffset = '0px' }) => {
   const [activeTab, setActiveTab] = useState<'simulator' | 'science' | 'technique' | 'problems'>('simulator');
   const [openId, setOpenId] = useState<string | null>(null);
   const [problemOpenId, setProblemOpenId] = useState<string | null>(null);
@@ -219,59 +194,63 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   ];
 
   return (
-    <div className="relative min-h-screen bg-white dark:bg-stone-950" style={{ scrollBehavior: 'smooth' }}>
+    <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
       
-      {/* Sticky Header - Cata Style */}
-      <div className="sticky top-0 z-[100] bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 safe-area-pt">
-        <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onBack}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-100 hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors"
-                aria-label="Volver"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl md:text-3xl font-black uppercase tracking-widest text-stone-900 dark:text-stone-100">
-                  LECHE
-                </h1>
-                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-stone-500">
-                  Conceptos, Técnica y Simulador
-                </p>
-              </div>
-            </div>
-
-            <div className="flex overflow-x-auto pb-2 hide-scrollbar">
-              <div className="flex gap-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    className={`px-4 py-2.5 rounded-full text-[11px] md:text-sm font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 shadow-md border border-black dark:border-stone-100'
-                        : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-800 hover:border-black dark:hover:border-white'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+      {/* Header & Tabs Container - Sticky */}
+      <div 
+        className="sticky z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200"
+        style={{ top: isEmbedded ? headerOffset : 0 }}
+      >
+        {!isEmbedded && (
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+              aria-label="Volver"
+            >
+              <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
+            </button>
+            <div>
+              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
+                Leche
+              </h1>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
+                Conceptos, Técnica y Simulador
+              </p>
             </div>
           </div>
+        </div>
+        )}
+
+        {/* Tabs - Cata Style (Underline) */}
+        <div className="relative">
+          <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-brand text-brand' 
+                    : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {/* Scroll fade indicator — mobile only */}
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-stone-950 pointer-events-none md:hidden" />
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 pb-32 animate-fade-in">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         
         {activeTab === 'simulator' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 p-6 rounded-2xl">
-               <MilkFrothingSimulator />
-            </div>
+             <MilkFrothingSimulator />
           </div>
         )}
 
@@ -279,32 +258,33 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           <div className="space-y-12 animate-fade-in">
             {/* Milk Science Section */}
             <div className="space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
                   La Ciencia (Componentes Clave)
                 </h2>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Entiende qué pasa al texturizar</p>
+                <p className="text-sm text-stone-600 dark:text-stone-400">Entiende qué pasa al texturizar.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {milkComponents.map((item) => {
                   const isOpen = openId === item.id;
                   return (
-                    <div key={item.id} className="rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm transition-all duration-300">
+                    <div key={item.id} className="group rounded-lg overflow-hidden border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 transition-all duration-300 hover:border-brand">
                       <button
                         onClick={() => setOpenId(isOpen ? null : item.id)}
-                        className={`w-full bg-gradient-to-r ${item.color} p-5 flex items-center justify-between gap-3 text-left transition-all hover:opacity-95 touch-target`}
+                        className="w-full p-5 flex items-center justify-between gap-3 text-left touch-target"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className={`font-bold text-sm uppercase tracking-wider ${item.textColor}`}>{item.label}</span>
-                            <span className={`text-xs font-mono font-bold ${item.textColor} flex-shrink-0 bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded-full`}>{item.pct}</span>
+                          <div className="flex items-center gap-3 mb-1">
+                            <div className={`w-2 h-2 rounded-full bg-gradient-to-br ${item.color}`}></div>
+                            <span className="font-bold text-sm uppercase tracking-wider text-stone-900 dark:text-stone-100 group-hover:text-brand transition-colors">{item.label}</span>
+                            <span className="text-xs font-mono font-bold text-stone-500 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full ml-auto">{item.pct}</span>
                           </div>
                           {item.subLabel && (
-                            <span className={`text-[10px] font-bold uppercase tracking-widest opacity-80 ${item.textColor} block truncate`}>{item.subLabel}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block truncate pl-5">{item.subLabel}</span>
                           )}
                         </div>
-                        <ChevronDown className={`w-5 h-5 ${item.textColor} transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                       </button>
 
                       <AnimatePresence>
@@ -316,10 +296,10 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="bg-white dark:bg-stone-900 overflow-hidden"
                           >
-                            <div className="p-6 space-y-6 text-sm text-stone-600 dark:text-stone-300 border-t border-stone-100 dark:border-stone-800">
+                            <div className="p-6 pt-0 space-y-6 text-sm text-stone-600 dark:text-stone-300">
                               {/* Role */}
                               {item.content.role && (
-                                <div className="space-y-2">
+                                <div className="space-y-2 pt-4 border-t border-stone-100 dark:border-stone-800">
                                   {item.content.role.title && <h4 className="font-black text-stone-900 dark:text-stone-100 uppercase text-xs tracking-widest">{item.content.role.title}</h4>}
                                   {item.content.role.description && <p className="leading-relaxed text-xs">{item.content.role.description}</p>}
                                   {item.content.role.points && (
@@ -384,11 +364,11 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
             {/* Critical Points */}
             <div className="space-y-6 border-t border-stone-200 dark:border-stone-800 pt-8">
-              <div className="space-y-1">
-                <h2 className="text-xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
                   Lo Importante
                 </h2>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Factores críticos</p>
+                <p className="text-sm text-stone-600 dark:text-stone-400">Factores críticos.</p>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -398,7 +378,7 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   { icon: '🌀', label: 'Vórtice', value: 'Constante', desc: 'Integración', color: 'bg-stone-50 dark:bg-stone-800/30' },
                   { icon: '🧨', label: 'Leche', value: 'Fría', desc: '4–6°C', color: 'bg-stone-50 dark:bg-stone-800/30' }
                 ].map((item, i) => (
-                  <div key={i} className={`${item.color} rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-3 border border-stone-200 dark:border-stone-800 shadow-sm`}>
+                  <div key={i} className={`${item.color} rounded-xl p-5 flex flex-col items-center justify-center text-center gap-3 border border-stone-200 dark:border-stone-800`}>
                     <span className="text-3xl">{item.icon}</span>
                     <div className="space-y-1">
                       <span className="font-black text-sm uppercase tracking-wider text-stone-900 dark:text-stone-100 block">{item.label}</span>
@@ -416,11 +396,11 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           <div className="space-y-12 animate-fade-in">
             {/* Technique Guide Section */}
             <div className="space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
                   Técnica de 6 Pasos
                 </h2>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Paso a paso para microespuma sedosa</p>
+                <p className="text-sm text-stone-600 dark:text-stone-400">Paso a paso para microespuma sedosa.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -432,8 +412,8 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   { step: 5, title: 'Temperatura', desc: 'Monitor: 60–65°C. Apaga antes.' },
                   { step: 6, title: 'Limpieza', desc: 'Purgue. Limpia inmediatamente. Seca.' }
                 ].map((item) => (
-                  <div key={item.step} className="flex flex-col gap-4 p-6 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-black dark:bg-stone-100 text-white dark:text-stone-900 flex items-center justify-center font-black text-lg shadow-sm">
+                  <div key={item.step} className="flex flex-col gap-4 p-6 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-brand transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-black dark:bg-stone-100 text-white dark:text-stone-900 flex items-center justify-center font-black text-lg">
                       {item.step}
                     </div>
                     <div>
@@ -457,7 +437,7 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
             {/* Quick Tips */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-stone-200 dark:border-stone-800">
-              <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-2xl p-6 space-y-4">
+              <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-xl p-6 space-y-4">
                 <h3 className="font-black uppercase tracking-widest text-red-900 dark:text-red-300 text-sm flex items-center gap-2">
                   <X className="w-4 h-4" /> Errores Comunes
                 </h3>
@@ -469,7 +449,7 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 </ul>
               </div>
 
-              <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl p-6 space-y-4">
+              <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-xl p-6 space-y-4">
                 <h3 className="font-black uppercase tracking-widest text-green-900 dark:text-green-300 text-sm flex items-center gap-2">
                   <Check className="w-4 h-4" /> Pasos Clave
                 </h3>
@@ -486,23 +466,23 @@ export const MilkTextureView: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
         {activeTab === 'problems' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="space-y-1">
-              <h2 className="text-xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100 flex items-center gap-2">
+            <div className="space-y-2">
+              <h2 className="text-3xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100 flex items-center gap-2">
                 Problemas Comunes
               </h2>
-              <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Diagnóstico y solución rápida</p>
+              <p className="text-sm text-stone-600 dark:text-stone-400">Diagnóstico y solución rápida.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {commonProblems.map((problem) => {
                 const isOpen = problemOpenId === problem.id;
                 return (
-                  <div key={problem.id} className="border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-stone-900/80 overflow-hidden shadow-sm transition-colors hover:border-black dark:hover:border-stone-500">
+                  <div key={problem.id} className="group border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-stone-900 overflow-hidden transition-colors hover:border-brand">
                     <button
                       onClick={() => setProblemOpenId(isOpen ? null : problem.id)}
                       className="w-full text-left p-5 flex items-center justify-between touch-target"
                     >
-                      <span className="font-bold text-sm uppercase tracking-wider text-stone-900 dark:text-stone-100">
+                      <span className="font-bold text-sm uppercase tracking-wider text-stone-900 dark:text-stone-100 group-hover:text-brand transition-colors">
                         {problem.title}
                       </span>
                       <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />

@@ -215,6 +215,156 @@ const VARIETIES: Variety[] = [
     description: 'Variedad misteriosa que ganó popularidad rápidamente en competencias de café de especialidad a partir de 2015-2018. Su origen genético exacto es debatido; algunos la vinculan con Bourbon Sidra de Ecuador, otros con materiales etíopes. Produce tazas de complejidad floral extraordinaria, rivalizando con Geisha.',
     sensoryProfile: 'Floral elegante (rosa, lavanda), acidez vibrante tipo vino blanco, frutas de hueso (durazno, ciruela), cuerpo ligero-medio tipo té, dulzor a miel floral, complejidad aromática que evoluciona en el enfriamiento, postgusto largo y perfumado.',
     characteristics: ['Origen genético debatido', 'Ha ganado múltiples competencias', 'Rival de Geisha en complejidad', 'Muy popular en Ecuador', 'Requiere altitud muy alta']
+  },
+  {
+    id: 'pink-bourbon',
+    name: 'Pink Bourbon (Bourbon Rosado)',
+    origin: 'Colombia (selecciones regionales; Huila/Tolima)',
+    species: 'Arábica',
+    altitude: '1,500 – 2,200 msnm',
+    description: 'Selección asociada a materiales tipo Bourbon con cereza rosada. Se valora por su alta fragancia y claridad cuando se cultiva en altura y se procesa con control.',
+    sensoryProfile: 'Floral (rosa, azahar), frutos rojos (fresa, frambuesa), cítrico dulce (mandarina), acidez jugosa, cuerpo medio sedoso, dulzor alto.',
+    characteristics: ['Cereza rosada', 'Alta fragancia', 'Mejor en altitudes altas', 'Calidad sensible al proceso', 'Muy usada en microlotes']
+  },
+  {
+    id: 'tabi',
+    name: 'Tabi',
+    origin: 'Colombia (CENICAFÉ)',
+    species: 'Arábica (con resistencia a roya)',
+    altitude: '1,300 – 2,000 msnm',
+    description: 'Variedad colombiana diseñada para combinar resistencia a roya con calidad de taza superior a materiales resistentes anteriores.',
+    sensoryProfile: 'Dulzor medio-alto (panela, caramelo), acidez media cítrica/málica, cuerpo medio, notas a frutas amarillas y chocolate, final limpio.',
+    characteristics: ['Resistente a roya', 'Buena calidad en taza', 'Productividad alta', 'Adaptable a Colombia y Centroamérica', 'Más consistente en altura']
+  },
+  {
+    id: 'java',
+    name: 'Java',
+    origin: 'Etiopía → introducciones históricas en Java; difundida en Centroamérica',
+    species: 'Arábica',
+    altitude: '1,300 – 2,100 msnm',
+    description: 'Material de linaje etíope difundido globalmente. En altura puede dar perfiles florales y frutales, con mayor tolerancia agronómica que Geisha en algunas fincas.',
+    sensoryProfile: 'Floral suave, frutas de hueso (durazno), cítrico delicado, acidez brillante, cuerpo ligero tipo té, dulzor a miel.',
+    characteristics: ['Linaje etíope', 'Buen desempeño en altura', 'Perfil elegante', 'Complejidad aromática', 'Interés en competencias']
+  },
+  {
+    id: 'wush-wush',
+    name: 'Wush Wush',
+    origin: 'Etiopía (Wushwush; material de bosque)',
+    species: 'Arábica',
+    altitude: '1,600 – 2,300 msnm',
+    description: 'Material etíope de alto interés por su expresión aromática. Se usa mucho en lotes experimentales por su capacidad de producir tazas muy perfumadas.',
+    sensoryProfile: 'Floral intenso, tropical (piña, maracuyá), frutas rojas, acidez vibrante, cuerpo ligero-medio, dulzor alto.',
+    characteristics: ['Material etíope', 'Muy aromático', 'Frecuente en procesos experimentales', 'Mejor en altura', 'Perfil cambiante al enfriar']
+  },
+  {
+    id: 'sudan-rume',
+    name: 'Sudan Rume',
+    origin: 'Sudán del Sur (Boma Plateau); difundida a África y América',
+    species: 'Arábica',
+    altitude: '1,500 – 2,200 msnm',
+    description: 'Variedad de genética particular, apreciada por su estructura en taza y complejidad. Ha ganado popularidad en microlotes y competencias.',
+    sensoryProfile: 'Fruta madura (ciruela, uva), especias suaves, acidez málica/vinosa, cuerpo medio, dulzor a panela, final largo.',
+    characteristics: ['Genética singular', 'Alta complejidad', 'Buena estructura', 'Preferida en microlotes', 'Requiere manejo agronómico fino']
+  },
+  {
+    id: 'laurina',
+    name: 'Laurina (Bourbon Pointu)',
+    origin: 'Isla Reunión (Bourbon Pointu)',
+    species: 'Arábica',
+    altitude: '1,200 – 2,000 msnm',
+    description: 'Mutación asociada a granos alargados y menor cafeína. Produce tazas muy delicadas, pero suele ser de bajo rendimiento.',
+    sensoryProfile: 'Floral sutil, cítrico fino, dulzor a miel ligera, acidez suave, cuerpo ligero tipo té, final limpio y dulce.',
+    characteristics: ['Menor cafeína', 'Perfil muy delicado', 'Bajo rendimiento', 'Grano alargado', 'Requiere alta selección']
+  },
+  {
+    id: 'parainema',
+    name: 'Parainema',
+    origin: 'Honduras (IHCAFE; línea resistente)',
+    species: 'Arábica (resistente a roya)',
+    altitude: '1,200 – 1,900 msnm',
+    description: 'Variedad resistente enfocada en productividad y sanidad. En altura y buena postcosecha puede dar perfiles limpios y balanceados.',
+    sensoryProfile: 'Dulzor a chocolate y caramelo, acidez media cítrica, cuerpo medio, notas a nuez y frutas suaves, final limpio.',
+    characteristics: ['Resistente a roya', 'Alta productividad', 'Buen desempeño en finca', 'Mejora en taza con altura', 'Muy usada en Honduras']
+  },
+  {
+    id: 'marsellesa',
+    name: 'Marsellesa',
+    origin: 'Centroamérica (selecciones tipo Sarchimor/CATIE)',
+    species: 'Arábica (resistente a roya)',
+    altitude: '1,100 – 1,900 msnm',
+    description: 'Selección resistente que busca equilibrar rendimiento con calidad. Común en fincas que priorizan estabilidad y sanidad.',
+    sensoryProfile: 'Cuerpo medio, dulzor a panela, acidez media, notas a cacao y frutas amarillas, perfil limpio y consistente.',
+    characteristics: ['Resistente a roya', 'Estable y productiva', 'Perfil consistente', 'Mejora en altura', 'Común en Centroamérica']
+  },
+  {
+    id: 'ihcafe90',
+    name: 'IHCAFE 90',
+    origin: 'Honduras (IHCAFE)',
+    species: 'Arábica (resistente a roya)',
+    altitude: '1,000 – 1,800 msnm',
+    description: 'Variedad desarrollada para resistencia y productividad. Su calidad en taza depende fuertemente de altitud y manejo de fermentación/secado.',
+    sensoryProfile: 'Chocolate, nuez, acidez media-baja, cuerpo medio-alto, dulzor medio, final corto a medio.',
+    characteristics: ['Resistente a roya', 'Alta productividad', 'Mayor consistencia agronómica', 'Mejor en altura', 'Común en Honduras']
+  },
+  {
+    id: 'obata',
+    name: 'Obatá',
+    origin: 'Brasil (programas IAC)',
+    species: 'Arábica (con resistencia)',
+    altitude: '900 – 1,600 msnm',
+    description: 'Selección brasileña orientada a productividad y resistencia. Es común en sistemas de cultivo tecnificado por su desempeño estable.',
+    sensoryProfile: 'Chocolate, caramelo, acidez baja-media, cuerpo medio, notas a frutos secos, perfil redondo.',
+    characteristics: ['Productiva', 'Resistente/estable', 'Perfil clásico', 'Buen rendimiento', 'Común en Brasil']
+  },
+  {
+    id: 'icatu',
+    name: 'Icatu',
+    origin: 'Brasil (híbridos Arábica × Robusta)',
+    species: 'Arábica (con introgresión de Robusta)',
+    altitude: '900 – 1,700 msnm',
+    description: 'Familia de híbridos creada para resistencia y vigor. En buenas condiciones puede dar tazas limpias con cuerpo marcado.',
+    sensoryProfile: 'Cuerpo medio-alto, dulzor a cacao y caramelo, acidez baja-media, notas a nuez, final persistente.',
+    characteristics: ['Vigor alto', 'Más resistente', 'Buen cuerpo', 'Rendimiento alto', 'Calidad mejora con altitud']
+  },
+  {
+    id: 'arara',
+    name: 'Arara',
+    origin: 'Brasil (selecciones modernas)',
+    species: 'Arábica',
+    altitude: '900 – 1,600 msnm',
+    description: 'Variedad moderna valorada por productividad y uniformidad. En taza suele ser dulce y fácil de perfilar.',
+    sensoryProfile: 'Dulzor alto (caramelo, miel), acidez media cítrica suave, cuerpo medio, notas a chocolate y frutas amarillas.',
+    characteristics: ['Uniformidad', 'Productividad alta', 'Dulzor alto', 'Perfil fácil de tostar', 'Común en Brasil']
+  },
+  {
+    id: 'mokka',
+    name: 'Mokka (Moka/Mocha)',
+    origin: 'Yemen (linajes históricos)',
+    species: 'Arábica',
+    altitude: '1,500 – 2,400 msnm',
+    description: 'Variedad de grano muy pequeño asociada a cafés yemeníes tradicionales. Baja productividad pero con perfiles muy distintivos.',
+    sensoryProfile: 'Especias dulces, cacao, fruta seca, acidez media, cuerpo medio, notas a vino y final largo.',
+    characteristics: ['Grano muy pequeño', 'Bajo rendimiento', 'Perfil distintivo', 'Asociada a Yemen', 'Alta complejidad']
+  },
+  {
+    id: 's795',
+    name: 'S795',
+    origin: 'India (selección histórica; difundida en Asia)',
+    species: 'Arábica',
+    altitude: '1,000 – 1,800 msnm',
+    description: 'Selección utilizada en Asia por su desempeño agronómico. En taza tiende a ser dulce, con perfil especiado y buen cuerpo.',
+    sensoryProfile: 'Chocolate, especias suaves, acidez media-baja, cuerpo medio-alto, dulzor a caramelo, final limpio.',
+    characteristics: ['Desempeño estable', 'Buen cuerpo', 'Perfil clásico', 'Común en Asia', 'Mejora con procesos limpios']
+  },
+  {
+    id: 'garnica',
+    name: 'Garnica',
+    origin: 'México (selecciones regionales)',
+    species: 'Arábica',
+    altitude: '1,100 – 1,900 msnm',
+    description: 'Variedad cultivada en México con buena adaptación en altura. Puede producir tazas dulces y balanceadas con postcosecha cuidada.',
+    sensoryProfile: 'Dulzor a panela, cacao, acidez media cítrica suave, cuerpo medio, notas a nuez y fruta madura.',
+    characteristics: ['Buena adaptación en México', 'Perfil balanceado', 'Mejor en altura', 'Respuesta fuerte a proceso', 'Productividad media']
   }
 ];
 
@@ -440,6 +590,32 @@ const VarietySimulator: React.FC = () => {
 
   if (!target) return null;
 
+  const summarizeText = (text: string, sentenceCount: number, maxLen: number) => {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+
+    let remaining = normalized;
+    let summary = '';
+
+    for (let i = 0; i < sentenceCount; i += 1) {
+      const match = remaining.match(/[.!?]/);
+      if (!match) break;
+      const endIndex = remaining.indexOf(match[0]);
+      const sentence = remaining.slice(0, endIndex + 1).trim();
+      summary = summary ? `${summary} ${sentence}` : sentence;
+      remaining = remaining.slice(endIndex + 1).trim();
+      if (!remaining) break;
+    }
+
+    const base = (summary || normalized).trim();
+    if (base.length <= maxLen) return base;
+    return `${base.slice(0, Math.max(0, maxLen - 1)).trim()}…`;
+  };
+
+  const promptDescription = summarizeText(target.description, 1, 180);
+  const displayDescription = summarizeText(target.description, 2, 260);
+  const displaySensoryProfile = summarizeText(target.sensoryProfile, 2, 260);
+
   return (
     <div className="w-full space-y-8 animate-fade-in">
       {/* Header & Streak */}
@@ -462,14 +638,24 @@ const VarietySimulator: React.FC = () => {
           </p>
           <div className="space-y-4 max-w-2xl mx-auto">
             <h3 className="text-lg md:text-xl font-serif italic text-stone-900 dark:text-stone-100 leading-relaxed">
-              "{target.description}"
+              "{promptDescription}"
             </h3>
-            <div className="p-4 bg-stone-50 dark:bg-stone-800/50 border border-stone-100 dark:border-stone-700 rounded-xl">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Perfil sensorial</p>
-              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed italic">
-                {target.sensoryProfile}
-              </p>
-            </div>
+            {feedback && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-stone-50 dark:bg-stone-800/50 border border-stone-100 dark:border-stone-700 rounded-xl text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Descripción</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+                    {displayDescription}
+                  </p>
+                </div>
+                <div className="p-4 bg-stone-50 dark:bg-stone-800/50 border border-stone-100 dark:border-stone-700 rounded-xl text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Perfil sensorial</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed italic">
+                    {displaySensoryProfile}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

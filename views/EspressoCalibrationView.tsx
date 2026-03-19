@@ -2011,25 +2011,29 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onBack }) => {
         </div>
 
         {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
-          {[
-            { id: 'simulator', label: 'Simulador' },
-            { id: 'session', label: 'Sesión de Calibración' },
-            { id: 'guide', label: 'Guía de Calibración' },
-            { id: 'problems', label: 'Problemas Comunes' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-brand text-brand'
-                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="relative">
+          <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
+            {[
+              { id: 'simulator', label: 'Simulador' },
+              { id: 'session', label: 'Sesión de Calibración' },
+              { id: 'guide', label: 'Guía de Calibración' },
+              { id: 'problems', label: 'Problemas Comunes' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {/* Scroll fade indicator — mobile only */}
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-stone-950 pointer-events-none md:hidden" />
         </div>
       </div>
 
