@@ -371,3 +371,65 @@ export interface ScheduleEntry {
   time: string;
   details: any; // jsonb
 }
+
+// ===== Sales System Types =====
+
+export interface SalesCategory {
+  id: string;
+  name: string;
+  color: string; // hex color
+  createdAt: string;
+}
+
+export interface SalesProduct {
+  id: string;
+  name: string;
+  price: number;
+  categoryId?: string;
+  isFavorite: boolean;
+  createdAt: string;
+}
+
+export interface SalesOrderItem {
+  id: string;
+  productId?: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  observation?: string;
+}
+
+export type SalesOrderStatus = 'pendiente' | 'entregado';
+
+export interface SalesOrder {
+  id: string;
+  clientName: string;
+  orderName: string;
+  items: SalesOrderItem[];
+  total: number;
+  status: SalesOrderStatus;
+  createdAt: string;
+  deliveredAt?: string;
+}
+
+export interface CashEntry {
+  id: string;
+  registerId: string;
+  type: 'ingreso' | 'egreso';
+  amount: number;
+  description: string;
+  orderId?: string;
+  createdAt: string;
+}
+
+export interface CashRegister {
+  id: string;
+  weekStart: string; // ISO Monday 00:01
+  weekEnd: string;   // ISO Sunday 23:59
+  openingAmount: number;
+  isOpen: boolean;
+  entries: CashEntry[];
+  totalIncome: number;
+  totalExpense: number;
+  closedAt?: string;
+}

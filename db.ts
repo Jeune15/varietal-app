@@ -1,7 +1,7 @@
 
 import { Dexie, type EntityTable } from 'dexie';
 import { createClient } from '@supabase/supabase-js';
-import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe, TeamMember, ScheduleEntry } from './types';
+import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe, TeamMember, ScheduleEntry, SalesProduct, SalesCategory, SalesOrder, CashRegister } from './types';
 
 type VarietalDB = Dexie & {
   greenCoffees: EntityTable<GreenCoffee, 'id'>;
@@ -19,11 +19,15 @@ type VarietalDB = Dexie & {
   filterRecipes: EntityTable<FilterRecipe, 'id'>;
   teamMembers: EntityTable<TeamMember, 'id'>;
   scheduleEntries: EntityTable<ScheduleEntry, 'id'>;
+  salesProducts: EntityTable<SalesProduct, 'id'>;
+  salesCategories: EntityTable<SalesCategory, 'id'>;
+  salesOrders: EntityTable<SalesOrder, 'id'>;
+  cashRegisters: EntityTable<CashRegister, 'id'>;
 };
 
 const db = new Dexie('VarietalDB') as VarietalDB;
 
-db.version(10).stores({
+db.version(11).stores({
   greenCoffees: 'id, clientName, variety',
   roasts: 'id, clientName, greenCoffeeId',
   orders: 'id, clientName, status',
@@ -38,7 +42,11 @@ db.version(10).stores({
   filterSessions: 'id, date, coffeeName, method',
   filterRecipes: 'id, method, coffeeName',
   teamMembers: 'id, name',
-  scheduleEntries: 'id, user_id, type, date'
+  scheduleEntries: 'id, user_id, type, date',
+  salesProducts: 'id, name, categoryId, isFavorite',
+  salesCategories: 'id, name',
+  salesOrders: 'id, status, createdAt',
+  cashRegisters: 'id, weekStart, isOpen'
 });
 
 export { db };

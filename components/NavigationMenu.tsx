@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { X, ArrowRight, Lock } from 'lucide-react';
+import { X, ArrowRight, Lock, DollarSign } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onAuthenticate: (role: 'admin' | 'student', password: string) => Promise<boolean>;
+  onSalesOpen?: () => void;
 }
 
-const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) => {
+const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSalesOpen }) => {
   const [activeOption, setActiveOption] = useState<'admin' | 'student' | null>(null);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -136,7 +137,32 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate }) =>
             </div>
           </div>
 
-          {/* Option 2: Alumnos */}
+          {/* Option 2: Ventas (No password) */}
+          <div 
+            className="relative flex-1 group cursor-pointer overflow-hidden transition-all duration-1000 border-t md:border-t-0 md:border-l border-white/10"
+            onClick={() => {
+              if (!activeOption && onSalesOpen) {
+                onSalesOpen();
+              }
+            }}
+          >
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-800 to-stone-900 transition-transform duration-1000 group-hover:scale-105" />
+            <div className={`absolute inset-0 transition-colors duration-1000 ${activeOption ? 'bg-black/40' : 'bg-black/10 group-hover:bg-black/20'}`} />
+
+            {/* Content */}
+            <div className="relative z-10 w-full h-full flex items-center justify-center p-8">
+              <div className="w-full max-w-sm mx-auto">
+                <div className="flex flex-col items-center text-center">
+                  <DollarSign className="w-8 h-8 text-emerald-300 mb-2 opacity-80" />
+                  <span className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">Ventas</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-300/70 mt-2">Acceso directo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Option 3: Alumnos */}
           <div 
             className="relative flex-1 group cursor-pointer overflow-hidden transition-all duration-1000 border-t md:border-t-0 md:border-l border-white/10"
             onClick={() => !activeOption && handleOptionClick('student')}

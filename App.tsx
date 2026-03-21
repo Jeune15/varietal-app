@@ -32,6 +32,7 @@ import InventoryView from './views/InventoryView';
 import InvoicingView from './views/InvoicingView';
 import DashboardView from './views/DashboardView';
 import CalendarPage from './views/CalendarPage';
+import SalesPage from './views/SalesPage';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import ModulesView from './views/ModulesView';
@@ -74,6 +75,7 @@ const AppContent: React.FC = () => {
   const studentContentRef = useRef<HTMLDivElement | null>(null);
   const [showStudentScrollTop, setShowStudentScrollTop] = useState(false);
   const [isCalendarIndependent, setIsCalendarIndependent] = useState(false); // Track if calendar is accessed from landing
+  const [isSalesPage, setIsSalesPage] = useState(false); // Track if sales page is accessed from landing
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -290,7 +292,7 @@ const AppContent: React.FC = () => {
   }
 
   // Landing Page View
-  if (viewState === 'landing' && !isCalendarIndependent) {
+  if (viewState === 'landing' && !isCalendarIndependent && !isSalesPage) {
     return (
       <div className="animate-zoom-in">
         <LandingPage 
@@ -304,6 +306,10 @@ const AppContent: React.FC = () => {
           isOpen={isNavMenuOpen} 
           onClose={() => setIsNavMenuOpen(false)} 
           onAuthenticate={handleAuthenticate}
+          onSalesOpen={() => {
+            setIsSalesPage(true);
+            setIsNavMenuOpen(false);
+          }}
         />
       </div>
     );
@@ -393,6 +399,22 @@ const AppContent: React.FC = () => {
       <div className="animate-zoom-in">
         <ErrorBoundary>
           <CalendarPage onExit={handleExitCalendar} />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  // Sales Page (accessed from navigation menu)
+  if (isSalesPage) {
+    const handleExitSales = () => {
+      setIsSalesPage(false);
+      setViewState('landing');
+    };
+
+    return (
+      <div className="animate-zoom-in">
+        <ErrorBoundary>
+          <SalesPage onExit={handleExitSales} />
         </ErrorBoundary>
       </div>
     );
