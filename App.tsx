@@ -56,8 +56,12 @@ const AppContent: React.FC = () => {
   const retailBags = useLiveQuery(() => db.retailBags.toArray()) || [];
   const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
 
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [stockTab, setStockTab] = useState<'green' | 'roasted' | 'utility'>('green');
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('varietal_active_tab') || 'dashboard');
+  const [stockTab, setStockTab] = useState<'green' | 'roasted' | 'utility'>(() => {
+    const stored = sessionStorage.getItem('varietal_stock_tab');
+    if (stored && ['green', 'roasted', 'utility'].includes(stored)) return stored as any;
+    return 'green';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -74,8 +78,8 @@ const AppContent: React.FC = () => {
   const [showAdminScrollTop, setShowAdminScrollTop] = useState(false);
   const studentContentRef = useRef<HTMLDivElement | null>(null);
   const [showStudentScrollTop, setShowStudentScrollTop] = useState(false);
-  const [isCalendarIndependent, setIsCalendarIndependent] = useState(false); // Track if calendar is accessed from landing
-  const [isSalesPage, setIsSalesPage] = useState(false); // Track if sales page is accessed from landing
+  const [isCalendarIndependent, setIsCalendarIndependent] = useState(() => sessionStorage.getItem('varietal_calendar_independent') === 'true'); // Track if calendar is accessed from landing
+  const [isSalesPage, setIsSalesPage] = useState(() => sessionStorage.getItem('varietal_sales_page') === 'true'); // Track if sales page is accessed from landing
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -101,6 +105,24 @@ const AppContent: React.FC = () => {
         initSupabase(url, key);
     }
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('varietal_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    sessionStorage.setItem('varietal_stock_tab', stockTab);
+  }, [stockTab]);
+
+  useEffect(() => {
+    if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');
+    else sessionStorage.removeItem('varietal_sales_page');
+  }, [isSalesPage]);
+
+  useEffect(() => {
+    if (isCalendarIndependent) sessionStorage.setItem('varietal_calendar_independent', 'true');
+    else sessionStorage.removeItem('varietal_calendar_independent');
+  }, [isCalendarIndependent]);
 
   useEffect(() => {
     const el = adminContentRef.current;
@@ -151,18 +173,22 @@ const AppContent: React.FC = () => {
     const storedAccess = sessionStorage.getItem('varietal_access');
     const storedRole = sessionStorage.getItem('varietal_role');
     const calendarAccess = sessionStorage.getItem('varietal_calendar');
+    const storedTab = sessionStorage.getItem('varietal_active_tab');
     
     if (storedAccess === 'true' && storedRole) {
       setUserRole(storedRole as 'admin' | 'student');
       setViewState('app');
-      // Check if accessing calendar
       if (calendarAccess === 'true') {
         setActiveTab('calendar');
         setIsCalendarIndependent(true);
         sessionStorage.removeItem('varietal_calendar');
-      } else if (storedRole === 'student') {
-        // If student, default to cupping immediately
-        setActiveTab('cupping');
+      } else {
+        if (storedRole === 'student') {
+          const desired = storedTab && ['cupping', 'modules', 'recipes'].includes(storedTab) ? storedTab : 'cupping';
+          setActiveTab(desired);
+        } else {
+          setActiveTab(storedTab || 'dashboard');
+        }
       }
       setIsLoading(false);
     } else {
@@ -233,6 +259,11 @@ const AppContent: React.FC = () => {
       // Clear session
       sessionStorage.removeItem('varietal_access');
       sessionStorage.removeItem('varietal_role');
+      sessionStorage.removeItem('varietal_active_tab');
+      sessionStorage.removeItem('varietal_stock_tab');
+      sessionStorage.removeItem('varietal_calendar_independent');
+      sessionStorage.removeItem('varietal_sales_page');
+      sessionStorage.removeItem('varietal_sales_tab');
       window.location.reload();
   };
 
@@ -299,6 +330,7 @@ const AppContent: React.FC = () => {
           onMenuOpen={() => setIsNavMenuOpen(true)} 
           onCalendarOpen={() => {
             setIsCalendarIndependent(true);
+            sessionStorage.setItem('varietal_calendar_independent', 'true');
             setActiveTab('calendar');
           }}
         />
@@ -308,6 +340,7 @@ const AppContent: React.FC = () => {
           onAuthenticate={handleAuthenticate}
           onSalesOpen={() => {
             setIsSalesPage(true);
+            sessionStorage.setItem('varietal_sales_page', 'true');
             setIsNavMenuOpen(false);
           }}
         />
@@ -391,6 +424,7 @@ const AppContent: React.FC = () => {
       sessionStorage.removeItem('varietal_access');
       sessionStorage.removeItem('varietal_role');
       sessionStorage.removeItem('varietal_calendar');
+      sessionStorage.removeItem('varietal_calendar_independent');
       setUserRole(null);
       setViewState('landing');
     };
@@ -408,6 +442,8 @@ const AppContent: React.FC = () => {
   if (isSalesPage) {
     const handleExitSales = () => {
       setIsSalesPage(false);
+      sessionStorage.removeItem('varietal_sales_page');
+      sessionStorage.removeItem('varietal_sales_tab');
       setViewState('landing');
     };
 

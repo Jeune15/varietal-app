@@ -2,15 +2,16 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { SalesProduct, SalesCategory, SalesOrderItem } from '../../types';
-import { Heart, Grid3X3, Plus, MoreVertical, Trash2, Edit2, MessageSquare, User, FileText, X, ShoppingCart, Check, Package } from 'lucide-react';
+import { Heart, Grid3X3, Plus, MoreVertical, Trash2, Edit2, MessageSquare, User, FileText, X, ShoppingCart, Check, Package, ChevronLeft } from 'lucide-react';
 
-type FilterMode = 'all' | 'favorites' | string; // string = categoryId
+type SalesTab = 'home' | 'pedidos' | 'productos' | 'caja' | 'historial';
+type FilterMode = 'categories' | 'favorites' | string; // string = categoryId | '__uncategorized__'
 
-const SalesHomeTab: React.FC = () => {
+const SalesHomeTab = () => {
   const products = useLiveQuery(() => db.salesProducts.toArray()) || [];
   const categories = useLiveQuery(() => db.salesCategories.toArray()) || [];
 
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [filterMode, setFilterMode] = useState<FilterMode>('categories');
   const [orderItems, setOrderItems] = useState<SalesOrderItem[]>([]);
   const [clientName, setClientName] = useState('');
   const [orderName, setOrderName] = useState('');
@@ -35,9 +36,17 @@ const SalesHomeTab: React.FC = () => {
   // Tap animation
   const [tappedProductId, setTappedProductId] = useState<string | null>(null);
 
+  const uncategorizedCount = useMemo(() => products.filter(p => !p.categoryId).length, [products]);
+
+  const selectedCategory = useMemo(() => {
+    if (filterMode === 'categories' || filterMode === 'favorites' || filterMode === '__uncategorized__') return null;
+    return categories.find(c => c.id === filterMode) || null;
+  }, [categories, filterMode]);
+
   const filteredProducts = useMemo(() => {
-    if (filterMode === 'all') return products;
     if (filterMode === 'favorites') return products.filter(p => p.isFavorite);
+    if (filterMode === '__uncategorized__') return products.filter(p => !p.categoryId);
+    if (filterMode === 'categories') return [];
     return products.filter(p => p.categoryId === filterMode);
   }, [products, filterMode]);
 
@@ -46,6 +55,11 @@ const SalesHomeTab: React.FC = () => {
 
   const total = useMemo(() => orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0), [orderItems]);
   const itemCount = useMemo(() => orderItems.reduce((sum, i) => sum + i.quantity, 0), [orderItems]);
+
+  const navigateToTab = (tab: SalesTab) => {
+    sessionStorage.setItem('varietal_sales_tab', tab);
+    window.dispatchEvent(new CustomEvent('varietal_sales_navigate', { detail: tab }));
+  };
 
   // Add product to order
   const addToOrder = (product: SalesProduct) => {
@@ -142,14 +156,14 @@ const SalesHomeTab: React.FC = () => {
         {/* Filter Bar */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-200 dark:border-stone-800 overflow-x-auto scrollbar-none">
           <button
-            onClick={() => setFilterMode('all')}
+            onClick={() => setFilterMode('categories')}
             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors ${
-              filterMode === 'all'
+              filterMode === 'categories'
                 ? 'bg-stone-800 dark:bg-white text-white dark:text-black'
                 : 'bg-stone-100 dark:bg-stone-800 text-stone-500 hover:bg-stone-200 dark:hover:bg-stone-700'
             }`}
           >
-            Todos
+            Categorías
           </button>
           <button
             onClick={() => setFilterMode('favorites')}
@@ -162,28 +176,33 @@ const SalesHomeTab: React.FC = () => {
             <Heart className="w-3 h-3" />
             Favoritos
           </button>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setFilterMode(cat.id)}
-              className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                filterMode === cat.id
-                  ? 'text-white'
-                  : 'bg-stone-100 dark:bg-stone-800 text-stone-500 hover:bg-stone-200 dark:hover:bg-stone-700'
-              }`}
-              style={filterMode === cat.id ? { backgroundColor: cat.color } : {}}
-            >
-              <Grid3X3 className="w-3 h-3" />
-              {cat.name}
-            </button>
-          ))}
           <button
             onClick={() => setShowFreeProduct(true)}
             className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
           >
             <Plus className="w-3 h-3" />
-            Libre
+            Producto libre
           </button>
+          {(filterMode !== 'categories' && filterMode !== 'favorites') && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="w-px h-5 bg-stone-200 dark:bg-stone-700" />
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200"
+              >
+                <Grid3X3 className="w-3 h-3 text-stone-400" />
+                {filterMode === '__uncategorized__' ? 'Sin categoría' : (selectedCategory?.name || 'Categoría')}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFilterMode('categories');
+                  }}
+                  className="p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 text-stone-500" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Product Grid */}
@@ -194,10 +213,66 @@ const SalesHomeTab: React.FC = () => {
               <Package className="w-14 h-14 mx-auto mb-4 opacity-30" />
               <p className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-1">Sin productos aún</p>
               <p className="text-xs text-stone-400 dark:text-stone-500 mb-5">Crea productos en la pestaña Productos para empezar a vender</p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-stone-800 rounded-lg text-xs font-bold text-stone-500">
+              <button
+                onClick={() => navigateToTab('productos')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-stone-800 rounded-lg text-xs font-bold text-stone-500 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+              >
                 <Package className="w-3.5 h-3.5" />
                 Ir a Productos ↗
+              </button>
+            </div>
+          ) : filterMode === 'categories' ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">Categorías</h2>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-500 mt-1">
+                    {categories.length} categoría{categories.length !== 1 ? 's' : ''}{uncategorizedCount > 0 ? ` · ${uncategorizedCount} sin categoría` : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigateToTab('productos')}
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Crear
+                </button>
               </div>
+
+              {(categories.length === 0 && uncategorizedCount === 0) ? (
+                <div className="text-center py-14 text-stone-400">
+                  <Grid3X3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-1">Sin categorías aún</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">Crea categorías y productos para empezar a vender</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {categories.map(cat => {
+                    const count = products.filter(p => p.categoryId === cat.id).length;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setFilterMode(cat.id)}
+                        className="relative rounded-xl p-4 text-left text-white shadow-sm hover:shadow-lg transition-all min-h-[90px] flex flex-col justify-between overflow-hidden hover:scale-[1.02] active:scale-[0.95]"
+                        style={{ backgroundColor: cat.color, transition: 'transform 0.15s ease-out, box-shadow 0.15s ease-out' }}
+                      >
+                        <span className="text-xs font-black uppercase tracking-wider opacity-95 line-clamp-2">{cat.name}</span>
+                        <span className="text-[11px] font-bold opacity-90">{count} producto{count !== 1 ? 's' : ''}</span>
+                      </button>
+                    );
+                  })}
+                  {uncategorizedCount > 0 && (
+                    <button
+                      onClick={() => setFilterMode('__uncategorized__')}
+                      className="relative rounded-xl p-4 text-left text-white shadow-sm hover:shadow-lg transition-all min-h-[90px] flex flex-col justify-between overflow-hidden hover:scale-[1.02] active:scale-[0.95] bg-stone-700"
+                      style={{ transition: 'transform 0.15s ease-out, box-shadow 0.15s ease-out' }}
+                    >
+                      <span className="text-xs font-black uppercase tracking-wider opacity-95">Sin categoría</span>
+                      <span className="text-[11px] font-bold opacity-90">{uncategorizedCount} producto{uncategorizedCount !== 1 ? 's' : ''}</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16 text-stone-400">

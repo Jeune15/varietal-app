@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Home, ClipboardList, Package, Wallet, History, ChevronLeft } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Home, ClipboardList, Package, Wallet, History, X } from 'lucide-react';
 import SalesHomeTab from './sales/SalesHomeTab';
 import SalesPedidosTab from './sales/SalesPedidosTab';
 import SalesProductosTab from './sales/SalesProductosTab';
@@ -21,30 +21,59 @@ const tabs: { id: SalesTab; label: string; icon: React.ElementType }[] = [
 ];
 
 const SalesPage: React.FC<Props> = ({ onExit }) => {
-  const [activeTab, setActiveTab] = useState<SalesTab>('home');
+  const [activeTab, setActiveTab] = useState<SalesTab>(() => {
+    const stored = sessionStorage.getItem('varietal_sales_tab');
+    if (stored && ['home', 'pedidos', 'productos', 'caja', 'historial'].includes(stored)) {
+      return stored as SalesTab;
+    }
+    return 'home';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('varietal_sales_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const tab = (event as CustomEvent).detail as SalesTab;
+      if (tab && ['home', 'pedidos', 'productos', 'caja', 'historial'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    };
+    window.addEventListener('varietal_sales_navigate', handler);
+    return () => window.removeEventListener('varietal_sales_navigate', handler);
+  }, []);
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-stone-50 dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 flex flex-col">
       {/* Top Bar */}
       <header className="flex-shrink-0 z-50 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-b border-stone-200 dark:border-stone-800">
         <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
+          <div className="w-[44px]" />
+          <h1 className="text-sm font-black uppercase tracking-[0.2em] text-black dark:text-white">Ventas</h1>
           <button
             onClick={onExit}
-            className="flex items-center gap-1.5 text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-white transition-colors min-w-[44px] min-h-[44px]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black uppercase tracking-widest text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-w-[44px] min-h-[44px]"
           >
-            <ChevronLeft className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Volver</span>
+            <X className="w-4 h-4" />
+            <span className="hidden sm:inline">Salir</span>
           </button>
-          <h1 className="text-sm font-black uppercase tracking-[0.2em] text-black dark:text-white">Ventas</h1>
-          <div className="w-[44px]" /> {/* Spacer for centering */}
         </div>
       </header>
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full" key={activeTab}>
-          {activeTab === 'home' && <SalesHomeTab />}
-          {activeTab === 'pedidos' && <SalesPedidosTab />}
+          {activeTab === 'home' && (
+            <div className="h-full max-w-7xl mx-auto">
+              <SalesHomeTab />
+            </div>
+          )}
+          {activeTab === 'pedidos' && (
+            <div className="h-full max-w-7xl mx-auto">
+              <SalesPedidosTab />
+            </div>
+          )}
           {(activeTab === 'productos' || activeTab === 'caja' || activeTab === 'historial') && (
             <div className="h-full overflow-y-auto">
               <div className="max-w-7xl mx-auto">
