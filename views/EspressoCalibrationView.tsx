@@ -1958,12 +1958,172 @@ const EspressoSessionDetailModal: React.FC<{ session: EspressoSession; onClose: 
   );
 };
 
+// ─── Observations Section ────────────────────────────────────────────────────
+
+interface Observation {
+  id: string;
+  title: string;
+  visual: string;
+  meaning: string;
+  cause: string;
+  action: string;
+}
+
+const ESPRESSO_OBSERVATIONS: Observation[] = [
+  {
+    id: 'blonding',
+    title: 'Blonding temprano',
+    visual: 'El flujo se vuelve rubio y pálido antes de los 20 segundos.',
+    meaning: 'La extracción está pasando de los compuestos dulces a los amargos/vacíos demasiado rápido. Indica subextracción del inicio.',
+    cause: 'Molienda demasiado gruesa, dosis insuficiente, o canalización que permite que el agua pase sin extraer uniformemente.',
+    action: 'Afinar molienda. Verificar distribución y nivelación. Si persiste, aumentar dosis ligeramente.'
+  },
+  {
+    id: 'grumos',
+    title: 'Grumos en la canasta',
+    visual: 'Al moler, se observan terrones o grumos de café compactos en el portafiltro.',
+    meaning: 'Los grumos generan zonas densas y zonas porosas, causando extracción desigual (channeling).',
+    cause: 'Molienda con muelas desgastadas, retención de café viejo, humedad en el molino, o carga estática.',
+    action: 'Aplicar WDT para romper los grumos. Limpiar el molino regularmente. Considerar un anti-static spray o RDT.'
+  },
+  {
+    id: 'uneven-bed',
+    title: 'Cama de café desigual',
+    visual: 'Al retirar el portafiltro, el puck presenta un lado más hundido, erosionado o con marcas de flujo.',
+    meaning: 'El agua no pasó uniformemente. Hay zonas sobreextraídas (más erosionadas) y subextraídas.',
+    cause: 'Mala distribución, tamping inclinado, o portafiltro insertado con golpe lateral.',
+    action: 'Mejorar distribución con WDT o distribuidor. Tampar con la muñeca alineada. Insertar portafiltro suavemente.'
+  },
+  {
+    id: 'fast-start-slow-end',
+    title: 'Inicio rápido → flujo lento después',
+    visual: 'Los primeros ml salen muy rápido, pero luego el flujo se reduce drásticamente.',
+    meaning: 'El puck está migrando (finos se desplazan al fondo) o hay compactación desigual.',
+    cause: 'Tamping excesivo, molienda demasiado fina con mala distribución, o presión de la máquina inconsistente.',
+    action: 'Reducir presión de tamping. Verificar WDT. Considerar una canasta con mejor drenaje.'
+  },
+  {
+    id: 'dark-start',
+    title: 'Salida con coloración oscura inicial',
+    visual: 'Los primeros ml salen muy oscuros y densos, casi como jarabe.',
+    meaning: 'Concentración muy alta al inicio. Puede indicar preinfusión eficiente o sobreextracción localizada.',
+    cause: 'Preinfusión larga con mucha presión, o molienda extremadamente fina.',
+    action: 'Si el resultado en taza es bueno, no hay problema. Si hay amargor, reducir preinfusión o engrosar molienda.'
+  },
+  {
+    id: 'wet-puck',
+    title: 'Puck mojado / lodoso',
+    visual: 'Al retirar el portafiltro, el puck está húmedo, lodoso, o se deshace al tocar.',
+    meaning: 'No necesariamente es un problema si la taza sabe bien. Indica que quedó agua residual entre el puck y la ducha.',
+    cause: 'Dosis baja para el tamaño de la canasta (exceso de headspace), o ratio muy alto.',
+    action: 'Aumentar dosis hasta llenar correctamente la canasta. Verificar que la dosis corresponda al tamaño del filtro.'
+  },
+  {
+    id: 'cracked-puck',
+    title: 'Puck agrietado',
+    visual: 'El puck presenta grietas o fisuras visibles al retirarlo.',
+    meaning: 'El agua encontró caminos de menor resistencia y canalizó a través de las grietas.',
+    cause: 'Tamping insuficiente, dosis excesiva para la canasta, o aire atrapado en el puck.',
+    action: 'Ajustar dosis al tamaño de la canasta. Aplicar WDT para eliminar bolsas de aire. Tampar con más consistencia.'
+  },
+  {
+    id: 'spritz',
+    title: 'Chorros laterales (spritz)',
+    visual: 'El espresso sale con chorros dispersos o salpicando en lugar de un flujo uniforme.',
+    meaning: 'Canalización severa. El agua pasa por puntos débiles del puck creando jets de alta velocidad.',
+    cause: 'Distribución deficiente, borde de la canasta con residuos de café, o canasta dañada.',
+    action: 'Limpiar el borde de la canasta antes de insertar. Mejorar distribución. Revisar estado de la canasta.'
+  },
+  {
+    id: 'no-pressure-drip',
+    title: 'Goteo sin presión',
+    visual: 'El espresso gotea lentamente sin formar un flujo continuo. Puede tardar >45 segundos.',
+    meaning: 'Resistencia excesiva del puck. La máquina no puede mantener flujo adecuado.',
+    cause: 'Molienda demasiado fina, dosis excesiva, o tamping con fuerza extrema.',
+    action: 'Engrosar molienda significativamente. Reducir dosis. Solar con tamping más ligero.'
+  },
+  {
+    id: 'excessive-crema',
+    title: 'Espuma excesiva en el shot',
+    visual: 'El espresso tiene una capa de crema muy gruesa, con burbujas grandes, o espumoso.',
+    meaning: 'CO₂ excesivo. El café es muy fresco (recién tostado) y está desgasificando en la extracción.',
+    cause: 'Café tostado hace menos de 5-7 días. También puede indicar sobreextracción con grano muy fresco.',
+    action: 'Dejar reposar el café 7-14 días después del tueste. Si es urgente, abrir la bolsa unas horas antes.'
+  }
+];
+
+const ObservationsSection: React.FC = () => {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
+          Observaciones durante la Calibración
+        </h2>
+        <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
+          Señales visuales y físicas que puedes observar durante la extracción de espresso. Aprende a interpretar lo que ves para mejorar tu calibración.
+        </p>
+      </div>
+
+      <div className="grid gap-3">
+        {ESPRESSO_OBSERVATIONS.map((obs, index) => {
+          const isOpen = openId === obs.id;
+          return (
+            <div key={obs.id} className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-900 transition-all">
+              <button
+                onClick={() => setOpenId(isOpen ? null : obs.id)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="flex-none w-7 h-7 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-[10px] font-black text-stone-500">
+                    {index + 1}
+                  </span>
+                  <span className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate">
+                    {obs.title}
+                  </span>
+                </div>
+                <svg className={`w-4 h-4 flex-none text-stone-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="p-4 pt-0 border-t border-stone-100 dark:border-stone-800 space-y-3">
+                  <div className="mt-3 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">Lo que ves</p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{obs.visual}</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-blue-700 dark:text-blue-400 mb-1">¿Qué significa?</p>
+                    <p className="text-[11px] md:text-xs text-blue-800 dark:text-blue-300 leading-relaxed">{obs.meaning}</p>
+                  </div>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-1">Causa probable</p>
+                    <p className="text-[11px] md:text-xs text-amber-800 dark:text-amber-300 leading-relaxed">{obs.cause}</p>
+                  </div>
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 mb-1">Acción recomendada</p>
+                    <p className="text-[11px] md:text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">{obs.action}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main View ───────────────────────────────────────────────────────────────
+
 interface EspressoViewProps {
   onBack: () => void;
 }
 
 export const EspressoView: React.FC<EspressoViewProps> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'simulator' | 'session' | 'guide' | 'problems'>('simulator');
+  const [activeTab, setActiveTab] = useState<'simulator' | 'session' | 'guide' | 'observations'>('simulator');
   const [sessionSubView, setSessionSubView] = useState<'new' | 'history'>('new');
   const [selectedSession, setSelectedSession] = useState<EspressoSession | null>(null);
   const { showToast } = useToast();
@@ -2017,7 +2177,7 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onBack }) => {
               { id: 'simulator', label: 'Simulador' },
               { id: 'session', label: 'Sesión de Calibración' },
               { id: 'guide', label: 'Guía de Calibración' },
-              { id: 'problems', label: 'Problemas Comunes' }
+              { id: 'observations', label: 'Observaciones' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -2152,8 +2312,8 @@ export const EspressoView: React.FC<EspressoViewProps> = ({ onBack }) => {
         {/* Guide Tab */}
         {activeTab === 'guide' && <CalibrationGuide />}
 
-        {/* Problems Tab */}
-        {activeTab === 'problems' && <CommonProblemsSection />}
+        {/* Observations Tab */}
+        {activeTab === 'observations' && <ObservationsSection />}
       </div>
 
       {/* Detail Modal */}

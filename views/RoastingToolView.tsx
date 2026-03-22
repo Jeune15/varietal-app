@@ -585,6 +585,271 @@ const ProfilesErrorsTab: React.FC = () => {
   );
 };
 
+// ─── Data: Posibles Sucesos ──────────────────────────────────────────────────
+
+interface RoastEvent {
+  id: string;
+  name: string;
+  symptoms: string[];
+  cupResult: string;
+  causes: string[];
+  solutions: string[];
+}
+
+const ROAST_EVENTS: RoastEvent[] = [
+  {
+    id: 'stalling',
+    name: 'Stalling (tueste plano)',
+    symptoms: ['La temperatura deja de subir o sube muy lento después del primer crack', 'El RoR cae drásticamente o se aplana cerca de cero', 'El café parece "estancado" sin progreso'],
+    cupResult: 'Taza apagada, sin dulzor, notas planas u "horneadas" (baked). Falta de complejidad aromática.',
+    causes: ['Se bajó demasiado el gas antes o justo después del primer crack', 'Exceso de carga para la capacidad del tostador', 'Flujo de aire muy alto que enfría el sistema', 'Perfil mal balanceado: demasiada energía al inicio y nada al final'],
+    solutions: ['Mantener suficiente energía (gas) entrando al primer crack', 'Reducir gas gradualmente, no de golpe', 'Verificar que la carga no exceda la capacidad recomendada', 'Bajar airflow si el sistema se enfría demasiado']
+  },
+  {
+    id: 'crash-flick',
+    name: 'Crash & Flick',
+    symptoms: ['El RoR cae abruptamente (crash) y luego sube de golpe (flick)', 'La curva de temperatura tiene un "valle" seguido de un pico repentino', 'Comportamiento errático de la temperatura después del crack'],
+    cupResult: 'Sabores mixtos: notas crudas/ácidas combinadas con quemado. Falta de limpieza y uniformidad.',
+    causes: ['Se cortó el gas de golpe en el crack y luego se compensó subiendo demasiado', 'Mal control de la transición de energía en la fase de desarrollo', 'Airflow cambiado bruscamente durante el crack'],
+    solutions: ['Hacer ajustes de gas graduales, nunca cambios bruscos mayores al 15-20%', 'Planificar la reducción de energía antes del crack', 'Mantener control del airflow constante en momentos críticos', 'Practicar perfiles de curva suave y decreciente']
+  },
+  {
+    id: 'first-crack-early',
+    name: 'Primer crack prematuro',
+    symptoms: ['El crack suena antes de lo esperado (antes de ~190°C)', 'El café no cambió completamente de color', 'El grano se siente más blando al tacto que lo normal'],
+    cupResult: 'Acidez agresiva, notas herbales o verdes, subdesarrollo evidente. Falta dulzor.',
+    causes: ['Carga demasiado alta (exceso de energía al inicio)', 'RoR demasiado alto en la fase de Maillard', 'Grano de baja densidad que responde rápido al calor', 'Sonda de temperatura mal calibrada'],
+    solutions: ['Reducir la temperatura de carga', 'Bajar gas al inicio de Maillard para desacelerar', 'Adaptar el perfil a la densidad del grano', 'Calibrar sonda de temperatura regularmente']
+  },
+  {
+    id: 'first-crack-late',
+    name: 'Primer crack retrasado',
+    symptoms: ['El crack no ha aparecido pasados los 12-13 minutos', 'El color del grano ya es marrón pero no se escucha crack', 'Olor a pan horneado prolongado sin transición'],
+    cupResult: 'Notas planas, baked, sin brillo ni acidez. Dulzor apagado, cuerpo pesado sin limpieza.',
+    causes: ['Carga demasiado baja o gas insuficiente', 'RoR demasiado bajo durante Maillard', 'Grano de alta densidad que necesita más energía', 'Tambor sobrecargado que absorbe demasiada energía'],
+    solutions: ['Aumentar temperatura de carga o gas inicial', 'Mantener RoR adecuado durante Maillard (mínimo 5-8°C/min)', 'Ajustar energía según la densidad del café', 'Verificar que el batch size sea el adecuado']
+  },
+  {
+    id: 'excessive-smoke',
+    name: 'Humo excesivo',
+    symptoms: ['Humo denso y oscuro sale del tambor o la cargadora', 'Olor a quemado penetrante', 'Los granos presentan manchas oscuras de aceite prematuro'],
+    cupResult: 'Notas ahumadas, carbónicas, amargas. Puede ocultar completamente el perfil del café.',
+    causes: ['Temperatura de descarga demasiado alta', 'Acumulación de chaff en el sistema', 'Se pasó del segundo crack sin control', 'Falta de limpieza del sistema de escape y chaff catcher'],
+    solutions: ['Descargar antes si se observa humo excesivo', 'Limpiar chaff catcher y ductos regularmente', 'Aumentar airflow para evacuar humo', 'Mantener el tostador limpio después de cada sesión']
+  },
+  {
+    id: 'negative-ror',
+    name: 'RoR negativo',
+    symptoms: ['La lectura de RoR baja por debajo de cero', 'La temperatura del grano empieza a descender', 'Se pierde completamente el momentum del tueste'],
+    cupResult: 'Taza extremadamente plana y sin vida. Sabor a cartón, notas de cereal crudo, sin dulzor.',
+    causes: ['Se cortó el gas completamente', 'El enfriador se activó prematuramente', 'Puerta del tambor abierta accidentalmente', 'Batch demasiado pequeño para el tostador'],
+    solutions: ['Nunca llevar el gas a cero durante el tueste activo', 'Verificar que el enfriador no se active antes de la descarga', 'Mantener un mínimo de energía constante', 'Si ocurre, descargar inmediatamente — el batch se perdió']
+  },
+  {
+    id: 'high-charge',
+    name: 'Temperatura de carga muy alta',
+    symptoms: ['Turning point muy alto (>160°C)', 'El grano cambia de color extremadamente rápido', 'Olor a chamuscado en los primeros 2 minutos', 'Manchas oscuras en la superficie del grano'],
+    cupResult: 'Scorching, notas a quemado superficial. Interior crudo con exterior oscuro. Astringencia.',
+    causes: ['Precalentamiento excesivo del tambor', 'Batch anterior dejó el tambor demasiado caliente', 'No se ajustó la carga según el descanso entre batches'],
+    solutions: ['Reducir precalentamiento', 'Esperar enfriamiento adecuado entre batches', 'Abrir la puerta brevemente para bajar temperatura antes de cargar', 'Usar batches de prueba para calibrar la carga']
+  },
+  {
+    id: 'low-charge',
+    name: 'Temperatura de carga muy baja',
+    symptoms: ['Turning point extremadamente bajo (<110°C)', 'El grano tarda demasiado en empezar a cambiar de color', 'El secado se extiende más de 5-6 minutos'],
+    cupResult: 'Baking, notas planas y de cereal. Poca dulzura, acidez muerta, cuerpo vacío.',
+    causes: ['Precalentamiento insuficiente', 'Primera carga del día sin calentamiento previo', 'Se dejó enfriar el tambor demasiado entre batches'],
+    solutions: ['Asegurar precalentamiento suficiente (20-30 min antes)', 'Realizar un "batch fantasma" para estabilizar el tambor', 'Mantener tiempos consistentes entre batches', 'Subir gas al inicio si el turning point es demasiado bajo']
+  },
+  {
+    id: 'scorching',
+    name: 'Scorching puntual',
+    symptoms: ['Marcas oscuras/quemadas en las caras planas del grano', 'Olor acre durante la fase de secado', 'Granos con puntos negros visibles tras el tueste'],
+    cupResult: 'Notas a quemado, ceniza, carbón. Amargor persistente que no corresponde al perfil del café.',
+    causes: ['Temperatura de tambor excesiva al cargar', 'Velocidad de tambor demasiado baja', 'Grano haciendo demasiado contacto con la pared caliente', 'Falta de airflow que ayude a distribuir el calor'],
+    solutions: ['Bajar temperatura de carga', 'Aumentar RPM del tambor', 'Subir airflow en los primeros minutos', 'Verificar que el tambor gire correctamente y sin obstrucciones']
+  },
+  {
+    id: 'tipping-maillard',
+    name: 'Tipping durante Maillard',
+    symptoms: ['Puntas de los granos quemadas (bordes oscuros)', 'Se nota al inspeccionar el grano tostado con lupa', 'Textura irregular en la superficie del grano'],
+    cupResult: 'Notas a ceniza o carbón sutil. Amargo residual que afecta la limpieza de la taza.',
+    causes: ['RoR demasiado alto en la fase de Maillard', 'Demasiada conducción (contacto directo con el tambor caliente)', 'Gas demasiado alto sin suficiente airflow', 'Velocidad de tambor baja durante Maillard'],
+    solutions: ['Reducir gas antes de entrar a Maillard', 'Aumentar airflow para favorecer convección sobre conducción', 'Subir RPM del tambor', 'Aplicar perfil de energía decreciente']
+  },
+  {
+    id: 'baking-post-crack',
+    name: 'Baking post-crack',
+    symptoms: ['El desarrollo se extiende más de 25-30% del tiempo total', 'El RoR es muy bajo o plano después del crack', 'El color final no corresponde con el tiempo de tueste'],
+    cupResult: 'Taza plana sin vida, notas de papel, cartón, cereal. Sin acidez, sin dulzor, sin complejidad.',
+    causes: ['Se bajó demasiado la energía después del primer crack', 'Miedo a quemar el café, compensando con gas muy bajo', 'No se tenía un punto de descarga claro planificado'],
+    solutions: ['Definir tiempo de desarrollo objetivo antes de empezar', 'Mantener suficiente momentum de RoR post-crack', 'Descargar con decisión cuando se alcance el perfil deseado', 'Usar desarrollo del 15-20% como guía general']
+  },
+  {
+    id: 'quakers',
+    name: 'Quakers visibles',
+    symptoms: ['Granos pálidos mezclados con granos correctamente tostados', 'No desarrollan color marrón aunque el tueste esté completo', 'Al catastar, se nota sabor papeloso o a maní crudo'],
+    cupResult: 'Notas a maní crudo, papel, cereal inmaduro. Deprime el dulzor y la limpieza general.',
+    causes: ['Granos inmaduros (verdes) que entraron en el lote', 'Café de baja calidad con alto porcentaje de cerezo no maduro', 'El tostador no puede solucionar esto — es un defecto de origen'],
+    solutions: ['Seleccionar mejor el café verde (pedir muestra antes de comprar)', 'Remover quakers manualmente después del tueste', 'Comunicar al proveedor si el porcentaje es alto', 'No se puede corregir con perfil de tueste']
+  },
+  {
+    id: 'uneven-color',
+    name: 'Color desparejo',
+    symptoms: ['Granos con diferentes tonos de marrón en el mismo batch', 'Variación visible al colocar granos en fila', 'Inconsistencia en tamaño y densidad del grano tostado'],
+    cupResult: 'Taza inconsistente, mezcla de sabores de sub y sobre-extracción. Falta de balance.',
+    causes: ['Café verde mezclado (diferentes lotes, orígenes o procesos)', 'Tambor sobrecargado que no agita uniformemente', 'Secado desigual por diferencias de humedad en el lote', 'Velocidad de tambor insuficiente'],
+    solutions: ['No mezclar lotes de café verde con diferentes características', 'Respetar la capacidad máxima del tostador (70-80%)', 'Aumentar RPM para mejorar agitación', 'Asegurar que el café verde tenga humedad homogénea']
+  },
+  {
+    id: 'excessive-weight-loss',
+    name: 'Merma excesiva (>18%)',
+    symptoms: ['El peso final del café tostado es mucho menor al esperado', 'El grano sale muy oscuro y aceitoso', 'Aroma fuerte a carbón o ceniza al enfriar'],
+    cupResult: 'Sobre-desarrollo. Notas carbonizadas, amargor intenso, cuerpo hueco.',
+    causes: ['Tueste demasiado oscuro o largo', 'Se pasó del segundo crack', 'Perfil con demasiada energía acumulada'],
+    solutions: ['Descargar antes si la merma objetivo es 13-16%', 'Monitorear el peso en tiempo real si el tostador lo permite', 'Ajustar el perfil para un desarrollo más corto', 'Establecer límites claros de temperatura de descarga']
+  },
+  {
+    id: 'low-weight-loss',
+    name: 'Merma insuficiente (<11%)',
+    symptoms: ['El grano pesa más de lo esperado', 'El grano se siente denso y duro', 'El color es más claro de lo esperado para el tiempo de tueste'],
+    cupResult: 'Sub-desarrollo. Acidez agresiva, notas verdes, herbales, astringencia. Falta de dulzor.',
+    causes: ['Tueste demasiado corto o con poca energía', 'Se descargó antes de que el desarrollo fuera suficiente', 'Grano de alta densidad que necesita más tiempo'],
+    solutions: ['Extender el desarrollo post-crack', 'Aumentar energía durante Maillard', 'Adaptar el perfil a la densidad del grano', 'Apuntar a 13-16% de merma como rango objetivo']
+  },
+  {
+    id: 'chaff-trapped',
+    name: 'Chaff no separado',
+    symptoms: ['Piel plateada adherida al grano después del tueste', 'Acumulación de chaff en la bandeja de enfriamiento', 'Olor a paja quemada durante el tueste tardío'],
+    cupResult: 'Notas a paja, papel, "sucio". Resta limpieza y claridad a la taza.',
+    causes: ['Airflow insuficiente para evacuar el chaff', 'Chaff catcher obstruido o lleno', 'Naturales y honey tienden a tener más chaff adherido', 'Sistema de extracción mal diseñado o sucio'],
+    solutions: ['Aumentar airflow especialmente durante y después del crack', 'Limpiar chaff catcher entre cada batch', 'Verificar que el sistema de extracción funcione correctamente', 'Con naturales, ser más agresivo con el airflow']
+  },
+  {
+    id: 'overloaded-drum',
+    name: 'Tambor sobrecargado',
+    symptoms: ['El turning point es muy bajo y tarda mucho en recuperarse', 'El tueste total dura mucho más de lo planeado', 'El color es desparejo y el RoR es errático'],
+    cupResult: 'Baking generalizado. Sabores planos, sin claridad ni dulzor. Heterogeneidad en taza.',
+    causes: ['Se cargó más café del recomendado', 'No se ajustó la energía para el batch size mayor', 'Falta de experiencia con la capacidad del equipo'],
+    solutions: ['Respetar la capacidad recomendada (generalmente 70-80% del máximo)', 'Si se carga más, aumentar gas y carga proporcionalmente', 'Pesar el café verde antes de cada tueste', 'Registrar el batch size óptimo para cada tostador']
+  },
+  {
+    id: 'small-batch',
+    name: 'Batch muy pequeño',
+    symptoms: ['El turning point es muy alto (el café se calienta inmediatamente)', 'El tueste progresa demasiado rápido', 'El primer crack llega antes de los 7 minutos totales'],
+    cupResult: 'Desarrollo desigual. Scorching y tipping. Notas a quemado con interior crudo.',
+    causes: ['Se cargó muy poco café comparado con la capacidad del tostador', 'El tambor caliente domina completamente la masa pequeña de café'],
+    solutions: ['Usar al menos el 50% de la capacidad del tostador', 'Bajar la carga y el gas significativamente si el batch es pequeño', 'Considerar un tostador más pequeño para muestras', 'Reducir pre-calentamiento para batches chicos']
+  },
+  {
+    id: 'silent-crack',
+    name: 'Primer crack silencioso',
+    symptoms: ['No se escucha el crack aunque la temperatura esté en rango (195-205°C)', 'El color del grano cambia pero sin sonido característico', 'Dificultad para determinar el punto de desarrollo'],
+    cupResult: 'Riesgo alto de sobre o sub-desarrollo por no tener la referencia auditiva.',
+    causes: ['Café de muy baja densidad (altitud baja)', 'Grano muy seco (humedad <10%)', 'Tostador muy ruidoso que oculta el sonido', 'Airflow muy alto que enmascara el crack'],
+    solutions: ['Confiar en otros indicadores: color, olor, RoR', 'Usar un grano de referencia conocido para calibrar', 'Reducir airflow momentáneamente para escuchar mejor', 'Instalar un micrófono amplificador si el equipo es ruidoso']
+  },
+  {
+    id: 'unexpected-second-crack',
+    name: 'Segundo crack inesperado',
+    symptoms: ['Se escucha un cracking continuo más agudo y rápido que el primero', 'Aparecen gotas de aceite en la superficie del grano', 'Humo denso y oscuro aumenta rápidamente'],
+    cupResult: 'Sobre-desarrollo severo. Notas carbonizadas, amargor dominante, pérdida total de acidez y origen.',
+    causes: ['No se descargó a tiempo después del primer crack', 'Se perdió el control del RoR y el tueste se aceleró', 'Distracción durante la fase crítica de desarrollo', 'Perfil demasiado agresivo con exceso de energía acumulada'],
+    solutions: ['Descargar inmediatamente al escuchar segundo crack (si no es el objetivo)', 'Establecer alarmas de temperatura para recordar puntos de descarga', 'Planificar el perfil con un margen de seguridad de 5-10°C antes del 2C', 'Nunca alejarse del tostador durante la fase de desarrollo']
+  }
+];
+
+// ─── Posibles Sucesos Tab ────────────────────────────────────────────────────
+
+const PosiblesSucesosTab: React.FC = () => {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
+          Posibles Sucesos en Tueste
+        </h2>
+        <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
+          Situaciones que pueden ocurrir durante una sesión de tostado. Cada escenario incluye síntomas observables, resultado en taza, causas probables y cómo solucionarlo.
+        </p>
+      </div>
+
+      <div className="grid gap-3">
+        {ROAST_EVENTS.map((event, index) => {
+          const isOpen = openId === event.id;
+          return (
+            <div key={event.id} className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-900 transition-all">
+              <button
+                onClick={() => setOpenId(isOpen ? null : event.id)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="flex-none w-7 h-7 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-[10px] font-black text-stone-500">
+                    {index + 1}
+                  </span>
+                  <span className="font-bold text-sm text-stone-900 dark:text-stone-100 truncate">
+                    {event.name}
+                  </span>
+                </div>
+                <svg className={`w-4 h-4 flex-none text-stone-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="p-4 pt-0 border-t border-stone-100 dark:border-stone-800 space-y-4">
+                  {/* Symptoms */}
+                  <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">¿Qué pasa? (Síntomas)</p>
+                    <ul className="space-y-1">
+                      {event.symptoms.map((s, i) => (
+                        <li key={i} className="text-[11px] md:text-xs text-amber-800 dark:text-amber-300 leading-relaxed flex items-start gap-2">
+                          <span className="text-amber-500 mt-1">•</span> {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Cup result */}
+                  <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-red-700 dark:text-red-400 mb-2">Resultado en taza</p>
+                    <p className="text-[11px] md:text-xs text-red-800 dark:text-red-300 leading-relaxed">{event.cupResult}</p>
+                  </div>
+
+                  {/* Causes */}
+                  <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">¿Por qué ocurre?</p>
+                    <ul className="space-y-1">
+                      {event.causes.map((c, i) => (
+                        <li key={i} className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed flex items-start gap-2">
+                          <span className="text-stone-400 mt-1">•</span> {c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Solutions */}
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 mb-2">Cómo solucionarlo</p>
+                    <ul className="space-y-1">
+                      {event.solutions.map((s, i) => (
+                        <li key={i} className="text-[11px] md:text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed flex items-start gap-2">
+                          <span className="text-emerald-500 mt-1">✓</span> {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Main View ───────────────────────────────────────────────────────────────
 
 interface Props {
@@ -592,7 +857,7 @@ interface Props {
 }
 
 export const RoastingToolView: React.FC<Props> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'simulator' | 'variables' | 'profiles'>('simulator');
+  const [activeTab, setActiveTab] = useState<'simulator' | 'variables' | 'profiles' | 'sucesos'>('simulator');
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
@@ -608,26 +873,31 @@ export const RoastingToolView: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
-          {[
-            { id: 'simulator', label: 'Simulador' },
-            { id: 'variables', label: 'Variables y Etapas' },
-            { id: 'profiles', label: 'Perfiles y Errores' }
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-brand text-brand'
-                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
-              }`}
-            >{tab.label}</button>
-          ))}
+        <div className="relative">
+          <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
+            {[
+              { id: 'simulator', label: 'Simulador' },
+              { id: 'variables', label: 'Variables y Etapas' },
+              { id: 'profiles', label: 'Perfiles y Errores' },
+              { id: 'sucesos', label: 'Posibles Sucesos' }
+            ].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+                className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                }`}
+              >{tab.label}</button>
+            ))}
+          </div>
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-stone-950 pointer-events-none md:hidden" />
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'simulator' && <RoastSimulator />}
         {activeTab === 'variables' && <VariablesStagesTab />}
         {activeTab === 'profiles' && <ProfilesErrorsTab />}
+        {activeTab === 'sucesos' && <PosiblesSucesosTab />}
       </div>
     </div>
   );

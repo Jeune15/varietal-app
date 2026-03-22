@@ -148,7 +148,7 @@ const VARIETIES: Variety[] = [
   },
   {
     id: 'colombia',
-    name: 'Variedad Colombia',
+    name: 'Gran Colombia',
     origin: 'Colombia (cruce Caturra × Híbrido de Timor, CENICAFÉ, ~1980s)',
     species: 'Arábica (híbrido con genes de resistencia)',
     altitude: '1,200 – 2,000 msnm',
@@ -305,6 +305,36 @@ const VARIETIES: Variety[] = [
     description: 'Variedad desarrollada para resistencia y productividad. Su calidad en taza depende fuertemente de altitud y manejo de fermentación/secado.',
     sensoryProfile: 'Chocolate, nuez, acidez media-baja, cuerpo medio-alto, dulzor medio, final corto a medio.',
     characteristics: ['Resistente a roya', 'Alta productividad', 'Mayor consistencia agronómica', 'Mejor en altura', 'Común en Honduras']
+  },
+  {
+    id: 'sl09',
+    name: 'SL09',
+    origin: 'Kenia (seleccionada por Scott Agricultural Laboratories, ~1930s)',
+    species: 'Arábica',
+    altitude: '1,400 – 2,000 msnm',
+    description: 'Selección de los Scott Laboratories en Kenia, menos conocida que SL28 y SL34 pero con características notables. Fue seleccionada por su vigor y adaptabilidad. Aunque menos valorada históricamente en taza que sus hermanas, en manos de productores cuidadosos produce perfiles limpios con buena estructura.',
+    sensoryProfile: 'Acidez media-alta cítrica, cuerpo medio, notas a frutas rojas suaves y chocolate, dulzor a caramelo, postgusto medio y limpio. Menos compleja que SL28 pero más consistente.',
+    characteristics: ['Selección de Scott Labs, Kenia', 'Vigor alto', 'Adaptable a diferentes altitudes', 'Menos conocida que SL28/SL34', 'Perfil limpio y consistente']
+  },
+  {
+    id: 'maracaturra',
+    name: 'Maracaturra',
+    origin: 'Nicaragua / El Salvador (cruce Maragogipe × Caturra)',
+    species: 'Arábica',
+    altitude: '1,200 – 1,800 msnm',
+    description: 'Cruce entre Maragogipe (grano gigante) y Caturra (porte bajo). Combina el tamaño grande del grano de Maragogipe con la productividad y compacidad de Caturra. Ha ganado reconocimiento en competencias de café de especialidad, especialmente en Nicaragua.',
+    sensoryProfile: 'Acidez brillante tipo málica, cuerpo medio-alto, notas florales y a frutas de hueso (durazno, ciruela), dulzor pronunciado a miel, complejidad aromática que evoluciona al enfriar, postgusto largo y elegante.',
+    characteristics: ['Grano grande (herencia Maragogipe)', 'Porte intermedio', 'Ganadora en competencias', 'Muy popular en Nicaragua', 'Alta complejidad sensorial']
+  },
+  {
+    id: 'k7',
+    name: 'K7',
+    origin: 'Kenia (seleccionada en los 1930s, difundida en África del Este)',
+    species: 'Arábica',
+    altitude: '1,200 – 1,800 msnm',
+    description: 'Variedad keniana antigua, seleccionada por su resistencia parcial a CBD (Coffee Berry Disease). Es de porte alto y fue ampliamente plantada en zonas de altitud media en Kenia. Produce rendimientos estables pero con perfil sensorial generalmente inferior a SL28/SL34.',
+    sensoryProfile: 'Cuerpo medio, acidez moderada, notas a cítrico suave y chocolate, dulzor medio a panela, final limpio pero menos complejo que las SL.',
+    characteristics: ['Resistencia parcial a CBD', 'Porte alto', 'Rendimiento estable', 'Menos compleja que SL28', 'Común en altitudes medias de Kenia']
   },
   {
     id: 'obata',
@@ -1140,9 +1170,10 @@ const VarietiesTab: React.FC = () => {
   );
 };
 
-// ─── Tech Standards Tab ──────────────────────────────────────────────────────
+// ─── Tech Standards Tab (includes Defects & Geographic Influence) ─────────────
 
 const TechStandardsTab: React.FC = () => {
+  const [techSection, setTechSection] = useState<'standards' | 'defects' | 'geo'>('standards');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = TECH_STANDARDS.find(s => s.id === selectedId) || null;
 
@@ -1153,61 +1184,102 @@ const TechStandardsTab: React.FC = () => {
           Datos Técnicos del Café Verde
         </h2>
         <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
-          Estándares internacionales y parámetros que definen la calidad de un café verde. Conocer estos valores te permite evaluar lotes, predecir comportamiento en tueste y diagnosticar problemas en taza.
+          Estándares internacionales, defectos y la influencia geográfica que definen la calidad de un café verde.
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {TECH_STANDARDS.map(s => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setSelectedId(selectedId === s.id ? null : s.id)}
-            className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
-              selectedId === s.id
-                ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
-                : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
-            }`}
-          >
-            {s.name}
-          </button>
-        ))}
+      {/* Sub-section toggles */}
+      <div className="flex p-1 bg-stone-100 dark:bg-stone-800 rounded-xl overflow-x-auto">
+        <button
+          onClick={() => { setTechSection('standards'); setSelectedId(null); }}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+            techSection === 'standards'
+              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
+        >
+          Estándares
+        </button>
+        <button
+          onClick={() => { setTechSection('defects'); setSelectedId(null); }}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+            techSection === 'defects'
+              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
+        >
+          Defectos
+        </button>
+        <button
+          onClick={() => { setTechSection('geo'); setSelectedId(null); }}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+            techSection === 'geo'
+              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+          }`}
+        >
+          Influencia Geográfica
+        </button>
       </div>
 
-      <div className="min-h-[200px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
-        {selected ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Rango estándar</p>
-                <p className="text-sm font-black text-stone-900 dark:text-stone-100">{selected.range}</p>
-              </div>
-              <div>
-                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Definición</p>
-                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.definition}</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                  Impacto para el tostador
-                </p>
-                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.roasterImpact}</p>
-              </div>
-              <div>
-                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                  Impacto para el barista
-                </p>
-                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.baristaImpact}</p>
-              </div>
-            </div>
+      {techSection === 'standards' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex flex-wrap gap-2">
+            {TECH_STANDARDS.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSelectedId(selectedId === s.id ? null : s.id)}
+                className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+                  selectedId === s.id
+                    ? 'bg-black text-white dark:bg-stone-100 dark:text-stone-900 border-black'
+                    : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white'
+                }`}
+              >
+                {s.name}
+              </button>
+            ))}
           </div>
-        ) : (
-          <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-            Selecciona un parámetro para ver su rango estándar, definición y cómo impacta al tostador y al barista.
-          </p>
-        )}
-      </div>
+
+          <div className="min-h-[200px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-6">
+            {selected ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Rango estándar</p>
+                    <p className="text-sm font-black text-stone-900 dark:text-stone-100">{selected.range}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Definición</p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.definition}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Impacto para el tostador
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.roasterImpact}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                      Impacto para el barista
+                    </p>
+                    <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.baristaImpact}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                Selecciona un parámetro para ver su rango estándar, definición y cómo impacta al tostador y al barista.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {techSection === 'defects' && <DefectsTab />}
+      {techSection === 'geo' && <GeographicInfluenceTab />}
     </div>
   );
 };
@@ -1416,7 +1488,7 @@ interface Props {
 }
 
 export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'simulator' | 'varieties' | 'tech' | 'defects' | 'geo'>('simulator');
+  const [activeTab, setActiveTab] = useState<'simulator' | 'varieties' | 'tech'>('simulator');
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
@@ -1446,9 +1518,7 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
           {[
             { id: 'simulator', label: 'Simulador' },
             { id: 'varieties', label: 'Variedades' },
-            { id: 'tech', label: 'Datos Técnicos' },
-            { id: 'defects', label: 'Defectos' },
-            { id: 'geo', label: 'Influencia geográfica' }
+            { id: 'tech', label: 'Datos Técnicos' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1470,8 +1540,6 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
         {activeTab === 'simulator' && <VarietySimulator />}
         {activeTab === 'varieties' && <VarietiesTab />}
         {activeTab === 'tech' && <TechStandardsTab />}
-        {activeTab === 'defects' && <DefectsTab />}
-        {activeTab === 'geo' && <GeographicInfluenceTab />}
       </div>
     </div>
   );

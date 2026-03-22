@@ -30,8 +30,8 @@ export const EspressoSimulator: React.FC = () => {
   // Pantalla inicial - Selección de modo
   if (!state && selectedDifficulty === null) {
     return (
-      <div className="min-h-screen bg-white dark:bg-stone-950 p-4 md:p-8 flex items-center justify-center">
-        <div className="w-full max-w-4xl">
+      <div className="bg-white dark:bg-stone-950 p-4 md:p-8">
+        <div className="w-full max-w-4xl mx-auto">
           {/* Botones principales */}
           <div className="space-y-4 mb-8">
             {/* Casos Aleatorios */}
@@ -90,8 +90,8 @@ export const EspressoSimulator: React.FC = () => {
   // Pantalla de selección de nivel
   if (!state && selectedDifficulty !== null) {
     return (
-      <div className="min-h-screen bg-white dark:bg-stone-950 p-4 md:p-8 flex items-center justify-center">
-        <div className="w-full max-w-2xl">
+      <div className="bg-white dark:bg-stone-950 p-4 md:p-8">
+        <div className="w-full max-w-2xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-4">
               Selecciona Nivel
@@ -229,7 +229,7 @@ export const EspressoSimulator: React.FC = () => {
   const isAdvancedMode = selectedDifficulty === 'advanced';
 
   return (
-    <div className="min-h-screen bg-white dark:bg-stone-950 p-4 md:p-8">
+    <div className="bg-white dark:bg-stone-950 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">

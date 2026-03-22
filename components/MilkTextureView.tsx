@@ -265,7 +265,7 @@ export const MilkTextureView: React.FC<{ onBack: () => void; isEmbedded?: boolea
                 <p className="text-sm text-stone-600 dark:text-stone-400">Entiende qué pasa al texturizar.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {milkComponents.map((item) => {
                   const isOpen = openId === item.id;
                   return (

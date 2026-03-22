@@ -5,7 +5,8 @@ import { MilkTextureView } from '../components/MilkTextureView';
 import { SensoryTrainingView } from './SensoryTrainingView';
 import { GreenCoffeeToolView } from './GreenCoffeeToolView';
 import { RoastingToolView } from './RoastingToolView';
-import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle, Eye, Trash2, X, FileDown } from 'lucide-react';
+import { LatteArtView } from './LatteArtView';
+import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle, Eye, Trash2, X, FileDown, Palette } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
@@ -1457,7 +1458,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [view, setView] = useState<'recipes' | 'guide' | 'troubleshoot'>('recipes');
-  const [sessionStage, setSessionStage] = useState<'coffee' | 'recipes'>('recipes');
+  const [sessionStage, setSessionStage] = useState<'coffee' | 'suggestions' | 'recipes'>('recipes');
   const [summaryRecipe, setSummaryRecipe] = useState<FilterRecipe | null>(null);
   const recipeItemRefs = useRef<HTMLDivElement[]>([]);
 
@@ -1525,13 +1526,13 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleRecipeHoverEnter = (index: number) => {
     const el = recipeItemRefs.current[index];
     if (!el) return;
-    gsap.to(el, { y: -4, scale: 1.02, duration: 0.2, ease: 'power2.out' });
+    /* pure css */
   };
 
   const handleRecipeHoverLeave = (index: number) => {
     const el = recipeItemRefs.current[index];
     if (!el) return;
-    gsap.to(el, { y: 0, scale: 1, duration: 0.2, ease: 'power2.inOut' });
+    /* pure css */
   };
 
   const handleDuplicateRecipe = () => {
@@ -1734,8 +1735,17 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
           <div className="flex-1 overflow-y-auto space-y-1">
             {recipes.length === 0 && (
-              <div className="text-xs text-stone-400 py-8 text-center">
-                Aún no hay recetas creadas.
+              <div className="flex flex-col items-center justify-center p-8 text-center bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-dashed border-stone-200 dark:border-stone-700 h-64">
+                <Coffee className="w-10 h-10 text-stone-300 dark:text-stone-600 mb-4" />
+                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 uppercase tracking-widest mb-2">No hay sesiones</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mb-6 max-w-[200px]">Crea tu primera sesión de filtrado para recibir sugerencias y perfilar tu extracción.</p>
+                <button
+                  type="button"
+                  onClick={handleStartSession}
+                  className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900 hover:scale-105 active:scale-95 transition-all shadow-md"
+                >
+                  Crear sesión
+                </button>
               </div>
             )}
             {recipes.map((r, index) => (
@@ -1748,7 +1758,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 }}
                 onMouseEnter={() => handleRecipeHoverEnter(index)}
                 onMouseLeave={() => handleRecipeHoverLeave(index)}
-                className={`group relative w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                className={`group relative w-full text-left px-4 py-3 rounded-xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-sm ${
                   r.id === selectedId
                     ? 'bg-stone-100 border-brand dark:bg-stone-800'
                     : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-brand/50'
@@ -1864,6 +1874,35 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                      Método
+                    </span>
+                    <StyledSelect
+                      value={current.method}
+                      onChange={e => updateCurrent({ method: e.target.value as BrewMethod })}
+                      options={brewMethodOptions}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                      Dosis (g)
+                    </span>
+                    <input
+                      type="number"
+                      min={5}
+                      max={60}
+                      value={current.doseGrams}
+                      onChange={e => {
+                        const val = Number(e.target.value);
+                        if (!Number.isNaN(val) && val >= 1 && val <= 100) {
+                          updateCurrent({ doseGrams: val });
+                        }
+                      }}
+                      className="w-full p-2.5 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl text-xs focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <span className="block text-[10px] font-bold uppercase tracking-widest text-stone-500">
                       Notas estimadas y detalles
@@ -1876,18 +1915,143 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-4">
                   <button
                     type="button"
-                    onClick={() => setSessionStage('recipes')}
-                    className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+                    onClick={() => setSessionStage('suggestions')}
+                    className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded-xl bg-black text-white dark:bg-stone-100 dark:text-stone-900 hover:scale-105 active:scale-95 transition-all shadow-md group"
                   >
-                    Continuar a recetas
+                    Sugerir Recetas
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
               </div>
-            ) : (
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-5 space-y-4">
+            ) : sessionStage === 'suggestions' ? (
+  <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-5 space-y-6">
+    <div className="space-y-2 text-center max-w-md mx-auto">
+      <h2 className="text-lg font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
+        Perfiles Sugeridos
+      </h2>
+      <p className="text-xs text-stone-500 dark:text-stone-400">
+        Basado en tu café, te proponemos 3 perfiles de extracción. También puedes crear tu receta desde cero.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Dulzor */}
+      <div className="border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex flex-col gap-3 hover:border-brand/50 transition-colors">
+        <div className="space-y-1">
+          <h3 className="text-sm font-black uppercase tracking-widest text-[#d97706]">Dulzor (1:15)</h3>
+          <p className="text-[10px] text-stone-500">Molienda media, 4 vertidos iguales, 92°C. Resalta balance y notas dulces.</p>
+        </div>
+        <div className="flex-1 text-[10px] space-y-1 text-stone-600 dark:text-stone-300">
+          <div className="flex justify-between"><span>Vertidos:</span> <strong>4</strong></div>
+          <div className="flex justify-between"><span>Agua Total:</span> <strong>{current.doseGrams * 15} ml</strong></div>
+          <div className="flex justify-between"><span>Tiempo:</span> <strong>~3:00</strong></div>
+        </div>
+        <button
+          onClick={() => {
+             updateCurrent({
+               name: `${current.coffeeName || 'Café'} - Dulzor`,
+               ratio: '1:15',
+               totalWaterMl: current.doseGrams * 15,
+               waterTempCelsius: 92,
+               filterType: current.method,
+               pressureBars: null,
+               phases: [
+                 { id: 's1', order: 1, startTimeSeconds: 0, endTimeSeconds: 45, volumeMl: current.doseGrams * 3, pourType: 'espiral', agitation: true, spinCount: 2 },
+                 { id: 's2', order: 2, startTimeSeconds: 45, endTimeSeconds: 90, volumeMl: current.doseGrams * 4, pourType: 'espiral', agitation: false, spinCount: 0 },
+                 { id: 's3', order: 3, startTimeSeconds: 90, endTimeSeconds: 135, volumeMl: current.doseGrams * 4, pourType: 'central', agitation: false, spinCount: 0 },
+                 { id: 's4', order: 4, startTimeSeconds: 135, endTimeSeconds: 180, volumeMl: current.doseGrams * 4, pourType: 'central', agitation: true, spinCount: 1 }
+               ]
+             });
+             setSessionStage('recipes');
+          }}
+          className="w-full py-2 rounded-lg bg-[#d97706]/10 text-[#d97706] text-[10px] font-bold uppercase tracking-widest hover:bg-[#d97706]/20 transition-colors"
+        >
+          Seleccionar
+        </button>
+      </div>
+
+      {/* Claridad */}
+      <div className="border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex flex-col gap-3 hover:border-brand/50 transition-colors">
+        <div className="space-y-1">
+          <h3 className="text-sm font-black uppercase tracking-widest text-[#2563eb]">Claridad (1:16)</h3>
+          <p className="text-[10px] text-stone-500">Molienda fina, 2-3 vertidos agresivos, 94°C. Resalta acidez y notas florales/frutales.</p>
+        </div>
+        <div className="flex-1 text-[10px] space-y-1 text-stone-600 dark:text-stone-300">
+          <div className="flex justify-between"><span>Vertidos:</span> <strong>2</strong></div>
+          <div className="flex justify-between"><span>Agua Total:</span> <strong>{current.doseGrams * 16} ml</strong></div>
+          <div className="flex justify-between"><span>Tiempo:</span> <strong>~2:30</strong></div>
+        </div>
+        <button
+          onClick={() => {
+             updateCurrent({
+               name: `${current.coffeeName || 'Café'} - Claridad`,
+               ratio: '1:16',
+               totalWaterMl: current.doseGrams * 16,
+               waterTempCelsius: 94,
+               filterType: current.method,
+               pressureBars: null,
+               phases: [
+                 { id: 'c1', order: 1, startTimeSeconds: 0, endTimeSeconds: 40, volumeMl: current.doseGrams * 3, pourType: 'espiral', agitation: true, spinCount: 1 },
+                 { id: 'c2', order: 2, startTimeSeconds: 40, endTimeSeconds: 90, volumeMl: (current.doseGrams * 16) - (current.doseGrams * 3), pourType: 'central', agitation: false, spinCount: 0 }
+               ]
+             });
+             setSessionStage('recipes');
+          }}
+          className="w-full py-2 rounded-lg bg-[#2563eb]/10 text-[#2563eb] text-[10px] font-bold uppercase tracking-widest hover:bg-[#2563eb]/20 transition-colors"
+        >
+          Seleccionar
+        </button>
+      </div>
+
+      {/* Cuerpo */}
+      <div className="border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex flex-col gap-3 hover:border-brand/50 transition-colors">
+        <div className="space-y-1">
+          <h3 className="text-sm font-black uppercase tracking-widest text-[#dc2626]">Cuerpo (1:13)</h3>
+          <p className="text-[10px] text-stone-500">Molienda gruesa, bloom extendido, 89°C. Más textura, ideal para tuestes medios/oscuros.</p>
+        </div>
+        <div className="flex-1 text-[10px] space-y-1 text-stone-600 dark:text-stone-300">
+          <div className="flex justify-between"><span>Vertidos:</span> <strong>3</strong></div>
+          <div className="flex justify-between"><span>Agua Total:</span> <strong>{current.doseGrams * 13} ml</strong></div>
+          <div className="flex justify-between"><span>Tiempo:</span> <strong>~2:45</strong></div>
+        </div>
+        <button
+          onClick={() => {
+             updateCurrent({
+               name: `${current.coffeeName || 'Café'} - Cuerpo`,
+               ratio: '1:13',
+               totalWaterMl: current.doseGrams * 13,
+               waterTempCelsius: 89,
+               filterType: current.method,
+               pressureBars: null,
+               phases: [
+                 { id: 'b1', order: 1, startTimeSeconds: 0, endTimeSeconds: 50, volumeMl: current.doseGrams * 2.5, pourType: 'espiral', agitation: true, spinCount: 3 },
+                 { id: 'b2', order: 2, startTimeSeconds: 50, endTimeSeconds: 100, volumeMl: current.doseGrams * 5.5, pourType: 'espiral', agitation: true, spinCount: 2 },
+                 { id: 'b3', order: 3, startTimeSeconds: 100, endTimeSeconds: 150, volumeMl: current.doseGrams * 5, pourType: 'central', agitation: false, spinCount: 1 }
+               ]
+             });
+             setSessionStage('recipes');
+          }}
+          className="w-full py-2 rounded-lg bg-[#dc2626]/10 text-[#dc2626] text-[10px] font-bold uppercase tracking-widest hover:bg-[#dc2626]/20 transition-colors"
+        >
+          Seleccionar
+        </button>
+      </div>
+    </div>
+
+    <div className="pt-4 border-t border-stone-200 dark:border-stone-800 flex justify-center">
+      <button
+        onClick={() => setSessionStage('recipes')}
+        className="text-[10px] font-bold uppercase tracking-widest text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+      >
+        Omitir y crear receta manual
+      </button>
+    </div>
+  </div>
+) : (
+  <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                 <div className="space-y-2 flex-1">
                   <input
@@ -2284,8 +2448,7 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         )}
         </div>
       )}
-
-      {view === 'guide' && (
+{view === 'guide' && (
         <div className="w-full">
           <FilterCalibrationGuide method={current?.method ?? 'Filtro'} />
         </div>
@@ -2393,6 +2556,8 @@ const FilterView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>,
         document.body
       )}
+
+      
       </div>
     </div>
   );
@@ -2767,14 +2932,16 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             )}
           </div>
         </div>
+
+
+      
       </div>
     </div>
   );
 };
 
-
 export const RecipesView: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping' | 'greenCoffee' | 'roasting'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping' | 'greenCoffee' | 'roasting' | 'latteArt'>('none');
   const rootRef = useRef<HTMLDivElement | null>(null);
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const greenCoffeeCardRef = useRef<HTMLButtonElement | null>(null);
@@ -2783,6 +2950,7 @@ export const RecipesView: React.FC = () => {
   const filterCardRef = useRef<HTMLButtonElement | null>(null);
   const milkCardRef = useRef<HTMLButtonElement | null>(null);
   const cuppingCardRef = useRef<HTMLButtonElement | null>(null);
+  const latteArtCardRef = useRef<HTMLButtonElement | null>(null);
   const espressoBackHandlerRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
@@ -2847,6 +3015,8 @@ export const RecipesView: React.FC = () => {
     content = <MilkTextureView onBack={() => setSelectedCategory('none')} />;
   } else if (selectedCategory === 'cupping') {
     content = <SensoryTrainingView onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'latteArt') {
+    content = <LatteArtView onBack={() => setSelectedCategory('none')} />;
   } else {
     content = (
       <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
@@ -3062,6 +3232,41 @@ export const RecipesView: React.FC = () => {
               </div>
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
                 Diseña y documenta cada vertido para tus métodos de filtrado manual, con sesiones guiadas y soporte.
+              </p>
+            </div>
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          {/* 7. Latte Art */}
+          <button
+            ref={latteArtCardRef}
+            onClick={() => setSelectedCategory('latteArt')}
+            onMouseEnter={() => handleCategoryCardEnter(latteArtCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(latteArtCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Palette className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Arte en café
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Latte Art
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Técnica, variables y patrones
+                </p>
+              </div>
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Aprende las técnicas de vertido libre y etching. Domina las variables y sigue guías paso a paso para cada patrón.
               </p>
             </div>
             <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">

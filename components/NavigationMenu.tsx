@@ -146,9 +146,12 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSa
               }
             }}
           >
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-800 to-stone-900 transition-transform duration-1000 group-hover:scale-105" />
-            <div className={`absolute inset-0 transition-colors duration-1000 ${activeOption ? 'bg-black/40' : 'bg-black/10 group-hover:bg-black/20'}`} />
+            {/* Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
+              style={{ backgroundImage: 'url(/ventas.webp)' }}
+            />
+            <div className={`absolute inset-0 transition-colors duration-1000 ${activeOption ? 'bg-black/60' : 'bg-black/40 group-hover:bg-black/50'}`} />
 
             {/* Content */}
             <div className="relative z-10 w-full h-full flex items-center justify-center p-8">
