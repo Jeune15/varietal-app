@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { SalesProduct, SalesCategory, SalesOrderItem } from '../../types';
@@ -59,6 +60,21 @@ const SalesHomeTab = () => {
   const navigateToTab = (tab: SalesTab) => {
     sessionStorage.setItem('varietal_sales_tab', tab);
     window.dispatchEvent(new CustomEvent('varietal_sales_navigate', { detail: tab }));
+  };
+
+  const contextMenuItem = useMemo(() => {
+    if (!contextMenu) return null;
+    return orderItems.find(i => i.id === contextMenu.itemId) || null;
+  }, [contextMenu, orderItems]);
+
+  const getMenuPosition = (x: number, y: number) => {
+    const width = 180;
+    const height = 150;
+    const padding = 8;
+    return {
+      top: Math.max(padding, Math.min(y, window.innerHeight - height - padding)),
+      left: Math.max(padding, Math.min(x - width, window.innerWidth - width - padding)),
+    };
   };
 
   // Add product to order
@@ -487,6 +503,45 @@ const SalesHomeTab = () => {
           </div>
         </ModalOverlay>
       )}
+
+      {contextMenu && contextMenuItem && createPortal(
+        <div
+          className="fixed inset-0 z-[500]"
+          onClick={() => setContextMenu(null)}
+        >
+          <div
+            className="absolute bg-white dark:bg-stone-800 rounded-xl shadow-xl border border-stone-200 dark:border-stone-700 py-1 min-w-[180px]"
+            style={getMenuPosition(contextMenu.x, contextMenu.y)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setEditingItemObs({ itemId: contextMenuItem.id, obs: contextMenuItem.observation || '' });
+                setContextMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-left"
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Observación
+            </button>
+            <button
+              onClick={() => {
+                setEditingItemPrice({ itemId: contextMenuItem.id, price: String(contextMenuItem.price) });
+                setContextMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-left"
+            >
+              <Edit2 className="w-3.5 h-3.5" /> Editar precio
+            </button>
+            <button
+              onClick={() => removeItem(contextMenuItem.id)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 text-left"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Eliminar
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
@@ -586,40 +641,15 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setContextMenu(contextMenu?.itemId === item.id ? null : { itemId: item.id, x: e.clientX, y: e.clientY });
+                  const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                  const x = r.right;
+                  const y = r.top;
+                  setContextMenu(contextMenu?.itemId === item.id ? null : { itemId: item.id, x, y });
                 }}
-                className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                className="p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:text-stone-300 dark:hover:bg-stone-800 transition-colors min-w-[36px] min-h-[36px] inline-flex items-center justify-center"
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
-
-              {/* Context Menu Dropdown */}
-              {contextMenu?.itemId === item.id && (
-                <div
-                  className="fixed z-[400] bg-white dark:bg-stone-800 rounded-xl shadow-xl border border-stone-200 dark:border-stone-700 py-1 min-w-[160px]"
-                  style={{ top: Math.min(contextMenu.y, window.innerHeight - 140), left: Math.min(contextMenu.x - 160, window.innerWidth - 180) }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  <button
-                    onClick={() => { setEditingItemObs({ itemId: item.id, obs: item.observation || '' }); setContextMenu(null); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-left"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" /> Observación
-                  </button>
-                  <button
-                    onClick={() => { setEditingItemPrice({ itemId: item.id, price: String(item.price) }); setContextMenu(null); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-stone-100 dark:hover:bg-stone-700 text-left"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" /> Editar precio
-                  </button>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 text-left"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
