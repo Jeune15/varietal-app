@@ -46,7 +46,7 @@ db.version(11).stores({
   salesProducts: 'id, name, categoryId, isFavorite',
   salesCategories: 'id, name',
   salesOrders: 'id, status, createdAt',
-  cashRegisters: 'id, weekStart, isOpen'
+  cashRegisters: 'id, monthStart, isOpen'
 });
 
 export { db };
@@ -141,7 +141,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
   salesCategories: ['id', 'name', 'createdAt'],
   salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source', 'deliveredAt', 'despachadoAt', 'invoicedAt', 'usedRoastedCoffee', 'usedRetailBags', 'usedUtilityBags', 'shippingCost', 'shippingPaidBy'],
-  cashRegisters: ['id', 'weekStart', 'weekEnd', 'isOpen', 'initialBalance', 'finalBalance', 'notes', 'createdAt', 'transactions']
+  cashRegisters: ['id', 'monthStart', 'monthEnd', 'isOpen', 'initialBalance', 'finalBalance', 'notes', 'createdAt', 'transactions']
 };
 
 function sanitizeRecord(table: string, record: any) {

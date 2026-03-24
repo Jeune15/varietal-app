@@ -45,21 +45,16 @@ const SalesPedidosTab: React.FC = () => {
     await db.salesOrders.update(order.id, updatedOrder);
     await syncToCloud('salesOrders', updatedOrder);
 
-    // Auto-add as income to current week's cash register
+    // Auto-add as income to current month's cash register
     const today = new Date();
-    const day = today.getDay() || 7; // Sunday = 7
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - day + 1);
-    monday.setHours(0, 0, 1, 0);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 0);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    const monthStartStr = startOfMonth.toISOString();
 
-    const weekStart = monday.toISOString();
-
-    // Find or create register for this week
+    // Find or create register for this month
     const registers = await db.cashRegisters.toArray();
-    let register = registers.find(r => r.weekStart === weekStart);
+    let register = registers.find(r => r.monthStart === monthStartStr);
 
     if (register) {
       const newEntry = {
@@ -282,7 +277,7 @@ const SalesPedidosTab: React.FC = () => {
                     className="flex-1 py-3 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    Marcar como Despachado
+                    Marcar como Producido
                   </button>
                 </div>
               )}

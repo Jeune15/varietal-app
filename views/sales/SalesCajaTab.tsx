@@ -1,30 +1,54 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../../db';
 import { CashRegister, CashEntry } from '../../types';
-import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, Lock, Unlock, X, ArrowUpCircle, ArrowDownCircle, Trash2, LockKeyhole } from 'lucide-react';
+import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, Lock, Unlock, X, ArrowUpCircle, ArrowDownCircle, Trash2, LockKeyhole, Calendar, FileDown, Eye } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-function getWeekRange(date: Date = new Date()) {
-  const d = new Date(date);
-  const day = d.getDay() || 7; // Sunday = 7
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - day + 1);
-  monday.setHours(0, 0, 1, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 0);
-  return { weekStart: monday.toISOString(), weekEnd: sunday.toISOString(), monday, sunday };
+function getMonthRange(date: Date = new Date()) {
+  const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { 
+    monthStart: startOfMonth.toISOString(), 
+    monthEnd: endOfMonth.toISOString(), 
+    startOfMonth, 
+    endOfMonth 
+  };
 }
 
 const SalesCajaTab: React.FC = () => {
   const registers = useLiveQuery(() => db.cashRegisters.toArray()) || [];
+  const salesOrders = useLiveQuery(() => db.salesOrders.toArray()) || [];
 
-  const { weekStart, weekEnd, monday, sunday } = useMemo(() => getWeekRange(), []);
+  const { monthStart, monthEnd, startOfMonth, endOfMonth } = useMemo(() => getMonthRange(), []);
 
   const currentRegister = useMemo(
-    () => registers.find(r => r.weekStart === weekStart) || null,
-    [registers, weekStart]
+    () => registers.find(r => r.monthStart === monthStart) || null,
+    [registers, monthStart]
   );
+
+  // Auto-open register if it doesn't exist for current month
+  useEffect(() => {
+    if (!currentRegister && registers.length > 0) { // Check length to ensure DB is loaded
+      const openCurrentMonth = async () => {
+        const id = crypto.randomUUID();
+        const newReg: CashRegister = {
+          id,
+          monthStart,
+          monthEnd,
+          openingAmount: 0,
+          isOpen: true,
+          entries: [],
+          totalIncome: 0,
+          totalExpense: 0,
+        };
+        await db.cashRegisters.add(newReg);
+        await syncToCloud('cashRegisters', newReg);
+      };
+      openCurrentMonth();
+    }
+  }, [currentRegister, registers.length, monthStart, monthEnd]);
 
   const [showOpenForm, setShowOpenForm] = useState(false);
   const [openingAmount, setOpeningAmount] = useState('');
@@ -42,10 +66,10 @@ const SalesCajaTab: React.FC = () => {
     const amount = parseFloat(openingAmount);
     if (isNaN(amount) || amount < 0) return;
     const id = crypto.randomUUID();
-    const newReg = {
+    const newReg: CashRegister = {
       id,
-      weekStart,
-      weekEnd,
+      monthStart,
+      monthEnd,
       openingAmount: amount,
       isOpen: true,
       entries: [],
@@ -122,7 +146,36 @@ const SalesCajaTab: React.FC = () => {
     ? currentRegister.openingAmount + currentRegister.totalIncome - currentRegister.totalExpense
     : 0;
 
-  const formatDate = (d: Date) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+  // Compute month stats
+  const { topProducts, bottomProducts } = useMemo(() => {
+    if (!currentRegister) return { topProducts: [], bottomProducts: [] };
+    
+    // Filter sales orders for this month
+    const monthOrders = salesOrders.filter(o => 
+      o.status !== 'pendiente' && // consider dispatched/invoiced
+      o.createdAt >= currentRegister.monthStart && 
+      o.createdAt <= currentRegister.monthEnd
+    );
+
+    const productCounts: Record<string, number> = {};
+    
+    monthOrders.forEach(order => {
+      order.items.forEach(item => {
+        productCounts[item.productName] = (productCounts[item.productName] || 0) + item.quantity;
+      });
+    });
+
+    const sortedProducts = Object.entries(productCounts)
+      .map(([name, qty]) => ({ name, qty }))
+      .sort((a, b) => b.qty - a.qty);
+
+    return {
+      topProducts: sortedProducts.slice(0, 5),
+      bottomProducts: sortedProducts.slice(-5).reverse() // Show least sold
+    };
+  }, [salesOrders, currentRegister]);
+
+  const formatDate = (d: Date) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
   const formateDateISO = (iso: string) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
 
@@ -163,11 +216,72 @@ const SalesCajaTab: React.FC = () => {
         <div>
           <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Caja</h2>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            Semana: {formatDate(monday)} — {formatDate(sunday)}
+            Mes: {formatDate(startOfMonth)} — {formatDate(endOfMonth)}
           </p>
         </div>
         {currentRegister && currentRegister.isOpen && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                const doc = new jsPDF();
+                const title = `Resumen de Caja - ${formatDate(startOfMonth)}`;
+                
+                doc.setFontSize(18);
+                doc.text(title, 14, 22);
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 30);
+            
+                // Summary
+                doc.setFontSize(12);
+                doc.setTextColor(0);
+                doc.text(`Apertura: S/ ${currentRegister.openingAmount.toFixed(2)}`, 14, 45);
+                doc.text(`Ingresos: S/ ${currentRegister.totalIncome.toFixed(2)}`, 14, 52);
+                doc.text(`Egresos: S/ ${currentRegister.totalExpense.toFixed(2)}`, 14, 59);
+                doc.text(`Balance Final: S/ ${balance.toFixed(2)}`, 14, 66);
+            
+                // Top Products
+                if (topProducts.length > 0) {
+                  doc.setFontSize(14);
+                  doc.text('Productos Más Vendidos', 14, 80);
+                  const topData = topProducts.map((p, i) => [`${i+1}`, p.name, `${p.qty} unid.`]);
+                  autoTable(doc, {
+                    startY: 85,
+                    head: [['#', 'Producto', 'Cantidad']],
+                    body: topData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [0, 0, 0] },
+                  });
+                }
+            
+                const finalY = (doc as any).lastAutoTable?.finalY || 80;
+            
+                // Entries
+                if (sortedEntries.length > 0) {
+                  doc.setFontSize(14);
+                  doc.text('Movimientos de Caja', 14, finalY + 15);
+                  const entryData = sortedEntries.map(e => [
+                    formateDateISO(e.createdAt),
+                    e.type.toUpperCase(),
+                    e.description,
+                    `S/ ${e.amount.toFixed(2)}`
+                  ]);
+                  autoTable(doc, {
+                    startY: finalY + 20,
+                    head: [['Fecha', 'Tipo', 'Descripción', 'Monto']],
+                    body: entryData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [0, 0, 0] },
+                  });
+                }
+            
+                doc.save(`Resumen_Caja_${monthStart.split('T')[0]}.pdf`);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+            >
+              <FileDown className="w-4 h-4" />
+              Resumen PDF
+            </button>
             <button
               onClick={() => setShowIncomeForm(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
@@ -198,21 +312,13 @@ const SalesCajaTab: React.FC = () => {
         )}
       </div>
 
-      {/* Not opened */}
+      {/* Not opened - Shouldn't happen often now, but fallback */}
       {!currentRegister ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-8 h-8 text-stone-400 dark:text-stone-500" />
           </div>
-          <p className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-1">Caja cerrada esta semana</p>
-          <p className="text-xs text-stone-500 mb-6">Abre la caja con un monto inicial para empezar</p>
-          <button
-            onClick={() => setShowOpenForm(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-colors"
-          >
-            <Unlock className="w-4 h-4" />
-            Abrir Caja
-          </button>
+          <p className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-1">Cargando caja del mes...</p>
         </div>
       ) : (
         <>
@@ -243,6 +349,51 @@ const SalesCajaTab: React.FC = () => {
               color={balance >= 0 ? 'emerald' : 'red'}
               highlight
             />
+          </div>
+
+          {/* Month Stats */}
+          <div className="bg-stone-50 dark:bg-stone-800/30 p-4 rounded-xl border border-stone-200 dark:border-stone-800">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" /> Estadísticas del Mes
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">Productos más vendidos</p>
+                {topProducts.length === 0 ? (
+                  <p className="text-xs text-stone-500 italic">No hay ventas registradas aún.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {topProducts.map((p, idx) => (
+                      <li key={p.name} className="flex justify-between items-center text-xs">
+                        <span className="font-medium flex items-center gap-2">
+                          <span className="text-[10px] text-stone-400 font-mono w-4">{idx + 1}.</span> 
+                          {p.name}
+                        </span>
+                        <span className="font-bold text-emerald-600">{p.qty} unid.</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">Sugerencias de rotación</p>
+                {bottomProducts.length === 0 ? (
+                  <p className="text-xs text-stone-500 italic">No hay suficientes datos para sugerir.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {bottomProducts.map((p, idx) => (
+                      <li key={p.name} className="flex justify-between items-center text-xs">
+                        <span className="font-medium text-stone-600 dark:text-stone-300 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                          {p.name}
+                        </span>
+                        <span className="text-[10px] text-stone-400">Solo {p.qty} unid.</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Entries List */}
@@ -309,7 +460,7 @@ const SalesCajaTab: React.FC = () => {
                 <Unlock className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="text-lg font-black uppercase tracking-tight">Abrir Caja</h3>
-              <p className="text-xs text-stone-500 mt-1">Semana: {formatDate(monday)} — {formatDate(sunday)}</p>
+              <p className="text-xs text-stone-500 mt-1">Mes: {formatDate(startOfMonth)} — {formatDate(endOfMonth)}</p>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 block mb-1.5">Monto Inicial (S/)</label>
@@ -434,7 +585,7 @@ const SalesCajaTab: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mx-auto">
               <LockKeyhole className="w-6 h-6 text-stone-500" />
             </div>
-            <h3 className="text-sm font-bold">¿Cerrar la caja de esta semana?</h3>
+            <h3 className="text-sm font-bold">¿Cerrar la caja de este mes?</h3>
             <p className="text-xs text-stone-500">No podrás agregar más movimientos</p>
             <div className="flex items-center justify-between bg-stone-50 dark:bg-stone-800/50 rounded-lg px-4 py-3">
               <span className="text-xs font-bold text-stone-500">Balance final</span>

@@ -444,10 +444,10 @@ export interface CashEntry {
 
 export interface CashRegister {
   id: string;
-  weekStart: string; // ISO Monday 00:01
-  weekEnd: string;   // ISO Sunday 23:59
+  monthStart: string; // ISO date string e.g. "2023-10-01T00:00:00.000Z"
+  monthEnd: string;   // ISO date string e.g. "2023-10-31T23:59:59.999Z"
   openingAmount: number;
-  isOpen: boolean;
+  isOpen: boolean;    // Not really needed if automatic, but we can keep it
   entries: CashEntry[];
   totalIncome: number;
   totalExpense: number;

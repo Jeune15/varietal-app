@@ -1071,11 +1071,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                           const updatedSalesOrder = { ...o.salesOrderOriginal, invoicedAt: now };
                           await db.salesOrders.update(o.salesOrderOriginal.id, updatedSalesOrder);
                           await syncToCloud('salesOrders', updatedSalesOrder);
-                          showToast('Pedido facturado', 'success');
+                          showToast('Pedido facturado y despachado', 'success');
                         }}
                         className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
                       >
-                        Facturar
+                        Despachar y Facturar
                       </button>
                     )}
                     <button
@@ -1212,11 +1212,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                                   const updatedSalesOrder = { ...o.salesOrderOriginal, invoicedAt: now };
                                   await db.salesOrders.update(o.salesOrderOriginal.id, updatedSalesOrder);
                                   await syncToCloud('salesOrders', updatedSalesOrder);
-                                  showToast('Pedido facturado', 'success');
+                                  showToast('Pedido facturado y despachado', 'success');
                                 }}
                                 className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
                               >
-                                Facturar
+                                Despachar y Facturar
                               </button>
                             )}
                           </div>

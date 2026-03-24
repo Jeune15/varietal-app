@@ -338,8 +338,7 @@ const AppContent: React.FC = () => {
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, roles: ['admin'] },
     { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
-    { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
-    { id: 'sales', label: 'Ventas', icon: Receipt, roles: ['admin'] },
+    { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] }
   ].filter(item => !userRole || (item.roles.includes(userRole)));
 
   // If loading (initial or transition)
@@ -363,11 +362,6 @@ const AppContent: React.FC = () => {
           isOpen={isNavMenuOpen} 
           onClose={() => setIsNavMenuOpen(false)} 
           onAuthenticate={handleAuthenticate}
-          onSalesOpen={() => {
-            setIsSalesPage(true);
-            sessionStorage.setItem('varietal_sales_page', 'true');
-            setIsNavMenuOpen(false);
-          }}
         />
       </div>
     );
@@ -443,7 +437,7 @@ const AppContent: React.FC = () => {
   }
 
   // Independent Calendar Page (accessed from landing page)
-  if (isCalendarIndependent) {
+  if (isCalendarIndependent) { 
     const handleExitCalendar = () => {
       setIsCalendarIndependent(false);
       sessionStorage.removeItem('varietal_access');
@@ -587,8 +581,6 @@ const AppContent: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : activeTab === 'sales' ? (
-                <SalesPage onExit={() => setActiveTab('dashboard')} />
               ) : (
                 <DashboardView 
                   roasts={roasts} 

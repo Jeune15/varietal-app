@@ -89,7 +89,9 @@ ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "usedUtilityBags" JSONB;
 ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "shippingCost" NUMERIC;
 ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "shippingPaidBy" TEXT;
 
--- 6. Setup RLS (Row Level Security) for new tables
+-- Rename cashRegisters columns from week to month
+ALTER TABLE "cashRegisters" RENAME COLUMN "weekStart" TO "monthStart";
+ALTER TABLE "cashRegisters" RENAME COLUMN "weekEnd" TO "monthEnd";
 ALTER TABLE "salesCategories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesProducts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesOrders" ENABLE ROW LEVEL SECURITY;
