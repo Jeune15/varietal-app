@@ -31,6 +31,7 @@ import InventoryView from './views/InventoryView';
 import DashboardView from './views/DashboardView';
 import CalendarPage from './views/CalendarPage';
 import SalesPage from './views/SalesPage';
+import SalesHistorialTab from './views/sales/SalesHistorialTab';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import ModulesView from './views/ModulesView';
@@ -140,14 +141,19 @@ const AppContent: React.FC = () => {
   }, [stockTab]);
 
   useEffect(() => {
+    if (isCalendarIndependent) sessionStorage.setItem('varietal_calendar_independent', 'true');
+    else sessionStorage.removeItem('varietal_calendar_independent');
+  }, [isCalendarIndependent]);
+
+  useEffect(() => {
     if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');
     else sessionStorage.removeItem('varietal_sales_page');
   }, [isSalesPage]);
 
   useEffect(() => {
-    if (isCalendarIndependent) sessionStorage.setItem('varietal_calendar_independent', 'true');
-    else sessionStorage.removeItem('varietal_calendar_independent');
-  }, [isCalendarIndependent]);
+    if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');
+    else sessionStorage.removeItem('varietal_sales_page');
+  }, [isSalesPage]);
 
   useEffect(() => {
     const el = adminContentRef.current;
@@ -207,6 +213,8 @@ const AppContent: React.FC = () => {
         setActiveTab('calendar');
         setIsCalendarIndependent(true);
         sessionStorage.removeItem('varietal_calendar');
+      } else if (sessionStorage.getItem('varietal_sales_page') === 'true') {
+        setIsSalesPage(true);
       } else {
         if (storedRole === 'student') {
           const desired = storedTab && ['cupping', 'modules', 'recipes'].includes(storedTab) ? storedTab : 'cupping';
@@ -338,7 +346,8 @@ const AppContent: React.FC = () => {
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, roles: ['admin'] },
     { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
-    { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] }
+    { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
+    { id: 'sales-history', label: 'Ventas (Historial)', icon: Receipt, roles: ['admin'] }
   ].filter(item => !userRole || (item.roles.includes(userRole)));
 
   // If loading (initial or transition)
@@ -436,6 +445,24 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Independent Sales Page (accessed from landing page)
+  if (isSalesPage) {
+    const handleExitSales = () => {
+      setIsSalesPage(false);
+      sessionStorage.removeItem('varietal_sales_page');
+      sessionStorage.removeItem('varietal_sales_tab');
+      setViewState('landing');
+    };
+
+    return (
+      <div className="animate-zoom-in">
+        <ErrorBoundary>
+          <SalesPage onExit={handleExitSales} />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
   // Independent Calendar Page (accessed from landing page)
   if (isCalendarIndependent) { 
     const handleExitCalendar = () => {
@@ -452,24 +479,6 @@ const AppContent: React.FC = () => {
       <div className="animate-zoom-in">
         <ErrorBoundary>
           <CalendarPage onExit={handleExitCalendar} />
-        </ErrorBoundary>
-      </div>
-    );
-  }
-
-  // Sales Page (accessed from navigation menu)
-  if (isSalesPage) {
-    const handleExitSales = () => {
-      setIsSalesPage(false);
-      sessionStorage.removeItem('varietal_sales_page');
-      sessionStorage.removeItem('varietal_sales_tab');
-      setViewState('landing');
-    };
-
-    return (
-      <div className="animate-zoom-in">
-        <ErrorBoundary>
-          <SalesPage onExit={handleExitSales} />
         </ErrorBoundary>
       </div>
     );
@@ -538,6 +547,12 @@ const AppContent: React.FC = () => {
                 />
               ) : activeTab === 'orders' ? (
                 <OrdersView orders={orders} />
+              ) : activeTab === 'sales-history' ? (
+                <div className="space-y-8">
+                  <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
+                    <SalesHistorialTab />
+                  </div>
+                </div>
               ) : activeTab === 'stock' ? (
                 <div className="space-y-8">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">

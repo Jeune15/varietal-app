@@ -4,9 +4,8 @@ import SalesHomeTab from './sales/SalesHomeTab';
 import SalesPedidosTab from './sales/SalesPedidosTab';
 import SalesProductosTab from './sales/SalesProductosTab';
 import SalesCajaTab from './sales/SalesCajaTab';
-import SalesHistorialTab from './sales/SalesHistorialTab';
 
-type SalesTab = 'home' | 'pedidos' | 'productos' | 'caja' | 'historial';
+type SalesTab = 'home' | 'pedidos' | 'productos' | 'caja';
 
 interface Props {
   onExit: () => void;
@@ -16,14 +15,13 @@ const tabs: { id: SalesTab; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Inicio', icon: Home },
   { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
   { id: 'productos', label: 'Productos', icon: Package },
-  { id: 'caja', label: 'Caja', icon: Wallet },
-  { id: 'historial', label: 'Historial', icon: History },
+  { id: 'caja', label: 'Caja', icon: Wallet }
 ];
 
 const SalesPage: React.FC<Props> = ({ onExit }) => {
   const [activeTab, setActiveTab] = useState<SalesTab>(() => {
     const stored = sessionStorage.getItem('varietal_sales_tab');
-    if (stored && ['home', 'pedidos', 'productos', 'caja', 'historial'].includes(stored)) {
+    if (stored && ['home', 'pedidos', 'productos', 'caja'].includes(stored)) {
       return stored as SalesTab;
     }
     return 'home';
@@ -36,7 +34,7 @@ const SalesPage: React.FC<Props> = ({ onExit }) => {
   useEffect(() => {
     const handler = (event: Event) => {
       const tab = (event as CustomEvent).detail as SalesTab;
-      if (tab && ['home', 'pedidos', 'productos', 'caja', 'historial'].includes(tab)) {
+      if (tab && ['home', 'pedidos', 'productos', 'caja'].includes(tab)) {
         setActiveTab(tab);
       }
     };
@@ -74,12 +72,11 @@ const SalesPage: React.FC<Props> = ({ onExit }) => {
               <SalesPedidosTab />
             </div>
           )}
-          {(activeTab === 'productos' || activeTab === 'caja' || activeTab === 'historial') && (
+          {(activeTab === 'productos' || activeTab === 'caja') && (
             <div className="h-full overflow-y-auto">
               <div className="max-w-7xl mx-auto">
                 {activeTab === 'productos' && <SalesProductosTab />}
                 {activeTab === 'caja' && <SalesCajaTab />}
-                {activeTab === 'historial' && <SalesHistorialTab />}
               </div>
             </div>
           )}
