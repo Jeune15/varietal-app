@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
-import { RoastedStock, RetailBagStock, Roast, ProductionItem } from '../types';
-import { ShoppingBag, CheckCircle, XCircle, Tag, Layers, Plus, Settings2, AlertCircle, Pencil, X, Search } from 'lucide-react';
+import { RoastedStock, RetailBagStock, Roast, ProductionItem, ProductionActivity } from '../types';
+import { ShoppingBag, CheckCircle, XCircle, Tag, Layers, Plus, Settings2, AlertCircle, Pencil, X, Search, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { StyledSelect } from '../components/StyledSelect';
@@ -54,7 +54,18 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
   });
 
   const [stockClientFilter, setStockClientFilter] = useState('');
-  const [stockVarietyFilter, setStockVarietyFilter] = useState('');
+  const [selectedStockForDetails, setSelectedStockForDetails] = useState<RoastedStock | null>(null);
+  const [stockHistory, setStockHistory] = useState<ProductionActivity[]>([]);
+
+  useEffect(() => {
+    if (selectedStockForDetails) {
+      db.history.where('details.stockId').equals(selectedStockForDetails.id).toArray()
+        .then(data => {
+          // Sort chronologically descending
+          setStockHistory(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        });
+    }
+  }, [selectedStockForDetails]);
 
   const [retailBagSearch, setRetailBagSearch] = useState('');
 
@@ -126,16 +137,16 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
 
   const filteredRoastedStocks = useMemo(() => {
     const clientQuery = stockClientFilter.trim().toLowerCase();
-    const varietyQuery = stockVarietyFilter.trim().toLowerCase();
+    const varietyQuery = stockClientFilter.trim().toLowerCase(); // using the same input for variety too
     const base = stocks.filter(s => s.remainingQtyKg > 0.001);
     return base.filter(s => {
       const client = s.clientName.toLowerCase();
       const variety = s.variety.toLowerCase();
       const matchesClient = clientQuery ? client.includes(clientQuery) : true;
       const matchesVariety = varietyQuery ? variety.includes(varietyQuery) : true;
-      return matchesClient && matchesVariety;
+      return matchesClient || matchesVariety; // changed to OR since we only have one search box
     });
-  }, [stocks, stockClientFilter, stockVarietyFilter]);
+  }, [stocks, stockClientFilter]);
 
   const visibleRoastedStocks = filteredRoastedStocks.slice(0, 10);
 
@@ -286,6 +297,23 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
       await syncToCloud('retailBags', newBag);
     }
 
+    // Save history for retail bags
+    const activity: ProductionActivity = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: 'Armado de Bolsas Retail',
+      date: new Date().toISOString(),
+      details: {
+        stockId: stock.id,
+        unitsValue,
+        bagType: selectedBagType,
+        reductionKg,
+        clientName: stock.clientName,
+        variety: stock.variety
+      }
+    };
+    await db.history.add(activity);
+    await syncToCloud('history', activity);
+
     setShowRetailModal(false);
     setSelectedRoastedStockId('');
     setBagUnits('');
@@ -363,6 +391,23 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
        const updatedStock = { ...editingStock, remainingQtyKg: newWeight };
        await db.roastedStocks.update(editingStock.id, { remainingQtyKg: newWeight });
        await syncToCloud('roastedStocks', updatedStock);
+       
+       const mermaDifference = editingStock.remainingQtyKg - newWeight;
+       if (mermaDifference > 0) {
+         const activity: ProductionActivity = {
+           id: Math.random().toString(36).substr(2, 9),
+           type: 'Ajuste de Merma',
+           date: new Date().toISOString(),
+           details: {
+             stockId: editingStock.id,
+             mermaKg: mermaDifference,
+             note: 'Ajuste manual de merma en silos'
+           }
+         };
+         await db.history.add(activity);
+         await syncToCloud('history', activity);
+       }
+       
        showToast('Stock actualizado', 'success');
     }
 
@@ -1182,19 +1227,10 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type="text"
-                placeholder="BUSCAR CLIENTE..."
+                placeholder="BUSCAR CLIENTE O VARIEDAD..."
                 value={stockClientFilter}
                 onChange={e => setStockClientFilter(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:outline-none transition-colors dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:focus:border-white"
-              />
-            </div>
-            <div className="flex-1 min-w-[180px]">
-              <input
-                type="text"
-                placeholder="FILTRAR POR VARIEDAD..."
-                value={stockVarietyFilter}
-                onChange={e => setStockVarietyFilter(e.target.value)}
-                className="w-full px-4 py-2 bg-white border border-stone-200 text-xs font-bold focus:border-black focus:outline-none transition-colors dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:focus:border-white"
               />
             </div>
           </div>
@@ -1209,17 +1245,28 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
             visibleRoastedStocks.map((s) => {
               const roastDate = getRoastDate(s);
               return (
-                <div key={s.id} className="bg-white dark:bg-stone-900 p-4 space-y-4">
+                <div key={s.id} className="bg-white dark:bg-stone-900 p-4 space-y-4 relative">
+                  <button
+                    onClick={() => setSelectedStockForDetails(s)}
+                    className="absolute top-4 right-4 p-2 text-stone-400 hover:text-black dark:hover:text-white transition-colors bg-stone-50 dark:bg-stone-800 rounded-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                   <div>
-                    <div className="font-black text-black dark:text-white text-lg uppercase tracking-tight">{s.clientName}</div>
+                    <div className="font-black text-black dark:text-white text-lg uppercase tracking-tight pr-10">{s.variety}</div>
                     <div className="text-[10px] text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest mt-1">
-                      {s.variety}
+                      {s.clientName}
                     </div>
                     {roastDate && (
                       <div className="text-[9px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-widest mt-0.5">
                         Tueste: {roastDate}
                       </div>
                     )}
+                    <div className="mt-2">
+                      <span className="text-[10px] font-mono bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded-sm text-stone-600 dark:text-stone-400">
+                        {s.roastCode || 'Sin código'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between py-2 border-t border-b border-stone-100 dark:border-stone-800">
@@ -1290,10 +1337,11 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
             <table className="w-full text-left min-w-[700px]">
               <thead className="bg-black dark:bg-stone-950 text-white dark:text-stone-200">
                 <tr>
-                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em]">Variedad / Cliente</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em]">Café / Cliente</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em]">Código</th>
                   <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em]">Stock Disponible</th>
                   <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-center">Estado</th>
-                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-right">Mermas Técnicas</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em] text-right">Mermas / Detalles</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
@@ -1312,15 +1360,20 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                     return (
                     <tr key={s.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors group">
                       <td className="px-6 py-6">
-                        <div className="font-black text-black dark:text-white text-lg uppercase tracking-tight">{s.clientName}</div>
+                        <div className="font-black text-black dark:text-white text-lg uppercase tracking-tight">{s.variety}</div>
                         <div className="text-[10px] text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest mt-1 group-hover:text-black dark:group-hover:text-white transition-colors">
-                          {s.variety}
+                          {s.clientName}
                         </div>
                         {roastDate && (
                           <div className="text-[9px] text-stone-400 dark:text-stone-500 font-bold uppercase tracking-widest mt-0.5">
                             Tueste: {roastDate}
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="text-xs font-mono bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded-sm text-stone-600 dark:text-stone-400">
+                          {s.roastCode || '-'}
+                        </span>
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex items-baseline gap-2">
@@ -1359,7 +1412,16 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                         </div>
                       </td>
                       <td className="px-6 py-6 text-right">
-                        <span className="text-sm font-bold text-stone-400 dark:text-stone-500 tabular-nums border-b border-stone-200 dark:border-stone-800 pb-0.5">{s.mermaGrams}g</span>
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="text-sm font-bold text-stone-400 dark:text-stone-500 tabular-nums border-b border-stone-200 dark:border-stone-800 pb-0.5">{s.mermaGrams}g</span>
+                          <button
+                            onClick={() => setSelectedStockForDetails(s)}
+                            className="p-2 text-stone-400 hover:text-black dark:hover:text-white transition-colors bg-stone-50 dark:bg-stone-800 rounded-sm"
+                            title="Ver detalles"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1794,6 +1856,99 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
         </div>,
         document.body
       )}
+      {selectedStockForDetails && createPortal(
+        <div 
+          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setSelectedStockForDetails(null)}
+        >
+          <div 
+            className="bg-white dark:bg-stone-900 w-full max-w-2xl border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 bg-black dark:bg-stone-950 text-white border-b border-stone-800 shrink-0 sticky top-0 z-10">
+              <div className="space-y-1">
+                <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                  Detalle de Café Tostado
+                </h3>
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest">{selectedStockForDetails.clientName}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedStockForDetails(null)}
+                className="p-2 hover:bg-stone-800 transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-8 overflow-y-auto scrollbar-hide">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-stone-50 dark:bg-stone-950 border border-stone-100 dark:border-stone-800">
+                  <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1">Variedad</p>
+                  <p className="font-black uppercase tracking-tight">{selectedStockForDetails.variety}</p>
+                </div>
+                <div className="p-4 bg-stone-50 dark:bg-stone-950 border border-stone-100 dark:border-stone-800">
+                  <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1">Código</p>
+                  <p className="font-mono text-sm">{selectedStockForDetails.roastCode || '-'}</p>
+                </div>
+                <div className="p-4 bg-stone-50 dark:bg-stone-950 border border-stone-100 dark:border-stone-800">
+                  <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1">Fecha de Tueste</p>
+                  <p className="font-black uppercase tracking-tight">{getRoastDate(selectedStockForDetails) || '-'}</p>
+                </div>
+                <div className="p-4 bg-stone-50 dark:bg-stone-950 border border-stone-100 dark:border-stone-800">
+                  <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1">Total Tostado Inicial</p>
+                  <p className="font-black uppercase tracking-tight">{selectedStockForDetails.totalQtyKg.toFixed(2)} Kg</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-4 border-b border-stone-200 dark:border-stone-800 pb-2">
+                  Historial de Movimientos / Mermas
+                </h4>
+                {stockHistory.length === 0 ? (
+                  <p className="text-[10px] uppercase text-stone-400 font-bold tracking-widest">No hay movimientos registrados.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stockHistory.map((act) => (
+                      <div key={act.id} className="flex justify-between items-start p-3 bg-stone-50 dark:bg-stone-900 border border-stone-100 dark:border-stone-800">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide">{act.type}</p>
+                          <p className="text-[9px] text-stone-500 uppercase tracking-widest mt-1">
+                            {new Date(act.date).toLocaleString()}
+                          </p>
+                          {act.details?.note && (
+                            <p className="text-[10px] text-stone-600 dark:text-stone-400 mt-1 italic">
+                              {act.details.note}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {act.details?.mermaKg && (
+                            <p className="text-xs font-black text-red-600 dark:text-red-400">
+                              -{act.details.mermaKg.toFixed(3)} Kg
+                            </p>
+                          )}
+                          {act.details?.reductionKg && (
+                            <p className="text-xs font-black text-red-600 dark:text-red-400">
+                              -{act.details.reductionKg.toFixed(3)} Kg
+                            </p>
+                          )}
+                          {act.details?.bagType && (
+                            <p className="text-[9px] text-stone-500 uppercase tracking-widest mt-1">
+                              {act.details.unitsValue}x {act.details.bagType}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       </>
   );
 }

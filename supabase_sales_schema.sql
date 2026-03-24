@@ -48,6 +48,11 @@ CREATE TABLE IF NOT EXISTS "cashRegisters" (
 -- Roasted Stocks
 ALTER TABLE "roastedStocks" ADD COLUMN IF NOT EXISTS "roastDate" TEXT;
 ALTER TABLE "roastedStocks" ADD COLUMN IF NOT EXISTS "roastType" TEXT;
+ALTER TABLE "roastedStocks" ADD COLUMN IF NOT EXISTS "roastCode" TEXT;
+
+-- Roasts
+ALTER TABLE roasts ADD COLUMN IF NOT EXISTS "roastCode" TEXT;
+ALTER TABLE roasts ADD COLUMN IF NOT EXISTS "greenCoffeeName" TEXT;
 
 -- Orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "serviceRoastedQtyKg" NUMERIC;

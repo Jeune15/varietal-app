@@ -58,13 +58,15 @@ const tableColumnWhitelist: Record<string, string[]> = {
   roasts: [
     'id',
     'greenCoffeeId',
+    'greenCoffeeName',
     'orderId',
     'clientName',
     'greenQtyKg',
     'roastedQtyKg',
     'weightLossPercentage',
     'profile',
-    'roastDate'
+    'roastDate',
+    'roastCode'
   ],
   orders: [
     'id',
@@ -99,7 +101,8 @@ const tableColumnWhitelist: Record<string, string[]> = {
     'isSelected',
     'mermaGrams',
     'roastDate',
-    'roastType'
+    'roastType',
+    'roastCode'
   ],
   retailBags: ['id', 'coffeeName', 'type', 'quantity', 'clientName', 'roastDate', 'roastId'],
   history: ['id', 'type', 'date', 'details'],

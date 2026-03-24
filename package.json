@@ -16,6 +16,8 @@
     "dexie-react-hooks": "^1.1.7",
     "framer-motion": "^12.34.3",
     "gsap": "^3.14.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.462.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

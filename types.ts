@@ -26,6 +26,7 @@ export interface GreenCoffee {
 export interface Roast {
   id: string;
   greenCoffeeId: string;
+  greenCoffeeName?: string; // Nombre del café verde cuando se ingresa manualmente
   orderId?: string; // Link to an order if it's a "Make to Order" roast
   clientName: string;
   greenQtyKg: number;
@@ -33,6 +34,7 @@ export interface Roast {
   weightLossPercentage: number;
   profile: string;
   roastDate: string;
+  roastCode?: string; // Código de café tostado
 }
 
 export interface Order {
@@ -93,6 +95,7 @@ export interface RoastedStock {
   mermaGrams: number;
   roastDate?: string; // Fecha de tostado para stock manual
   roastType?: string; // Tipo de tueste (espresso, omni, filtrado)
+  roastCode?: string; // Código de café tostado
 }
 
 export interface RetailBagStock {
@@ -258,7 +261,8 @@ export type ProductionActivityType =
   | 'Despacho de Pedido'
   | 'SYSTEM_RESET'
   | 'Examen'
-  | 'Calibración';
+  | 'Calibración'
+  | 'Ajuste de Merma';
 
 export interface ProductionActivity {
   id: string;
