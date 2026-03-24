@@ -33,14 +33,14 @@ CREATE TABLE IF NOT EXISTS "salesOrders" (
 -- 4. Create Cash Registers Table
 CREATE TABLE IF NOT EXISTS "cashRegisters" (
   id TEXT PRIMARY KEY,
-  "weekStart" TEXT NOT NULL,
-  "weekEnd" TEXT NOT NULL,
+  "monthStart" TEXT NOT NULL,
+  "monthEnd" TEXT NOT NULL,
   "isOpen" BOOLEAN NOT NULL DEFAULT TRUE,
-  "initialBalance" NUMERIC NOT NULL DEFAULT 0,
-  "finalBalance" NUMERIC,
-  notes TEXT,
-  "createdAt" TEXT NOT NULL,
-  transactions JSONB
+  "openingAmount" NUMERIC NOT NULL DEFAULT 0,
+  "totalIncome" NUMERIC NOT NULL DEFAULT 0,
+  "totalExpense" NUMERIC NOT NULL DEFAULT 0,
+  "closedAt" TEXT,
+  entries JSONB
 );
 
 -- 5. Fix Missing Columns in existing tables
@@ -89,9 +89,7 @@ ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "usedUtilityBags" JSONB;
 ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "shippingCost" NUMERIC;
 ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "shippingPaidBy" TEXT;
 
--- Rename cashRegisters columns from week to month
-ALTER TABLE "cashRegisters" RENAME COLUMN "weekStart" TO "monthStart";
-ALTER TABLE "cashRegisters" RENAME COLUMN "weekEnd" TO "monthEnd";
+-- Fix Missing Columns in existing tables
 ALTER TABLE "salesCategories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesProducts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesOrders" ENABLE ROW LEVEL SECURITY;

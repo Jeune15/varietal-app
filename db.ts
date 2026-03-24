@@ -141,7 +141,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
   salesCategories: ['id', 'name', 'createdAt'],
   salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source', 'deliveredAt', 'despachadoAt', 'invoicedAt', 'usedRoastedCoffee', 'usedRetailBags', 'usedUtilityBags', 'shippingCost', 'shippingPaidBy'],
-  cashRegisters: ['id', 'monthStart', 'monthEnd', 'isOpen', 'initialBalance', 'finalBalance', 'notes', 'createdAt', 'transactions']
+  cashRegisters: ['id', 'monthStart', 'monthEnd', 'isOpen', 'openingAmount', 'totalIncome', 'totalExpense', 'closedAt', 'entries']
 };
 
 function sanitizeRecord(table: string, record: any) {

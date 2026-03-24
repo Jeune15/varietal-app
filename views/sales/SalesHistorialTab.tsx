@@ -128,13 +128,13 @@ const SalesHistorialTab: React.FC = () => {
     return (
       <div className="p-4 md:p-8">
         <div className="border-b border-stone-200 dark:border-stone-800 pb-6 mb-8">
-          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Historial</h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Resumen semanal de ventas</p>
+          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Historial de Facturación</h2>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Resumen de pedidos facturados</p>
         </div>
         <div className="text-center py-16 text-stone-400 dark:text-stone-600">
           <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm font-medium">No hay historial aún</p>
-          <p className="text-xs mt-1">El historial aparecerá cuando se despachen pedidos</p>
+          <p className="text-xs mt-1">El historial aparecerá cuando se facturen pedidos</p>
         </div>
       </div>
     );
