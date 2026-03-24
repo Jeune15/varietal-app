@@ -31,6 +31,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState<Order | null>(null);
   const [shippingCost, setShippingCost] = useState<number>(0);
+  const [shippingPaidBy, setShippingPaidBy] = useState<string>('Varietal');
   const [shippingQty, setShippingQty] = useState<number | ''>('');
 
   // Delete Modal State
@@ -458,6 +459,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
 
   const updates: Partial<Order> = { 
     shippingCost,
+    shippingPaidBy,
     shippedDate: nowIso,
     shippedKg: newTotalShipped,
     status: isCompleteDispatch
@@ -468,6 +470,18 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   await db.orders.update(order.id, updates);
   await syncToCloud('orders', { ...order, ...updates });
 
+  if (order.isSalesOrder && order.salesOrderOriginal) {
+    const updatedSalesOrder = {
+      ...order.salesOrderOriginal,
+      shippingCost,
+      shippingPaidBy
+    };
+    await db.salesOrders.update(order.salesOrderOriginal.id, updatedSalesOrder);
+    if (getSupabase()) {
+       await getSupabase().from('salesOrders').update(updatedSalesOrder).eq('id', order.salesOrderOriginal.id);
+    }
+  }
+
   if (shippingCost > 0) {
     const newExpense = {
       id: Math.random().toString(36).substr(2, 9),
@@ -475,7 +489,8 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       amount: shippingCost,
       date: nowIso.split('T')[0],
       status: 'pending' as const,
-      relatedOrderId: order.id
+      relatedOrderId: order.id,
+      paidBy: shippingPaidBy
     };
     await db.expenses.add(newExpense);
     await syncToCloud('expenses', newExpense);
@@ -567,10 +582,12 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
     });
   };
 
-  const getRequiredActivities = (order: Order): ProductionActivityType[] =>
-    order.type === 'Venta Café Tostado'
+  const getRequiredActivities = (order: Order): ProductionActivityType[] => {
+    if (order.isSalesOrder) return ['Armado de Pedido'];
+    return order.type === 'Venta Café Tostado'
       ? ['Armado de Bolsas Retail']
       : ['Selección de Café', 'Armado de Pedido'];
+  };
 
   const areAllRequiredActivitiesCompleted = (order: Order) => {
     const required = getRequiredActivities(order);
@@ -709,7 +726,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
 
         if (!isServiceOrder) {
           const currentFulfilled = order.fulfilledKg || 0;
-          const remainingOrderQty = Math.max(0, order.quantityKg - currentFulfilled);
+          const orderTotalKg = order.isSalesOrder 
+            ? (order.orderLines?.reduce((sum, l) => sum + l.quantityKg, 0) || 1)
+            : (order.quantityKg || 0);
+            
+          const remainingOrderQty = Math.max(0, orderTotalKg - currentFulfilled);
 
           if (remainingOrderQty <= 0.001) {
             showToast('Este pedido ya está completamente armado.', 'info');
@@ -799,14 +820,20 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
         updates.fulfilledKg = newFulfilled;
 
         if (!isServiceOrder) {
-          if (order.quantityKg > 0) {
+          if (order.quantityKg && order.quantityKg > 0) {
             const progressPercentage = Math.round((newFulfilled / order.quantityKg) * 100);
             updates.progress = Number.isNaN(progressPercentage)
               ? 0
               : Math.min(100, Math.max(0, progressPercentage));
+          } else if (order.isSalesOrder) {
+            // For sales orders, calculate progress based on total items
+            const totalKg = order.orderLines?.reduce((sum, l) => sum + l.quantityKg, 0) || 1;
+            const progressPercentage = Math.round((newFulfilled / totalKg) * 100);
+            updates.progress = Math.min(100, Math.max(0, progressPercentage));
           }
 
-          if (newFulfilled >= order.quantityKg - 0.01) {
+          if ((order.quantityKg && newFulfilled >= order.quantityKg - 0.01) || 
+              (order.isSalesOrder && updates.progress === 100)) {
             updates.status = 'Listo para Despacho';
             updates.progress = 100;
           } else if (order.status === 'Pendiente') {
@@ -825,13 +852,13 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
         activityDeductionKg = deductionQty;
         activityNewFulfilledKg = newFulfilled;
         activityOrderQtyKg = !isServiceOrder
-          ? order.quantityKg
-          : (order.serviceRoastedQtyKg || order.quantityKg);
+          ? (order.quantityKg || 0)
+          : (order.serviceRoastedQtyKg || order.quantityKg || 0);
         activityProgressAfter = updates.progress ?? order.progress;
 
         await db.orders.update(order.id, updates);
         await syncToCloud('orders', { ...order, ...updates });
-      } else if (order) {
+      } else if (order && !order.isSalesOrder) {
         showToast('Debe seleccionar un lote de café para envasar.', 'error');
         return;
       }
@@ -867,12 +894,47 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
     await syncToCloud('history', newActivity);
 
     if (orderForActivity) {
-      const prevCompleted = orderForActivity.completedActivities || [];
-      const alreadyCompleted = prevCompleted.includes(activeMode);
-      const updatedCompleted = alreadyCompleted ? prevCompleted : [...prevCompleted, activeMode];
-      await db.orders.update(orderForActivity.id, { completedActivities: updatedCompleted });
-      await syncToCloud('orders', { ...orderForActivity, completedActivities: updatedCompleted });
-      setSelectedOrderForActivities({ ...orderForActivity, completedActivities: updatedCompleted });
+      if (orderForActivity.isSalesOrder) {
+        // Special logic to handle Sales Orders updates
+        const salesOrderOriginal = orderForActivity.salesOrderOriginal;
+        if (salesOrderOriginal) {
+          const updatedSalesOrder = {
+            ...salesOrderOriginal,
+            usedRoastedCoffee: [
+              ...(salesOrderOriginal.usedRoastedCoffee || []),
+              {
+                stockId: selectedStockId,
+                variety: stockForActivity?.variety || '',
+                qtyKg: activityDeductionKg || 0
+              }
+            ],
+            usedUtilityBags: [
+              ...(salesOrderOriginal.usedUtilityBags || [])
+            ]
+          };
+
+          if (additionalInfo.bagsUsed > 0) {
+            updatedSalesOrder.usedUtilityBags.push({
+              utilityId: 'mixed',
+              format: additionalInfo.packagingType,
+              qty: additionalInfo.bagsUsed
+            });
+          }
+
+          await db.salesOrders.update(salesOrderOriginal.id, updatedSalesOrder);
+          // Assuming syncToCloud supports salesOrders or has equivalent handling
+          if (getSupabase()) {
+             await getSupabase().from('salesOrders').update(updatedSalesOrder).eq('id', salesOrderOriginal.id);
+          }
+        }
+      } else {
+        const prevCompleted = orderForActivity.completedActivities || [];
+        const alreadyCompleted = prevCompleted.includes(activeMode);
+        const updatedCompleted = alreadyCompleted ? prevCompleted : [...prevCompleted, activeMode];
+        await db.orders.update(orderForActivity.id, { completedActivities: updatedCompleted });
+        await syncToCloud('orders', { ...orderForActivity, completedActivities: updatedCompleted });
+        setSelectedOrderForActivities({ ...orderForActivity, completedActivities: updatedCompleted });
+      }
     }
 
     showToast('Operación registrada exitosamente', 'success');
@@ -901,8 +963,8 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       <div className="space-y-12 animate-in fade-in duration-700 pb-48">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
         <div className="space-y-2">
-          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Pedidos</h3>
-          <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Gestión de Demanda Activa</p>
+          <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Pedidos Equipo</h3>
+          <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Gestión de Demanda y Despachos</p>
         </div>
         <div className="flex flex-wrap gap-4 w-full sm:w-auto justify-end">
           <button
@@ -1002,6 +1064,22 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                     >
                       <Trash2 className="w-3 h-3" /> Eliminar
                     </button>
+                    {o.isSalesOrder && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const now = new Date().toISOString();
+                          await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
+                          if (getSupabase()) {
+                             await getSupabase().from('salesOrders').update({ invoicedAt: now }).eq('id', o.salesOrderOriginal.id);
+                          }
+                          showToast('Pedido facturado', 'success');
+                        }}
+                        className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
+                      >
+                        Facturar
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setSelectedOrderIdForContinuation(prev => prev === o.id ? null : o.id)}
@@ -1820,6 +1898,22 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                     />
                     <DollarSign className="w-6 h-6 absolute left-4 top-4 text-stone-400" />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-bold text-sm text-stone-600 dark:text-stone-300 uppercase tracking-wide">
+                    Pagado por
+                  </p>
+                  <StyledSelect
+                    value={shippingPaidBy}
+                    onChange={(e) => setShippingPaidBy(e.target.value)}
+                    options={[
+                      { value: 'Varietal', label: 'Varietal' },
+                      { value: 'Isai', label: 'Isai' },
+                      { value: 'Alejhandro', label: 'Alejhandro' },
+                      { value: 'Anthony', label: 'Anthony' },
+                    ]}
+                  />
                 </div>
               </div>
 

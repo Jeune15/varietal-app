@@ -67,6 +67,7 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS "completedActivities" JSONB;
 
 -- Expenses
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS "createdBy" TEXT;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS "paidBy" TEXT;
 
 -- Retail Bags
 ALTER TABLE "retailBags" ADD COLUMN IF NOT EXISTS "clientName" TEXT;
@@ -77,6 +78,16 @@ ALTER TABLE "retailBags" ADD COLUMN IF NOT EXISTS "roastId" TEXT;
 ALTER TABLE "cuppingSessions" ADD COLUMN IF NOT EXISTS "notes" TEXT;
 ALTER TABLE "cuppingSessions" ADD COLUMN IF NOT EXISTS "sessionType" TEXT;
 ALTER TABLE "cuppingSessions" ADD COLUMN IF NOT EXISTS "samples" JSONB;
+
+-- Sales Orders (new columns for integration)
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "deliveredAt" TEXT;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "despachadoAt" TEXT;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "invoicedAt" TEXT;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "usedRoastedCoffee" JSONB;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "usedRetailBags" JSONB;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "usedUtilityBags" JSONB;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "shippingCost" NUMERIC;
+ALTER TABLE "salesOrders" ADD COLUMN IF NOT EXISTS "shippingPaidBy" TEXT;
 
 -- 6. Setup RLS (Row Level Security) for new tables
 ALTER TABLE "salesCategories" ENABLE ROW LEVEL SECURITY;

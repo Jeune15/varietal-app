@@ -13,18 +13,14 @@ export const ExpensesView = () => {
   const [formData, setFormData] = useState({
     reason: '',
     amount: '',
-    documentType: 'Factura' as 'Factura' | 'Boleta',
+    documentType: 'Factura' as 'Factura' | 'Boleta' | 'Recibo' | 'Otro',
     documentId: '',
     date: new Date().toISOString().split('T')[0],
-    type: 'envio' as 'envio' | 'compra',
-    createdBy: 'Anthony' as 'Anthony' | 'Alei'
+    paidBy: 'Varietal' as string
   });
 
-  // Only show pending expenses as per "eliminen al pagar" request (interpreted as filter)
   const expenses = useLiveQuery(() => 
     db.expenses
-      .where('status')
-      .equals('pending')
       .reverse()
       .sortBy('date')
   );
@@ -41,11 +37,11 @@ export const ExpensesView = () => {
       id: Math.random().toString(36).substr(2, 9),
       reason: formData.reason,
       amount: parseFloat(formData.amount),
-      documentType: formData.type === 'compra' ? formData.documentType : undefined,
-      documentId: formData.type === 'compra' ? formData.documentId : '',
+      documentType: formData.documentType,
+      documentId: formData.documentId,
       date: formData.date,
-      status: 'pending',
-      createdBy: formData.createdBy
+      status: 'paid', // All new expenses are considered paid by default now
+      paidBy: formData.paidBy
     };
 
     await db.expenses.add(newExpense);
@@ -58,8 +54,7 @@ export const ExpensesView = () => {
       documentType: 'Factura',
       documentId: '',
       date: new Date().toISOString().split('T')[0],
-      type: 'envio',
-      createdBy: 'Anthony'
+      paidBy: 'Varietal'
     });
   };
 
@@ -87,7 +82,7 @@ export const ExpensesView = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
         <div className="space-y-2">
           <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Gastos</h3>
-          <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">Cuentas por Pagar</p>
+          <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">Historial de Egresos</p>
         </div>
         {canEdit && (
           <button 
@@ -106,8 +101,8 @@ export const ExpensesView = () => {
             <div className="w-16 h-16 bg-stone-50 flex items-center justify-center mx-auto mb-4 border border-stone-200">
               <DollarSign className="w-8 h-8 text-stone-400" />
             </div>
-            <h3 className="text-lg font-black text-black uppercase mb-1">Sin gastos pendientes</h3>
-            <p className="text-stone-500 font-medium text-sm">No hay cuentas por pagar registradas.</p>
+            <h3 className="text-lg font-black text-black uppercase mb-1">Sin gastos</h3>
+            <p className="text-stone-500 font-medium text-sm">No hay gastos registrados en el historial.</p>
           </div>
         ) : (
           expenses?.map(expense => (
@@ -126,10 +121,10 @@ export const ExpensesView = () => {
                     <Calendar className="w-3 h-3" />
                     {expense.date}
                   </span>
-                  {expense.createdBy && (
+                  {expense.paidBy && (
                     <span className="flex items-center gap-1 text-black dark:text-white">
                       <User className="w-3 h-3" />
-                      {expense.createdBy}
+                      {expense.paidBy}
                     </span>
                   )}
                   {expense.relatedOrderId && (
@@ -142,19 +137,12 @@ export const ExpensesView = () => {
               
               <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
                 <span className="text-2xl font-black text-black tracking-tighter">
-                  ${expense.amount.toLocaleString('es-CL')}
+                  S/ {expense.amount.toFixed(2)}
                 </span>
                 
                 <div className="flex gap-2">
                   {canEdit && (
                     <>
-                      <button 
-                        onClick={() => handlePay(expense)}
-                        className="p-2 text-stone-400 hover:text-black hover:bg-stone-100 border border-transparent hover:border-black transition-all"
-                        title="Marcar como Pagado"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                      </button>
                       <button 
                         onClick={() => handleDelete(expense)}
                         className="p-2 text-stone-400 hover:text-black hover:bg-stone-100 border border-transparent hover:border-black transition-all"
@@ -226,63 +214,6 @@ export const ExpensesView = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Tipo de Gasto</label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'envio' })}
-                      className={`flex-1 px-3 py-2 text-[11px] font-bold uppercase tracking-widest border ${
-                        formData.type === 'envio'
-                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                          : 'bg-stone-50 text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
-                      }`}
-                    >
-                      Envío
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'compra' })}
-                      className={`flex-1 px-3 py-2 text-[11px] font-bold uppercase tracking-widest border ${
-                        formData.type === 'compra'
-                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                          : 'bg-stone-50 text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
-                      }`}
-                    >
-                      Compra
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Responsable</label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, createdBy: 'Anthony' })}
-                      className={`flex-1 px-3 py-2 text-[11px] font-bold uppercase tracking-widest border ${
-                        formData.createdBy === 'Anthony'
-                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                          : 'bg-stone-50 text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
-                      }`}
-                    >
-                      Anthony
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, createdBy: 'Alei' })}
-                      className={`flex-1 px-3 py-2 text-[11px] font-bold uppercase tracking-widest border ${
-                        formData.createdBy === 'Alei'
-                          ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                          : 'bg-stone-50 text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
-                      }`}
-                    >
-                      Alei
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
                   <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Fecha</label>
                   <input
                     type="date"
@@ -292,22 +223,35 @@ export const ExpensesView = () => {
                     required
                   />
                 </div>
-                {formData.type === 'compra' && (
-                  <div>
-                    <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Tipo Doc.</label>
-                    <StyledSelect
-                      value={formData.documentType}
-                      onChange={e => setFormData({...formData, documentType: e.target.value as 'Factura' | 'Boleta'})}
-                      options={[
-                        { value: 'Factura', label: 'Factura' },
-                        { value: 'Boleta', label: 'Boleta' }
-                      ]}
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Responsable / Quién Pagó</label>
+                  <StyledSelect
+                    value={formData.paidBy}
+                    onChange={e => setFormData({...formData, paidBy: e.target.value})}
+                    options={[
+                      { value: 'Varietal', label: 'Varietal' },
+                      { value: 'Isai', label: 'Isai' },
+                      { value: 'Alejhandro', label: 'Alejhandro' },
+                      { value: 'Anthony', label: 'Anthony' }
+                    ]}
+                  />
+                </div>
               </div>
-              
-              {formData.type === 'compra' && (
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Tipo Doc. (Opcional)</label>
+                  <StyledSelect
+                    value={formData.documentType}
+                    onChange={e => setFormData({...formData, documentType: e.target.value as 'Factura' | 'Boleta' | 'Recibo' | 'Otro'})}
+                    options={[
+                      { value: 'Factura', label: 'Factura' },
+                      { value: 'Boleta', label: 'Boleta' },
+                      { value: 'Recibo', label: 'Recibo' },
+                      { value: 'Otro', label: 'Otro' }
+                    ]}
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Nº Documento</label>
                   <input
@@ -318,8 +262,8 @@ export const ExpensesView = () => {
                     placeholder="Opcional"
                   />
                 </div>
-              )}
-
+              </div>
+              
               <div className="pt-4 border-t border-stone-100 dark:border-stone-800 flex justify-end gap-3">
                 <button
                   type="button"

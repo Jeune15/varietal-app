@@ -63,6 +63,7 @@ export interface Order {
   shippedDate?: string;
   shippedKg?: number;
   shippingCost?: number;
+  shippingPaidBy?: string;
   invoicedDate?: string;
   deliveryType?: 'envio' | 'recojo';
   deliveryAddress?: string;
@@ -70,18 +71,23 @@ export interface Order {
   isPaused?: boolean;
   nextActivity?: ProductionActivityType;
   completedActivities?: ProductionActivityType[];
+  
+  // Fields for Ventas -> Equipo Integration
+  isSalesOrder?: boolean;
+  salesOrderOriginal?: any;
 }
 
 export interface Expense {
   id: string;
   reason: string;
   amount: number;
-  documentType?: 'Factura' | 'Boleta';
-  documentId?: string; // Factura o Boleta
+  documentType?: 'Factura' | 'Boleta' | 'Recibo' | 'Otro';
+  documentId?: string;
   date: string;
   status: 'pending' | 'paid';
   relatedOrderId?: string;
-  createdBy?: 'Anthony' | 'Alei';
+  createdBy?: string;
+  paidBy?: string; // Varietal, Isai, Alejhandro, Anthony
 }
 
 export interface RoastedStock {
@@ -262,7 +268,8 @@ export type ProductionActivityType =
   | 'SYSTEM_RESET'
   | 'Examen'
   | 'Calibración'
-  | 'Ajuste de Merma';
+  | 'Ajuste de Merma'
+  | 'Facturación de Pedido';
 
 export interface ProductionActivity {
   id: string;
@@ -405,7 +412,7 @@ export interface SalesOrderItem {
   observation?: string;
 }
 
-export type SalesOrderStatus = 'pendiente' | 'entregado';
+export type SalesOrderStatus = 'pendiente' | 'entregado' | 'despachado';
 
 export interface SalesOrder {
   id: string;
@@ -416,6 +423,13 @@ export interface SalesOrder {
   status: SalesOrderStatus;
   createdAt: string;
   deliveredAt?: string;
+  despachadoAt?: string; // Cuando se envía a equipo
+  invoicedAt?: string; // Cuando se marca facturado
+  usedRoastedCoffee?: { stockId: string; variety: string; qtyKg: number }[];
+  usedRetailBags?: { bagId: string; type: string; variety: string; qty: number }[];
+  usedUtilityBags?: { utilityId: string; format: string; qty: number }[];
+  shippingCost?: number;
+  shippingPaidBy?: string; // Varietal, Alejhandro, Anthony, Isai
 }
 
 export interface CashEntry {

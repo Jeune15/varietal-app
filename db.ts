@@ -106,7 +106,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   ],
   retailBags: ['id', 'coffeeName', 'type', 'quantity', 'clientName', 'roastDate', 'roastId'],
   history: ['id', 'type', 'date', 'details'],
-  expenses: ['id', 'reason', 'amount', 'documentType', 'documentId', 'date', 'status', 'relatedOrderId'],
+  expenses: ['id', 'reason', 'amount', 'documentType', 'documentId', 'date', 'status', 'relatedOrderId', 'createdBy', 'paidBy'],
   productionInventory: ['id', 'name', 'type', 'quantity', 'minThreshold', 'format'],
   profiles: ['id', 'email', 'role', 'isActive'],
   cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form', 'notes', 'sessionType', 'samples', 'deleted'],
@@ -140,7 +140,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'details'],
   salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
   salesCategories: ['id', 'name', 'createdAt'],
-  salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source'],
+  salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source', 'deliveredAt', 'despachadoAt', 'invoicedAt', 'usedRoastedCoffee', 'usedRetailBags', 'usedUtilityBags', 'shippingCost', 'shippingPaidBy'],
   cashRegisters: ['id', 'weekStart', 'weekEnd', 'isOpen', 'initialBalance', 'finalBalance', 'notes', 'createdAt', 'transactions']
 };
 

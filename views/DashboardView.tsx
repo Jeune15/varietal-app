@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { GreenCoffee, Roast, Order, ProductionItem, RoastedStock } from '../types';
-import { exportDatabaseToJson, initSupabase } from '../db';
+import { Roast, Order, ProductionItem, RoastedStock, SalesOrder } from '../types';
+import { exportDatabaseToJson, initSupabase, db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
+import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X, DollarSign } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -19,7 +19,6 @@ import {
 } from 'recharts';
 
 interface Props {
-  green: GreenCoffee[];
   roasts: Roast[];
   orders: Order[];
   productionInventory: ProductionItem[];
@@ -28,7 +27,12 @@ interface Props {
   userRole?: 'admin' | 'student' | null;
 }
 
-const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInventory, roastedStocks = [], onNavigate, userRole }) => {
+const DashboardView: React.FC<Props> = ({ roasts, orders, productionInventory, roastedStocks = [], onNavigate, userRole }) => {
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
+  
+  useEffect(() => {
+    db.salesOrders.toArray().then(setSalesOrders);
+  }, []);
   const [showSyncConfig, setShowSyncConfig] = useState(false);
   const [syncForm, setSyncForm] = useState({
     url: localStorage.getItem('supabase_url') || '',
@@ -46,22 +50,22 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
   startOfWeekDate.setDate(startOfWeekDate.getDate() + diffToMonday);
   const startOfWeek = startOfWeekDate.toISOString().split('T')[0];
   
-  const totalGreen = green.reduce((acc, curr) => acc + (Number(curr.quantityKg) || 0), 0);
   const totalRoastedStock = roastedStocks.reduce((acc, curr) => acc + (Number(curr.remainingQtyKg) || 0), 0);
   
   // Orders Stats
   const activeOrders = orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado');
   const totalOrders = activeOrders.length;
   
-  const ordersToday = orders.filter(o => {
-    const entryDate = o.entryDate || '';
-    return entryDate.startsWith(today);
-  }).length;
+  const salesOrdersToday = salesOrders.filter(o => o.createdAt.startsWith(today)).length;
+  const salesOrdersThisWeek = salesOrders.filter(o => o.createdAt >= startOfWeek && o.createdAt <= today).length;
   
-  const ordersThisWeek = orders.filter(o => {
-    const entryDate = o.entryDate || '';
-    return entryDate >= startOfWeek && entryDate <= today;
-  }).length;
+  const salesTotalToday = salesOrders
+    .filter(o => o.createdAt.startsWith(today))
+    .reduce((acc, curr) => acc + curr.total, 0);
+    
+  const salesTotalThisWeek = salesOrders
+    .filter(o => o.createdAt >= startOfWeek && o.createdAt <= today)
+    .reduce((acc, curr) => acc + curr.total, 0);
   
   // Roasting Stats
   const roastedToday = roasts
@@ -72,13 +76,13 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
     .filter(r => r.roastDate >= startOfWeek && r.roastDate <= today)
     .reduce((acc, curr) => acc + (Number(curr.roastedQtyKg) || 0), 0);
   
-  const lowGreen = useMemo(
+  const lowRoasted = useMemo(
     () =>
-      green
-        .filter(g => g.quantityKg > 0 && g.quantityKg <= 5)
-        .sort((a, b) => a.quantityKg - b.quantityKg)
+      roastedStocks
+        .filter(g => g.remainingQtyKg > 0 && g.remainingQtyKg <= 5)
+        .sort((a, b) => a.remainingQtyKg - b.remainingQtyKg)
         .slice(0, 5),
-    [green]
+    [roastedStocks]
   );
   
   const dedupedUtility = useMemo(() => {
@@ -185,10 +189,16 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          label="Stock café verde"
-          value={`${totalGreen.toFixed(0)} Kg`}
-          icon={<Package strokeWidth={1.5} />}
-          description="Total disponible en verde"
+          label="Ventas Hoy"
+          value={`S/ ${salesTotalToday.toFixed(2)}`}
+          icon={<DollarSign strokeWidth={1.5} />}
+          description={`Pedidos hoy: ${salesOrdersToday}`}
+        />
+        <MetricCard
+          label="Ventas Semana"
+          value={`S/ ${salesTotalThisWeek.toFixed(2)}`}
+          icon={<DollarSign strokeWidth={1.5} />}
+          description={`Pedidos semana: ${salesOrdersThisWeek}`}
         />
         <MetricCard
           label="Stock café tostado"
@@ -202,12 +212,6 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
           icon={<Flame strokeWidth={1.5} />}
           description={`Día: ${roastedToday.toFixed(1)} Kg • Sem: ${roastedThisWeek.toFixed(1)} Kg`}
         />
-        <MetricCard
-          label="Pedidos"
-          value={totalOrders}
-          icon={<Clock strokeWidth={1.5} />}
-          description={`Activos: ${totalOrders} • Hoy: ${ordersToday} • Sem: ${ordersThisWeek}`}
-        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -218,20 +222,20 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
                 Alertas de stock
               </p>
               <h3 className="text-lg font-black uppercase tracking-tight dark:text-white">
-                Café verde — stock bajo
+                Café Tostado — stock bajo
               </h3>
             </div>
             <span className="text-[10px] font-bold bg-stone-900 text-white px-3 py-1 tracking-widest uppercase dark:bg-stone-800 dark:text-stone-200">
-              {lowGreen.length}
+              {lowRoasted.length}
             </span>
           </div>
-          {lowGreen.length === 0 ? (
+          {lowRoasted.length === 0 ? (
             <div className="h-32 flex items-center justify-center text-[11px] text-stone-400 font-mono uppercase tracking-widest dark:text-stone-600">
-              Sin alertas de stock verde
+              Sin alertas de stock tostado
             </div>
           ) : (
             <div className="space-y-3">
-              {lowGreen.map(item => (
+              {lowRoasted.map(item => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between border border-stone-100 px-3 py-2 text-xs dark:border-stone-800"
@@ -246,7 +250,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-black text-red-600 dark:text-red-500">
-                      {item.quantityKg.toFixed(1)}
+                      {item.remainingQtyKg.toFixed(1)}
                     </span>
                     <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest ml-1">
                       Kg

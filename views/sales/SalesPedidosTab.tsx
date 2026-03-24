@@ -19,8 +19,8 @@ const SalesPedidosTab: React.FC = () => {
 
   const deliveredOrders = useMemo(
     () => orders
-      .filter(o => o.status === 'entregado')
-      .sort((a, b) => new Date(b.deliveredAt!).getTime() - new Date(a.deliveredAt!).getTime())
+      .filter(o => o.status === 'despachado')
+      .sort((a, b) => new Date(b.despachadoAt || b.createdAt).getTime() - new Date(a.despachadoAt || a.createdAt).getTime())
       .slice(0, 20), // Show last 20 delivered
     [orders]
   );
@@ -38,8 +38,8 @@ const SalesPedidosTab: React.FC = () => {
   const markAsDelivered = async (order: SalesOrder) => {
     const now = new Date().toISOString();
     await db.salesOrders.update(order.id, {
-      status: 'entregado',
-      deliveredAt: now,
+      status: 'despachado', // Changed from entregado to despachado
+      despachadoAt: now,
     });
 
     // Auto-add as income to current week's cash register
@@ -162,7 +162,7 @@ const SalesPedidosTab: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                    Entregados ({deliveredOrders.length})
+                    Despachados ({deliveredOrders.length})
                   </span>
                 </div>
                 {showDelivered ? (
@@ -193,7 +193,7 @@ const SalesPedidosTab: React.FC = () => {
                       <div className="text-right flex-shrink-0">
                         <p className="text-xs font-bold text-stone-500">S/ {order.total.toFixed(2)}</p>
                         <p className="text-[9px] text-stone-400">
-                          {order.deliveredAt ? formatDate(order.deliveredAt) : ''}
+                          {order.despachadoAt ? formatDate(order.despachadoAt) : ''}
                         </p>
                       </div>
                     </button>
@@ -229,7 +229,7 @@ const SalesPedidosTab: React.FC = () => {
                       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                       : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                   }`}>
-                    {selectedOrder.status === 'pendiente' ? 'Pendiente' : 'Entregado'}
+                    {selectedOrder.status === 'pendiente' ? 'Pendiente' : 'Despachado'}
                   </span>
                 </div>
               </div>
@@ -275,13 +275,13 @@ const SalesPedidosTab: React.FC = () => {
                     className="flex-1 py-3 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    Marcar como Entregado
+                    Marcar como Despachado
                   </button>
                 </div>
               )}
-              {selectedOrder.status === 'entregado' && selectedOrder.deliveredAt && (
+              {selectedOrder.status === 'despachado' && selectedOrder.despachadoAt && (
                 <p className="text-center text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest">
-                  ✓ Entregado el {formatDate(selectedOrder.deliveredAt)} a las {formatTime(selectedOrder.deliveredAt)}
+                  ✓ Despachado a Equipo el {formatDate(selectedOrder.despachadoAt)} a las {formatTime(selectedOrder.despachadoAt)}
                 </p>
               )}
             </div>

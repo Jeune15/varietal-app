@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Coffee, 
   Flame, 
@@ -28,7 +28,6 @@ import { db, getSupabase, pullFromCloud, initSupabase, subscribeToChanges } from
 import RoastingView from './views/RoastingView';
 import OrdersView from './views/OrdersView';
 import InventoryView from './views/InventoryView';
-import InvoicingView from './views/InvoicingView';
 import DashboardView from './views/DashboardView';
 import CalendarPage from './views/CalendarPage';
 import SalesPage from './views/SalesPage';
@@ -50,7 +49,34 @@ const AppContent: React.FC = () => {
   const { user, loading, profile, refreshSession } = useAuth();
   const greenCoffees = useLiveQuery(() => db.greenCoffees.toArray()) || [];
   const roasts = useLiveQuery(() => db.roasts.toArray()) || [];
-  const orders = useLiveQuery(() => db.orders.toArray()) || [];
+  const salesOrders = useLiveQuery(() => db.salesOrders.toArray()) || [];
+  // Use a simpler approach since hooks inside useMemo cause issues
+  const rawOrders = useLiveQuery(() => db.orders.toArray()) || [];
+  const orders = useMemo(() => {
+    const salesAsOrders = salesOrders
+      .filter(so => so.status === 'despachado')
+      .map(so => ({
+        id: so.id,
+        clientName: so.clientName,
+        variety: 'Pedido de Ventas',
+        type: 'Venta Café Tostado' as const,
+        quantityKg: 0,
+        status: so.invoicedAt ? 'Facturado' : 'Pendiente',
+        progress: so.invoicedAt ? 100 : 0,
+        entryDate: so.despachadoAt || so.createdAt,
+        dueDate: so.createdAt,
+        orderLines: so.items.map(item => ({
+          id: item.id,
+          variety: item.productName,
+          quantityKg: item.quantity,
+          bagSizeGrams: 0,
+          bagsCount: item.quantity
+        })),
+        isSalesOrder: true,
+        salesOrderOriginal: so
+      }));
+    return [...rawOrders, ...salesAsOrders] as any[];
+  }, [salesOrders, rawOrders]);
   const roastedStocks = useLiveQuery(() => db.roastedStocks.toArray()) || [];
   const retailBags = useLiveQuery(() => db.retailBags.toArray()) || [];
   const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
@@ -313,7 +339,7 @@ const AppContent: React.FC = () => {
     { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
     { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
-    { id: 'invoicing', label: 'Facturación', icon: Receipt, roles: ['admin'] },
+    { id: 'sales', label: 'Ventas', icon: Receipt, roles: ['admin'] },
   ].filter(item => !userRole || (item.roles.includes(userRole)));
 
   // If loading (initial or transition)
@@ -503,7 +529,6 @@ const AppContent: React.FC = () => {
             <div key={activeTab} className="animate-slide-up">
               {activeTab === 'dashboard' ? (
                 <DashboardView 
-                  green={greenCoffees} 
                   roasts={roasts} 
                   orders={orders} 
                   productionInventory={productionInventory}
@@ -562,15 +587,10 @@ const AppContent: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : activeTab === 'invoicing' ? (
-                <InvoicingView 
-                  orders={orders}
-                  roasts={roasts}
-                  stocks={roastedStocks}
-                />
+              ) : activeTab === 'sales' ? (
+                <SalesPage onExit={() => setActiveTab('dashboard')} />
               ) : (
                 <DashboardView 
-                  green={greenCoffees} 
                   roasts={roasts} 
                   orders={orders} 
                   productionInventory={productionInventory}
