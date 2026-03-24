@@ -6,7 +6,9 @@ import { SensoryTrainingView } from './SensoryTrainingView';
 import { GreenCoffeeToolView } from './GreenCoffeeToolView';
 import { RoastingToolView } from './RoastingToolView';
 import { LatteArtView } from './LatteArtView';
-import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle, Eye, Trash2, X, FileDown, Palette } from 'lucide-react';
+import { HotDrinksView } from './HotDrinksView';
+import { ColdDrinksView } from './ColdDrinksView';
+import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle, Eye, Trash2, X, FileDown, Palette, Snowflake } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../db';
@@ -2941,7 +2943,7 @@ const FilterBrewView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 export const RecipesView: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping' | 'greenCoffee' | 'roasting' | 'latteArt'>('none');
+  const [selectedCategory, setSelectedCategory] = useState<'none' | 'espresso' | 'filter' | 'milk' | 'cupping' | 'greenCoffee' | 'roasting' | 'latteArt' | 'hotDrinks' | 'coldDrinks'>('none');
   const rootRef = useRef<HTMLDivElement | null>(null);
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const greenCoffeeCardRef = useRef<HTMLButtonElement | null>(null);
@@ -2951,6 +2953,8 @@ export const RecipesView: React.FC = () => {
   const milkCardRef = useRef<HTMLButtonElement | null>(null);
   const cuppingCardRef = useRef<HTMLButtonElement | null>(null);
   const latteArtCardRef = useRef<HTMLButtonElement | null>(null);
+  const hotDrinksCardRef = useRef<HTMLButtonElement | null>(null);
+  const coldDrinksCardRef = useRef<HTMLButtonElement | null>(null);
   const espressoBackHandlerRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
@@ -3017,6 +3021,10 @@ export const RecipesView: React.FC = () => {
     content = <SensoryTrainingView onBack={() => setSelectedCategory('none')} />;
   } else if (selectedCategory === 'latteArt') {
     content = <LatteArtView onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'hotDrinks') {
+    content = <HotDrinksView onBack={() => setSelectedCategory('none')} />;
+  } else if (selectedCategory === 'coldDrinks') {
+    content = <ColdDrinksView onBack={() => setSelectedCategory('none')} />;
   } else {
     content = (
       <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8">
@@ -3267,6 +3275,76 @@ export const RecipesView: React.FC = () => {
               </div>
               <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
                 Aprende las técnicas de vertido libre y etching. Domina las variables y sigue guías paso a paso para cada patrón.
+              </p>
+            </div>
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          {/* 8. Bebidas Calientes */}
+          <button
+            ref={hotDrinksCardRef}
+            onClick={() => setSelectedCategory('hotDrinks')}
+            onMouseEnter={() => handleCategoryCardEnter(hotDrinksCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(hotDrinksCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                  <Coffee className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Recetario
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Bebidas Calientes
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Clásicos y jarabes
+                </p>
+              </div>
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Descubre la historia, preparación y perfil sensorial de las bebidas calientes más populares, y aprende a preparar tus propios jarabes.
+              </p>
+            </div>
+            <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
+              <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Entrar</span>
+              <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+            </div>
+          </button>
+
+          {/* 9. Bebidas Frías */}
+          <button
+            ref={coldDrinksCardRef}
+            onClick={() => setSelectedCategory('coldDrinks')}
+            onMouseEnter={() => handleCategoryCardEnter(coldDrinksCardRef.current)}
+            onMouseLeave={() => handleCategoryCardLeave(coldDrinksCardRef.current)}
+            className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+          >
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-blue-500 dark:group-hover:text-white">
+                  <Snowflake className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
+                  Refrescantes
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
+                  Bebidas Frías
+                </h3>
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Siropes y Cold Brew
+                </p>
+              </div>
+              <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Explora el mundo de las bebidas heladas, domina la preparación del Cold Brew y crea 10 siropes artesanales.
               </p>
             </div>
             <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">

@@ -43,6 +43,16 @@ CREATE TABLE IF NOT EXISTS "cashRegisters" (
   entries JSONB
 );
 
+-- 4.5 Create Schedule Entries Table
+CREATE TABLE IF NOT EXISTS "scheduleEntries" (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  date TEXT NOT NULL,
+  time TEXT NOT NULL,
+  details JSONB
+);
+
 -- 5. Fix Missing Columns in existing tables
 
 -- Roasted Stocks
@@ -94,6 +104,7 @@ ALTER TABLE "salesCategories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesProducts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesOrders" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "cashRegisters" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "scheduleEntries" ENABLE ROW LEVEL SECURITY;
 
 -- Allow public access to all tables (Anon Access)
 DO $$
@@ -120,6 +131,12 @@ BEGIN
         SELECT 1 FROM pg_policies WHERE tablename = 'cashRegisters' AND policyname = 'Public Access for cashRegisters'
     ) THEN
         CREATE POLICY "Public Access for cashRegisters" ON "cashRegisters" FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'scheduleEntries' AND policyname = 'Public Access for scheduleEntries'
+    ) THEN
+        CREATE POLICY "Public Access for scheduleEntries" ON "scheduleEntries" FOR ALL USING (true) WITH CHECK (true);
     END IF;
 END $$;
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../../db';
 import { SalesOrder } from '../../types';
-import { ClipboardList, Clock, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Package, Trash2, X } from 'lucide-react';
+import { ClipboardList, Clock, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Package, Trash2, X, ChevronLeft } from 'lucide-react';
 
 const SalesPedidosTab: React.FC = () => {
   const orders = useLiveQuery(() => db.salesOrders.toArray()) || [];
@@ -98,9 +98,9 @@ const SalesPedidosTab: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-full">
+    <div className="flex flex-col lg:flex-row h-full relative">
       {/* Left: Orders List */}
-      <div className="flex-1 flex flex-col min-w-0 border-r-0 lg:border-r border-stone-200 dark:border-stone-800">
+      <div className={`flex-1 flex flex-col min-w-0 border-r-0 lg:border-r border-stone-200 dark:border-stone-800 ${selectedOrder ? 'hidden lg:flex' : 'flex'}`}>
         <div className="px-4 py-5 border-b border-stone-200 dark:border-stone-800">
           <div className="flex items-center justify-between">
             <div>
@@ -208,7 +208,7 @@ const SalesPedidosTab: React.FC = () => {
       </div>
 
       {/* Right: Order Detail */}
-      <div className="w-full lg:w-[380px] flex-shrink-0 bg-white dark:bg-stone-900 border-t lg:border-t-0 border-stone-200 dark:border-stone-800 flex flex-col">
+      <div className={`w-full lg:w-[380px] flex-shrink-0 bg-white dark:bg-stone-900 border-t lg:border-t-0 border-stone-200 dark:border-stone-800 flex-col absolute inset-0 lg:relative lg:flex ${selectedOrder ? 'flex z-10' : 'hidden lg:flex'}`}>
         {!selectedOrder ? (
           <div className="flex-1 flex items-center justify-center text-stone-300 dark:text-stone-700">
             <div className="text-center">
@@ -219,25 +219,33 @@ const SalesPedidosTab: React.FC = () => {
         ) : (
           <>
             <div className="px-4 py-5 border-b border-stone-200 dark:border-stone-800">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-black text-black dark:text-white tracking-tight">{selectedOrder.orderName}</h3>
-                  <p className="text-xs text-stone-500 mt-0.5">{selectedOrder.clientName}</p>
-                  <p className="text-[10px] text-stone-400 mt-1">{formatDate(selectedOrder.createdAt)} • {formatTime(selectedOrder.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full ${
-                    selectedOrder.status === 'pendiente'
-                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                  }`}>
-                    {selectedOrder.status === 'pendiente' ? 'Pendiente' : 'Despachado'}
-                  </span>
+              <div className="flex items-start gap-3">
+                <button
+                  onClick={() => setSelectedOrderId(null)}
+                  className="lg:hidden p-1.5 -ml-1.5 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 rounded-lg transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="flex-1 flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-black text-black dark:text-white tracking-tight">{selectedOrder.orderName}</h3>
+                    <p className="text-xs text-stone-500 mt-0.5">{selectedOrder.clientName}</p>
+                    <p className="text-[10px] text-stone-400 mt-1">{formatDate(selectedOrder.createdAt)} • {formatTime(selectedOrder.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full ${
+                      selectedOrder.status === 'pendiente'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                    }`}>
+                      {selectedOrder.status === 'pendiente' ? 'Pendiente' : 'Despachado'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[35vh] lg:max-h-none">
+            <div className="flex-1 overflow-y-auto min-h-[200px] lg:min-h-0">
               <div className="divide-y divide-stone-100 dark:divide-stone-800">
                 {selectedOrder.items.map((item, idx) => (
                   <div key={item.id} className="flex items-center gap-3 px-4 py-3">
