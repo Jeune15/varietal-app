@@ -132,7 +132,11 @@ const tableColumnWhitelist: Record<string, string[]> = {
     'deleted'
   ],
   teamMembers: ['id', 'name'],
-  scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'details']
+  scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'details'],
+  salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
+  salesCategories: ['id', 'name', 'createdAt'],
+  salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source'],
+  cashRegisters: ['id', 'weekStart', 'weekEnd', 'isOpen', 'initialBalance', 'finalBalance', 'notes', 'createdAt', 'transactions']
 };
 
 function sanitizeRecord(table: string, record: any) {
@@ -199,7 +203,7 @@ export async function pullFromCloud() {
       if (!lastProcessed || new Date(lastReset.date) > new Date(lastProcessed)) {
         console.warn('GLOBAL RESET SIGNAL DETECTED. Wiping local database...');
         
-        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions], async () => {
+        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters], async () => {
           await db.greenCoffees.clear();
           await db.roasts.clear();
           await db.orders.clear();
@@ -212,6 +216,13 @@ export async function pullFromCloud() {
           await db.cuppingSessions.clear();
           await db.espressoSessions.clear();
           await db.filterSessions.clear();
+          await db.filterRecipes.clear();
+          await db.teamMembers.clear();
+          await db.scheduleEntries.clear();
+          await db.salesProducts.clear();
+          await db.salesCategories.clear();
+          await db.salesOrders.clear();
+          await db.cashRegisters.clear();
         });
         
         localStorage.setItem('varietal_last_reset_processed', lastReset.date);
@@ -222,7 +233,7 @@ export async function pullFromCloud() {
     console.error('Error checking for reset signal:', err);
   }
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
   let success = true;
 
   for (const table of tables) {
@@ -261,7 +272,7 @@ export async function pullFromCloud() {
 
 export async function pushToCloud(): Promise<{ success: boolean; message?: string }> {
   if (!supabase) return { success: false, message: 'No hay conexión con Supabase' };
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
   let success = true;
   let errorMessage = '';
 
@@ -307,6 +318,10 @@ export async function exportDatabaseToJson() {
     filterRecipes: await db.filterRecipes.toArray(),
     teamMembers: await db.teamMembers.toArray(),
     scheduleEntries: await db.scheduleEntries.toArray(),
+    salesProducts: await db.salesProducts.toArray(),
+    salesCategories: await db.salesCategories.toArray(),
+    salesOrders: await db.salesOrders.toArray(),
+    cashRegisters: await db.cashRegisters.toArray(),
     exportDate: new Date().toISOString()
   };
   return JSON.stringify(data, null, 2);
@@ -315,7 +330,7 @@ export async function exportDatabaseToJson() {
 export async function importDatabaseFromJson(jsonString: string) {
   try {
     const data = JSON.parse(jsonString);
-    await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes], async () => {
+    await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -329,6 +344,12 @@ export async function importDatabaseFromJson(jsonString: string) {
       await db.espressoSessions.clear();
       await db.filterSessions.clear();
       await db.filterRecipes.clear();
+      await db.teamMembers.clear();
+      await db.scheduleEntries.clear();
+      await db.salesProducts.clear();
+      await db.salesCategories.clear();
+      await db.salesOrders.clear();
+      await db.cashRegisters.clear();
       
       if (data.greenCoffees) await db.greenCoffees.bulkAdd(data.greenCoffees);
       if (data.roasts) await db.roasts.bulkAdd(data.roasts);
@@ -345,6 +366,10 @@ export async function importDatabaseFromJson(jsonString: string) {
       if (data.filterRecipes) await db.filterRecipes.bulkAdd(data.filterRecipes);
       if (data.teamMembers) await db.teamMembers.bulkAdd(data.teamMembers);
       if (data.scheduleEntries) await db.scheduleEntries.bulkAdd(data.scheduleEntries);
+      if (data.salesProducts) await db.salesProducts.bulkAdd(data.salesProducts);
+      if (data.salesCategories) await db.salesCategories.bulkAdd(data.salesCategories);
+      if (data.salesOrders) await db.salesOrders.bulkAdd(data.salesOrders);
+      if (data.cashRegisters) await db.cashRegisters.bulkAdd(data.cashRegisters);
     });
     return true;
   } catch (error) {
@@ -356,7 +381,7 @@ export async function importDatabaseFromJson(jsonString: string) {
 export function subscribeToChanges() {
   if (!supabase) return () => {};
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
 
   const channel = supabase.channel('db-changes')
     .on(
@@ -392,9 +417,9 @@ export function subscribeToChanges() {
 }
 
 export async function resetDatabase(excludeUserId?: string) {
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
   
-  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries], async () => {
+  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -410,6 +435,10 @@ export async function resetDatabase(excludeUserId?: string) {
       await db.filterRecipes.clear();
       await db.teamMembers.clear();
       await db.scheduleEntries.clear();
+      await db.salesProducts.clear();
+      await db.salesCategories.clear();
+      await db.salesOrders.clear();
+      await db.cashRegisters.clear();
   });
 
   // Clear Cloud DB if connected

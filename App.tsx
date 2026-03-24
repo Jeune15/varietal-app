@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getSupabase, pullFromCloud, initSupabase, subscribeToChanges } from './db';
-import GreenCoffeeView from './views/GreenCoffeeView';
 import RoastingView from './views/RoastingView';
 import OrdersView from './views/OrdersView';
 import InventoryView from './views/InventoryView';
@@ -57,10 +56,10 @@ const AppContent: React.FC = () => {
   const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
 
   const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('varietal_active_tab') || 'dashboard');
-  const [stockTab, setStockTab] = useState<'green' | 'roasted' | 'utility'>(() => {
+  const [stockTab, setStockTab] = useState<'roasted' | 'utility'>(() => {
     const stored = sessionStorage.getItem('varietal_stock_tab');
-    if (stored && ['green', 'roasted', 'utility'].includes(stored)) return stored as any;
-    return 'green';
+    if (stored && ['roasted', 'utility'].includes(stored)) return stored as any;
+    return 'roasted';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
@@ -484,6 +483,23 @@ const AppContent: React.FC = () => {
         {/* Dynamic Content Area */}
         <section ref={adminContentRef} className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">
           <div className="p-4 md:p-8 lg:p-10 pb-32 max-w-7xl mx-auto">
+            {/* Admin Top Bar */}
+            <div className="flex justify-end items-center mb-6 gap-3">
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+                title="Configuración"
+              >
+                <Settings2 className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="text-xs font-bold uppercase tracking-widest text-stone-400 hover:text-red-500 transition-colors px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                Salir
+              </button>
+            </div>
+
             <div key={activeTab} className="animate-slide-up">
               {activeTab === 'dashboard' ? (
                 <DashboardView 
@@ -500,11 +516,6 @@ const AppContent: React.FC = () => {
                   greenCoffees={greenCoffees} 
                   orders={orders} 
                 />
-              ) : activeTab === 'green-coffee' ? (
-                <GreenCoffeeView 
-                  coffees={greenCoffees}
-                  setCoffees={() => {}} 
-                />
               ) : activeTab === 'orders' ? (
                 <OrdersView orders={orders} />
               ) : activeTab === 'stock' ? (
@@ -514,7 +525,7 @@ const AppContent: React.FC = () => {
                       <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Inventario</h2>
                     </div>
                     <div className="flex gap-4 md:gap-8">
-                      {['green', 'roasted', 'utility'].map((tab) => (
+                      {['roasted', 'utility'].map((tab) => (
                         <button
                           key={tab}
                           onClick={() => setStockTab(tab as any)}
@@ -524,19 +535,14 @@ const AppContent: React.FC = () => {
                               : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
                           }`}
                         >
-                          {tab === 'green' ? 'Café Verde' : tab === 'roasted' ? 'Café Tostado' : 'Utilería'}
+                          {tab === 'roasted' ? 'Café Tostado' : 'Utilería'}
                         </button>
                       ))}
                     </div>
                   </div>
                   
                   <div key={stockTab} className="animate-fade-in">
-                    {stockTab === 'green' ? (
-                      <GreenCoffeeView 
-                        coffees={greenCoffees}
-                        setCoffees={() => {}}
-                      />
-                    ) : stockTab === 'roasted' ? (
+                    {stockTab === 'roasted' ? (
                       <InventoryView
                         stocks={roastedStocks}
                         roasts={roasts}
@@ -587,7 +593,7 @@ const AppContent: React.FC = () => {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center justify-center gap-4 px-2 py-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -602,23 +608,15 @@ const AppContent: React.FC = () => {
                 }`}
               >
                 <Icon 
-                  className={`w-5 h-5 transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
+                  className={`w-[18px] h-[18px] transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
                   strokeWidth={isActive ? 2.5 : 2} 
                 />
-                <span className={`text-[9px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
                   {item.label}
                 </span>
               </button>
             );
           })}
-          
-          <button
-            onClick={() => setShowSettings(true)}
-            className="flex flex-col items-center gap-1 p-2 min-w-[3.5rem] text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
-          >
-            <Settings2 className="w-5 h-5" strokeWidth={2} />
-            <span className="text-[9px] font-bold uppercase tracking-widest opacity-0 hidden">Ajustes</span>
-          </button>
         </div>
       </nav>
     </div>
