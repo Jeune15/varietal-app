@@ -85,10 +85,32 @@ ALTER TABLE "salesOrders" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "cashRegisters" ENABLE ROW LEVEL SECURITY;
 
 -- Allow public access to all tables (Anon Access)
-CREATE POLICY "Public Access for salesCategories" ON "salesCategories" FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Access for salesProducts" ON "salesProducts" FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Access for salesOrders" ON "salesOrders" FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Access for cashRegisters" ON "cashRegisters" FOR ALL USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'salesCategories' AND policyname = 'Public Access for salesCategories'
+    ) THEN
+        CREATE POLICY "Public Access for salesCategories" ON "salesCategories" FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'salesProducts' AND policyname = 'Public Access for salesProducts'
+    ) THEN
+        CREATE POLICY "Public Access for salesProducts" ON "salesProducts" FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'salesOrders' AND policyname = 'Public Access for salesOrders'
+    ) THEN
+        CREATE POLICY "Public Access for salesOrders" ON "salesOrders" FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'cashRegisters' AND policyname = 'Public Access for cashRegisters'
+    ) THEN
+        CREATE POLICY "Public Access for cashRegisters" ON "cashRegisters" FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
 -- 7. Setup Realtime Replication for new tables
 -- Safe addition to supabase_realtime publication using DO block
