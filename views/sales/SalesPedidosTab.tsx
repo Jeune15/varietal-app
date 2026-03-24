@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db';
+import { db, syncToCloud } from '../../db';
 import { SalesOrder } from '../../types';
 import { ClipboardList, Clock, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Package, Trash2, X } from 'lucide-react';
 
@@ -37,10 +37,13 @@ const SalesPedidosTab: React.FC = () => {
 
   const markAsDelivered = async (order: SalesOrder) => {
     const now = new Date().toISOString();
-    await db.salesOrders.update(order.id, {
-      status: 'despachado', // Changed from entregado to despachado
+    const updatedOrder = {
+      ...order,
+      status: 'despachado' as const, // Changed from entregado to despachado
       despachadoAt: now,
-    });
+    };
+    await db.salesOrders.update(order.id, updatedOrder);
+    await syncToCloud('salesOrders', updatedOrder);
 
     // Auto-add as income to current week's cash register
     const today = new Date();
@@ -70,10 +73,13 @@ const SalesPedidosTab: React.FC = () => {
       };
       const updatedEntries = [...register.entries, newEntry];
       const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
-      await db.cashRegisters.update(register.id, {
+      const updatedRegister = {
+        ...register,
         entries: updatedEntries,
         totalIncome,
-      });
+      };
+      await db.cashRegisters.update(register.id, updatedRegister);
+      await syncToCloud('cashRegisters', updatedRegister);
     }
 
     setSelectedOrderId(null);
@@ -81,6 +87,7 @@ const SalesPedidosTab: React.FC = () => {
 
   const deleteOrder = async (orderId: string) => {
     await db.salesOrders.delete(orderId);
+    // Again, handle cloud deletion elsewhere or implement soft delete
     setDeleteConfirm(null);
     if (selectedOrderId === orderId) setSelectedOrderId(null);
   };

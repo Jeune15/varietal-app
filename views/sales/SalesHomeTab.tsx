@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db';
-import { SalesProduct, SalesCategory, SalesOrderItem } from '../../types';
+import { db, syncToCloud } from '../../db';
+import { SalesProduct, SalesCategory, SalesOrderItem, SalesOrder } from '../../types';
 import { Heart, Grid3X3, Plus, MoreVertical, Trash2, Edit2, MessageSquare, User, FileText, X, ShoppingCart, Check, Package, ChevronLeft } from 'lucide-react';
 
 type SalesTab = 'home' | 'pedidos' | 'productos' | 'caja' | 'historial';
@@ -137,7 +137,7 @@ const SalesHomeTab = () => {
     if (orderItems.length === 0) return;
     const id = crypto.randomUUID();
     const name = orderName.trim() || `Pedido #${Date.now().toString(36).slice(-4).toUpperCase()}`;
-    await db.salesOrders.add({
+    const newOrder: SalesOrder = {
       id,
       clientName: clientName.trim() || 'Sin nombre',
       orderName: name,
@@ -145,7 +145,9 @@ const SalesHomeTab = () => {
       total,
       status: 'pendiente',
       createdAt: new Date().toISOString(),
-    });
+    };
+    await db.salesOrders.add(newOrder);
+    await syncToCloud('salesOrders', newOrder);
     // Reset
     setOrderItems([]);
     setClientName('');

@@ -477,9 +477,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       shippingPaidBy
     };
     await db.salesOrders.update(order.salesOrderOriginal.id, updatedSalesOrder);
-    if (getSupabase()) {
-       await getSupabase().from('salesOrders').update(updatedSalesOrder).eq('id', order.salesOrderOriginal.id);
-    }
+    await syncToCloud('salesOrders', updatedSalesOrder);
   }
 
   if (shippingCost > 0) {
@@ -558,7 +556,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       
       await db.orders.delete(selectedOrderForDelete.id);
       if (getSupabase()) {
-        await getSupabase().from('orders').delete().eq('id', selectedOrderForDelete.id);
+        if (selectedOrderForDelete.isSalesOrder) {
+          await getSupabase().from('salesOrders').delete().eq('id', selectedOrderForDelete.id);
+        } else {
+          await getSupabase().from('orders').delete().eq('id', selectedOrderForDelete.id);
+        }
       }
       
       setDeleteModalOpen(false);
@@ -922,10 +924,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
           }
 
           await db.salesOrders.update(salesOrderOriginal.id, updatedSalesOrder);
-          // Assuming syncToCloud supports salesOrders or has equivalent handling
-          if (getSupabase()) {
-             await getSupabase().from('salesOrders').update(updatedSalesOrder).eq('id', salesOrderOriginal.id);
-          }
+          await syncToCloud('salesOrders', updatedSalesOrder);
         }
       } else {
         const prevCompleted = orderForActivity.completedActivities || [];
@@ -1069,10 +1068,9 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                         type="button"
                         onClick={async () => {
                           const now = new Date().toISOString();
-                          await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
-                          if (getSupabase()) {
-                             await getSupabase().from('salesOrders').update({ invoicedAt: now }).eq('id', o.salesOrderOriginal.id);
-                          }
+                          const updatedSalesOrder = { ...o.salesOrderOriginal, invoicedAt: now };
+                          await db.salesOrders.update(o.salesOrderOriginal.id, updatedSalesOrder);
+                          await syncToCloud('salesOrders', updatedSalesOrder);
                           showToast('Pedido facturado', 'success');
                         }}
                         className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
@@ -1205,6 +1203,22 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                            {o.isSalesOrder && (
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const now = new Date().toISOString();
+                                  const updatedSalesOrder = { ...o.salesOrderOriginal, invoicedAt: now };
+                                  await db.salesOrders.update(o.salesOrderOriginal.id, updatedSalesOrder);
+                                  await syncToCloud('salesOrders', updatedSalesOrder);
+                                  showToast('Pedido facturado', 'success');
+                                }}
+                                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
+                              >
+                                Facturar
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

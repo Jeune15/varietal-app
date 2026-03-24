@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db';
+import { db, syncToCloud } from '../../db';
 import { SalesCategory, SalesProduct } from '../../types';
 import { Plus, Edit2, Trash2, Star, X, Palette, Check, Package, Search } from 'lucide-react';
 
@@ -55,10 +55,14 @@ const SalesProductosTab: React.FC = () => {
   const saveCategory = async () => {
     if (!catName.trim()) return;
     if (editingCategory) {
-      await db.salesCategories.update(editingCategory.id, { name: catName.trim(), color: catColor });
+      const updated = { ...editingCategory, name: catName.trim(), color: catColor };
+      await db.salesCategories.update(editingCategory.id, updated);
+      await syncToCloud('salesCategories', updated);
     } else {
       const id = crypto.randomUUID();
-      await db.salesCategories.add({ id, name: catName.trim(), color: catColor, createdAt: new Date().toISOString() });
+      const newCat = { id, name: catName.trim(), color: catColor, createdAt: new Date().toISOString() };
+      await db.salesCategories.add(newCat);
+      await syncToCloud('salesCategories', newCat);
     }
     setShowCategoryForm(false);
   };
@@ -67,9 +71,12 @@ const SalesProductosTab: React.FC = () => {
     // Unassign products from this category
     const prods = products.filter(p => p.categoryId === id);
     for (const p of prods) {
-      await db.salesProducts.update(p.id, { categoryId: undefined });
+      const updatedProd = { ...p, categoryId: undefined };
+      await db.salesProducts.update(p.id, updatedProd);
+      await syncToCloud('salesProducts', updatedProd);
     }
     await db.salesCategories.delete(id);
+    // You might want to handle cloud deletion here, or leave it to user logic
     setDeleteConfirm(null);
   };
 
@@ -95,21 +102,26 @@ const SalesProductosTab: React.FC = () => {
     if (isNaN(price) || price < 0) return;
 
     if (editingProduct) {
-      await db.salesProducts.update(editingProduct.id, {
+      const updatedProd = {
+        ...editingProduct,
         name: prodName.trim(),
         price,
         categoryId: prodCategoryId || undefined,
-      });
+      };
+      await db.salesProducts.update(editingProduct.id, updatedProd);
+      await syncToCloud('salesProducts', updatedProd);
     } else {
       const id = crypto.randomUUID();
-      await db.salesProducts.add({
+      const newProd = {
         id,
         name: prodName.trim(),
         price,
         categoryId: prodCategoryId || undefined,
         isFavorite: false,
         createdAt: new Date().toISOString(),
-      });
+      };
+      await db.salesProducts.add(newProd);
+      await syncToCloud('salesProducts', newProd);
     }
     setShowProductForm(false);
   };
@@ -120,7 +132,9 @@ const SalesProductosTab: React.FC = () => {
   };
 
   const toggleFavorite = async (prod: SalesProduct) => {
-    await db.salesProducts.update(prod.id, { isFavorite: !prod.isFavorite });
+    const updatedProd = { ...prod, isFavorite: !prod.isFavorite };
+    await db.salesProducts.update(prod.id, updatedProd);
+    await syncToCloud('salesProducts', updatedProd);
   };
 
   // Group products by category

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db';
+import { db, syncToCloud } from '../../db';
 import { CashRegister, CashEntry } from '../../types';
 import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, Lock, Unlock, X, ArrowUpCircle, ArrowDownCircle, Trash2, LockKeyhole } from 'lucide-react';
 
@@ -42,7 +42,7 @@ const SalesCajaTab: React.FC = () => {
     const amount = parseFloat(openingAmount);
     if (isNaN(amount) || amount < 0) return;
     const id = crypto.randomUUID();
-    await db.cashRegisters.add({
+    const newReg = {
       id,
       weekStart,
       weekEnd,
@@ -51,7 +51,9 @@ const SalesCajaTab: React.FC = () => {
       entries: [],
       totalIncome: 0,
       totalExpense: 0,
-    });
+    };
+    await db.cashRegisters.add(newReg);
+    await syncToCloud('cashRegisters', newReg);
     setShowOpenForm(false);
     setOpeningAmount('');
   };
@@ -73,10 +75,13 @@ const SalesCajaTab: React.FC = () => {
     const updatedEntries = [...currentRegister.entries, newEntry];
     const totalExpense = updatedEntries.filter(e => e.type === 'egreso').reduce((s, e) => s + e.amount, 0);
 
-    await db.cashRegisters.update(currentRegister.id, {
+    const updatedReg = {
+      ...currentRegister,
       entries: updatedEntries,
       totalExpense,
-    });
+    };
+    await db.cashRegisters.update(currentRegister.id, updatedReg);
+    await syncToCloud('cashRegisters', updatedReg);
 
     setShowExpenseForm(false);
     setExpAmount('');
@@ -100,10 +105,13 @@ const SalesCajaTab: React.FC = () => {
     const updatedEntries = [...currentRegister.entries, newEntry];
     const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
 
-    await db.cashRegisters.update(currentRegister.id, {
+    const updatedReg = {
+      ...currentRegister,
       entries: updatedEntries,
       totalIncome,
-    });
+    };
+    await db.cashRegisters.update(currentRegister.id, updatedReg);
+    await syncToCloud('cashRegisters', updatedReg);
 
     setShowIncomeForm(false);
     setIncAmount('');
@@ -128,17 +136,22 @@ const SalesCajaTab: React.FC = () => {
     const updatedEntries = currentRegister.entries.filter(e => e.id !== entryId);
     const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
     const totalExpense = updatedEntries.filter(e => e.type === 'egreso').reduce((s, e) => s + e.amount, 0);
-    await db.cashRegisters.update(currentRegister.id, {
+    const updatedReg = {
+      ...currentRegister,
       entries: updatedEntries,
       totalIncome,
       totalExpense,
-    });
+    };
+    await db.cashRegisters.update(currentRegister.id, updatedReg);
+    await syncToCloud('cashRegisters', updatedReg);
     setDeleteEntryId(null);
   };
 
   const closeRegister = async () => {
     if (!currentRegister) return;
-    await db.cashRegisters.update(currentRegister.id, { isOpen: false });
+    const updatedReg = { ...currentRegister, isOpen: false };
+    await db.cashRegisters.update(currentRegister.id, updatedReg);
+    await syncToCloud('cashRegisters', updatedReg);
     setShowCloseConfirm(false);
   };
 
