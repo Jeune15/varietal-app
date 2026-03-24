@@ -905,13 +905,6 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
           <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Gestión de Demanda Activa</p>
         </div>
         <div className="flex flex-wrap gap-4 w-full sm:w-auto justify-end">
-          <button 
-            onClick={() => { resetFormState(); setShowModal(true); }}
-            className="w-full sm:w-auto px-6 py-3 bg-black dark:bg-stone-800 text-white dark:text-stone-200 border border-black dark:border-stone-700 hover:bg-white hover:text-black dark:hover:bg-stone-700 dark:hover:text-white font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo Pedido
-          </button>
           <button
             type="button"
             onClick={() => setActiveView(prev => prev === 'history' ? 'active' : 'history')}

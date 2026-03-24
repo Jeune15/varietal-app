@@ -91,6 +91,8 @@ export interface RoastedStock {
   remainingQtyKg: number;
   isSelected: boolean;
   mermaGrams: number;
+  roastDate?: string; // Fecha de tostado para stock manual
+  roastType?: string; // Tipo de tueste (espresso, omni, filtrado)
 }
 
 export interface RetailBagStock {

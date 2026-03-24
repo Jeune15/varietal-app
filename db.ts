@@ -97,7 +97,9 @@ const tableColumnWhitelist: Record<string, string[]> = {
     'totalQtyKg',
     'remainingQtyKg',
     'isSelected',
-    'mermaGrams'
+    'mermaGrams',
+    'roastDate',
+    'roastType'
   ],
   retailBags: ['id', 'coffeeName', 'type', 'quantity', 'clientName', 'roastDate', 'roastId'],
   history: ['id', 'type', 'date', 'details'],

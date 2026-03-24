@@ -45,6 +45,10 @@ CREATE TABLE IF NOT EXISTS "cashRegisters" (
 
 -- 5. Fix Missing Columns in existing tables
 
+-- Roasted Stocks
+ALTER TABLE "roastedStocks" ADD COLUMN IF NOT EXISTS "roastDate" TEXT;
+ALTER TABLE "roastedStocks" ADD COLUMN IF NOT EXISTS "roastType" TEXT;
+
 -- Orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "serviceRoastedQtyKg" NUMERIC;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "fulfilledKg" NUMERIC;

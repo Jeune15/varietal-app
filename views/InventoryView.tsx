@@ -43,9 +43,30 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
   const [editingStock, setEditingStock] = useState<RoastedStock | null>(null);
   const [editStockWeight, setEditStockWeight] = useState<number | ''>('');
 
+  // Add Manual Stock State
+  const [showAddManualStockModal, setShowAddManualStockModal] = useState(false);
+  const [manualStockForm, setManualStockForm] = useState({
+    clientName: '',
+    variety: '',
+    roastDate: new Date().toISOString().split('T')[0],
+    roastType: 'omni',
+    quantityKg: '' as number | ''
+  });
+
   const [stockClientFilter, setStockClientFilter] = useState('');
   const [stockVarietyFilter, setStockVarietyFilter] = useState('');
 
+  const [retailBagSearch, setRetailBagSearch] = useState('');
+
+  const retailRoastedStockOptions = useMemo(() => {
+    const available = stocks.filter(s => s.remainingQtyKg > 0.001);
+    if (!retailBagSearch.trim()) return available;
+    const query = retailBagSearch.toLowerCase();
+    return available.filter(s => 
+      s.clientName.toLowerCase().includes(query) || 
+      s.variety.toLowerCase().includes(query)
+    );
+  }, [stocks, retailBagSearch]);
   const [prodForm, setProdForm] = useState<{
     name: string;
     type: 'unit' | 'rechargeable';
@@ -98,6 +119,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
   }, [canEdit]);
 
   const getRoastDate = (stock: RoastedStock) => {
+    if (stock.roastDate) return stock.roastDate;
     const roast = roasts.find(r => r.id === stock.roastId);
     return roast?.roastDate || null;
   };
@@ -200,6 +222,25 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
       return;
     }
 
+    // Check utility bags stock
+    const utilityBags = productionInventory.filter(p => p.type === 'unit' && p.format === selectedBagType);
+    const utilityBag = utilityBags.length > 0 ? utilityBags[0] : null;
+
+    if (!utilityBag) {
+      showToast(`No hay bolsas de utilería de ${selectedBagType} registradas.`, 'error');
+      return;
+    }
+
+    if (utilityBag.quantity < unitsValue) {
+      showToast(`No hay suficientes bolsas de utilería de ${selectedBagType}. Tienes ${utilityBag.quantity} y necesitas ${unitsValue}.`, 'error');
+      return;
+    }
+
+    // Deduct utility bags
+    const updatedUtilityBag = { ...utilityBag, quantity: utilityBag.quantity - unitsValue };
+    await db.productionInventory.update(utilityBag.id, { quantity: updatedUtilityBag.quantity });
+    await syncToCloud('productionInventory', updatedUtilityBag);
+
     const newRemaining = stock.remainingQtyKg - reductionKg;
 
     if (newRemaining <= 0.001) {
@@ -238,7 +279,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
         type: selectedBagType,
         quantity: unitsValue,
         clientName: stock.clientName,
-        roastDate: roast?.roastDate,
+        roastDate: stock.roastDate || roast?.roastDate,
         roastId: stock.roastId
       };
       await db.retailBags.add(newBag);
@@ -249,7 +290,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
     setSelectedRoastedStockId('');
     setBagUnits('');
     setSelectedBagType('250g');
-    showToast('Bolsas retail armadas correctamente.', 'success');
+    showToast('Bolsas retail armadas correctamente. Stock de utilería actualizado.', 'success');
   };
 
   const updateItemQuantity = async (id: string, newQty: number) => {
@@ -328,6 +369,50 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
     setShowEditStockModal(false);
     setEditingStock(null);
     setEditStockWeight('');
+  };
+
+  const handleAddManualStockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEdit) return;
+
+    const { clientName, variety, roastDate, roastType, quantityKg } = manualStockForm;
+
+    if (!clientName.trim()) {
+      showToast('Ingresa el nombre del cliente.', 'error');
+      return;
+    }
+
+    const qty = typeof quantityKg === 'string' ? parseFloat(quantityKg) : quantityKg;
+    if (!qty || qty <= 0) {
+      showToast('Ingresa una cantidad válida.', 'error');
+      return;
+    }
+
+    const newStock: RoastedStock = {
+      id: Math.random().toString(36).substr(2, 9),
+      roastId: `manual_${Date.now()}`,
+      clientName: clientName.trim(),
+      variety: variety.trim() || 'Sin especificar',
+      totalQtyKg: qty,
+      remainingQtyKg: qty,
+      isSelected: false,
+      mermaGrams: 0,
+      roastDate,
+      roastType
+    };
+
+    await db.roastedStocks.add(newStock);
+    await syncToCloud('roastedStocks', newStock);
+
+    setShowAddManualStockModal(false);
+    setManualStockForm({
+      clientName: '',
+      variety: '',
+      roastDate: new Date().toISOString().split('T')[0],
+      roastType: 'omni',
+      quantityKg: ''
+    });
+    showToast('Café tostado agregado manualmente.', 'success');
   };
 
   const handleAddBagStock = async (e: React.FormEvent) => {
@@ -957,15 +1042,142 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
 
   return (
     <>
+    {/* Add Manual Stock Modal */}
+    {showAddManualStockModal && createPortal(
+      <div
+        className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
+        onClick={() => setShowAddManualStockModal(false)}
+      >
+        <div
+          className="bg-white dark:bg-stone-900 w-full max-w-md border border-black dark:border-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="bg-black dark:bg-stone-950 text-white p-4 border-b border-stone-800 shrink-0 sticky top-0 z-10 flex justify-between items-center">
+            <div className="space-y-1">
+              <h4 className="text-lg font-black tracking-tighter uppercase">
+                Añadir Café Tostado
+              </h4>
+              <p className="text-stone-400 dark:text-stone-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+                Ingreso manual a silos
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddManualStockModal(false)}
+              className="text-white hover:text-stone-300 transition-colors"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          </div>
+          <form onSubmit={handleAddManualStockSubmit} className="p-6 space-y-6 overflow-y-auto">
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                Cliente / Origen
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
+                value={manualStockForm.clientName}
+                onChange={e => setManualStockForm({ ...manualStockForm, clientName: e.target.value })}
+                placeholder="Ej. Finca La Esperanza"
+              />
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                Variedad (Opcional)
+              </label>
+              <input
+                type="text"
+                className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
+                value={manualStockForm.variety}
+                onChange={e => setManualStockForm({ ...manualStockForm, variety: e.target.value })}
+                placeholder="Ej. Caturra Lavado"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                  Fecha Tueste
+                </label>
+                <input
+                  type="date"
+                  required
+                  className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
+                  value={manualStockForm.roastDate}
+                  onChange={e => setManualStockForm({ ...manualStockForm, roastDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                  Tipo Tueste
+                </label>
+                <StyledSelect
+                  value={manualStockForm.roastType}
+                  onChange={e => setManualStockForm({ ...manualStockForm, roastType: e.target.value })}
+                  options={[
+                    { value: 'omni', label: 'Omni' },
+                    { value: 'espresso', label: 'Espresso' },
+                    { value: 'filtrado', label: 'Filtrado' }
+                  ]}
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                Cantidad (Kg)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                className="w-full px-5 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
+                value={manualStockForm.quantityKg}
+                onChange={e => setManualStockForm({ ...manualStockForm, quantityKg: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                placeholder="Ej. 5.5"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t border-stone-200 dark:border-stone-800">
+              <button
+                type="button"
+                onClick={() => setShowAddManualStockModal(false)}
+                className="px-6 py-3 text-xs font-bold uppercase tracking-widest border border-stone-300 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-black hover:text-black dark:hover:border-white dark:hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-3 text-xs font-bold uppercase tracking-widest border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+              >
+                Guardar Stock
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>,
+      document.body
+    )}
+
     <div className="space-y-16 pb-48">
       {/* Roasted Bulk Inventory */}
       <section className="space-y-8">
+        {/* Top Header & Search */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div className="space-y-2">
             <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Silos de Café</h3>
             <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Existencias Tostadas &middot; Granel</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            {canEdit && (
+              <button
+                onClick={() => setShowAddManualStockModal(true)}
+                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-widest hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-2 justify-center"
+              >
+                <Plus className="w-3 h-3" /> Manual
+              </button>
+            )}
             <div className="flex-1 min-w-[180px] relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
@@ -1439,6 +1651,21 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
             <form onSubmit={handleRetailBagsSubmit} className="space-y-6">
               <div className="space-y-3">
                 <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
+                  Buscar Café
+                </label>
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por cliente o variedad..."
+                    value={retailBagSearch}
+                    onChange={e => setRetailBagSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-3 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:border-black dark:focus:border-stone-500 outline-none text-sm font-bold text-black dark:text-white transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1 dark:text-white">
                   Café tostado
                 </label>
                 <StyledSelect
@@ -1446,9 +1673,7 @@ const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'co
                   onChange={e => setSelectedRoastedStockId(e.target.value)}
                   options={[
                     { value: '', label: 'Selecciona un lote tostado' },
-                    ...stocks
-                      .filter(s => s.remainingQtyKg > 0.001)
-                      .map(s => ({
+                    ...retailRoastedStockOptions.map(s => ({
                         value: s.id,
                         label: `${s.clientName} — ${s.variety} — Disp: ${s.remainingQtyKg.toFixed(2)} Kg`
                       }))

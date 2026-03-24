@@ -507,6 +507,7 @@ const AppContent: React.FC = () => {
                   roasts={roasts} 
                   orders={orders} 
                   productionInventory={productionInventory}
+                  roastedStocks={roastedStocks}
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                   userRole={userRole}
                 />
@@ -573,6 +574,7 @@ const AppContent: React.FC = () => {
                   roasts={roasts} 
                   orders={orders} 
                   productionInventory={productionInventory}
+                  roastedStocks={roastedStocks}
                   onNavigate={(tabId) => setActiveTab(tabId)} 
                   userRole={userRole}
                 />

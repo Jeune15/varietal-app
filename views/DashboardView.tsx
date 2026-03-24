@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { GreenCoffee, Roast, Order, ProductionItem } from '../types';
+import { GreenCoffee, Roast, Order, ProductionItem, RoastedStock } from '../types';
 import { exportDatabaseToJson, initSupabase } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
@@ -23,11 +23,12 @@ interface Props {
   roasts: Roast[];
   orders: Order[];
   productionInventory: ProductionItem[];
+  roastedStocks?: RoastedStock[];
   onNavigate?: (tabId: string) => void;
   userRole?: 'admin' | 'student' | null;
 }
 
-const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInventory, onNavigate, userRole }) => {
+const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInventory, roastedStocks = [], onNavigate, userRole }) => {
   const [showSyncConfig, setShowSyncConfig] = useState(false);
   const [syncForm, setSyncForm] = useState({
     url: localStorage.getItem('supabase_url') || '',
@@ -37,11 +38,38 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
   const { canEdit } = useAuth();
   
   const today = new Date().toISOString().split('T')[0];
-  const totalGreen = green.reduce((acc, curr) => acc + (Number(curr.quantityKg) || 0), 0);
-  const totalOrders = orders.length;
   
+  // Calculate week start and end
+  const currentDay = new Date().getDay(); // 0 is Sunday
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+  const startOfWeekDate = new Date();
+  startOfWeekDate.setDate(startOfWeekDate.getDate() + diffToMonday);
+  const startOfWeek = startOfWeekDate.toISOString().split('T')[0];
+  
+  const totalGreen = green.reduce((acc, curr) => acc + (Number(curr.quantityKg) || 0), 0);
+  const totalRoastedStock = roastedStocks.reduce((acc, curr) => acc + (Number(curr.remainingQtyKg) || 0), 0);
+  
+  // Orders Stats
+  const activeOrders = orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado');
+  const totalOrders = activeOrders.length;
+  
+  const ordersToday = orders.filter(o => {
+    const entryDate = o.entryDate || '';
+    return entryDate.startsWith(today);
+  }).length;
+  
+  const ordersThisWeek = orders.filter(o => {
+    const entryDate = o.entryDate || '';
+    return entryDate >= startOfWeek && entryDate <= today;
+  }).length;
+  
+  // Roasting Stats
   const roastedToday = roasts
     .filter(r => r.roastDate === today)
+    .reduce((acc, curr) => acc + (Number(curr.roastedQtyKg) || 0), 0);
+    
+  const roastedThisWeek = roasts
+    .filter(r => r.roastDate >= startOfWeek && r.roastDate <= today)
     .reduce((acc, curr) => acc + (Number(curr.roastedQtyKg) || 0), 0);
   
   const lowGreen = useMemo(
@@ -155,7 +183,7 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           label="Stock café verde"
           value={`${totalGreen.toFixed(0)} Kg`}
@@ -163,16 +191,22 @@ const DashboardView: React.FC<Props> = ({ green, roasts, orders, productionInven
           description="Total disponible en verde"
         />
         <MetricCard
-          label="Tostado hoy"
-          value={`${roastedToday.toFixed(1)} Kg`}
-          icon={<Flame strokeWidth={1.5} />}
-          description="Kg tostados en la fecha actual"
+          label="Stock café tostado"
+          value={`${totalRoastedStock.toFixed(1)} Kg`}
+          icon={<Package strokeWidth={1.5} />}
+          description="Total disponible en silos"
         />
         <MetricCard
-          label="Pedidos en sistema"
+          label="Tostado"
+          value={`${roastedToday.toFixed(1)} Kg`}
+          icon={<Flame strokeWidth={1.5} />}
+          description={`Día: ${roastedToday.toFixed(1)} Kg • Sem: ${roastedThisWeek.toFixed(1)} Kg`}
+        />
+        <MetricCard
+          label="Pedidos"
           value={totalOrders}
-          icon={<Package strokeWidth={1.5} />}
-          description="Número total de pedidos registrados"
+          icon={<Clock strokeWidth={1.5} />}
+          description={`Activos: ${totalOrders} • Hoy: ${ordersToday} • Sem: ${ordersThisWeek}`}
         />
       </div>
 
