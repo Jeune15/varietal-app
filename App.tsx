@@ -47,6 +47,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { BrandLogoFull } from './components/BrandLogo';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Main App Content
 const AppContent: React.FC = () => {
   const { user, loading, profile, refreshSession } = useAuth();
   const greenCoffees = useLiveQuery(() => db.greenCoffees.toArray()) || [];
@@ -146,11 +147,6 @@ const AppContent: React.FC = () => {
     if (isCalendarIndependent) sessionStorage.setItem('varietal_calendar_independent', 'true');
     else sessionStorage.removeItem('varietal_calendar_independent');
   }, [isCalendarIndependent]);
-
-  useEffect(() => {
-    if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');
-    else sessionStorage.removeItem('varietal_sales_page');
-  }, [isSalesPage]);
 
   useEffect(() => {
     if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');

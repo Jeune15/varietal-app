@@ -17,12 +17,9 @@ export interface CalendarViewProps {
 
 const CalendarView = ({ onBack }: CalendarViewProps) => {
   const { showToast } = useToast();
-  const [selectedUser, setSelectedUser] = useState<string>('alejandro');
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month' | 'history'>('week');
-  const [showPasswordPrompt, setShowPasswordPrompt] = useState(true);
-  const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'task' | 'event'>('task');
   const [formData, setFormData] = useState({
@@ -75,16 +72,6 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
       calculateHours();
     }
   }, [scheduleEntries, selectedUser, currentDate]);
-
-  const handlePasswordSubmit = () => {
-    if (password === '10666234') {
-      setIsAuthenticated(true);
-      setShowPasswordPrompt(false);
-      showToast('Acceso concedido', 'success');
-    } else {
-      showToast('Contraseña incorrecta', 'error');
-    }
-  };
 
   const calculateHours = () => {
     if (!scheduleEntries) return;
@@ -318,48 +305,91 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
     showToast('Entrada actualizada', 'success');
   };
 
-  if (showPasswordPrompt) {
+  if (!selectedUser) {
     return (
-      <div className="min-h-screen bg-white dark:bg-stone-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <Calendar className="w-16 h-16 mx-auto mb-4 text-stone-900 dark:text-stone-100" />
-            <h1 className="text-2xl font-black uppercase tracking-widest text-stone-900 dark:text-stone-100">
-              Calendario
-            </h1>
-            <p className="text-stone-600 dark:text-stone-400 mt-2 text-sm">
-              Ingresa la contraseña para acceder
-            </p>
+      <div className="min-h-screen bg-white dark:bg-stone-950 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-black uppercase tracking-tight text-black dark:text-white">Bienvenido</h1>
+            <p className="text-sm text-stone-500 uppercase tracking-widest">¿Quién está ingresando?</p>
           </div>
-          
-          <div className="space-y-4">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña"
-              className="w-full px-4 py-3 border border-stone-200 dark:border-stone-800 rounded bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-sm"
-              onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-            />
+
+          <div className="grid gap-4">
             <button
-              onClick={handlePasswordSubmit}
-              className="w-full py-3 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded font-bold uppercase tracking-widest text-sm hover:opacity-90 transition-opacity"
+              onClick={() => setSelectedUser('alejandro')}
+              className="group relative overflow-hidden bg-stone-100 dark:bg-stone-900 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              Acceder
+              <div className="absolute inset-0 bg-gradient-to-br from-brand/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Alejhandro</h3>
+                  <p className="text-xs text-stone-500 uppercase tracking-widest mt-1">Seleccionar</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-stone-800 flex items-center justify-center shadow-sm">
+                  <User className="w-6 h-6 text-brand" />
+                </div>
+              </div>
             </button>
-            {onBack && (
-               <button
-                 onClick={onBack}
-                 className="w-full py-3 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 rounded font-bold uppercase tracking-widest text-sm hover:bg-stone-50 dark:hover:bg-stone-900 transition-colors"
-               >
-                 Volver
-               </button>
-            )}
+
+            <button
+              onClick={() => setSelectedUser('anthony')}
+              className="group relative overflow-hidden bg-stone-100 dark:bg-stone-900 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">Anthony</h3>
+                  <p className="text-xs text-stone-500 uppercase tracking-widest mt-1">Seleccionar</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-stone-800 flex items-center justify-center shadow-sm">
+                  <User className="w-6 h-6 text-blue-500" />
+                </div>
+              </div>
+            </button>
           </div>
+
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-full py-4 text-xs font-bold text-stone-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors flex items-center justify-center gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver al inicio
+            </button>
+          )}
         </div>
       </div>
     );
   }
+
+  const getTodayEntries = () => {
+    if (!scheduleEntries || !selectedUser) return [];
+    const today = new Date().toISOString().split('T')[0];
+    return scheduleEntries.filter(e => e.date === today && e.user_id === selectedUser);
+  };
+
+  const handleQuickCheck = async (type: 'check_in' | 'check_out') => {
+    if (!selectedUser) return;
+    const now = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().slice(0, 5);
+    
+    const newEntry: ScheduleEntry = {
+      id: `${selectedUser}_${date}_${time}_${type}`,
+      user_id: selectedUser,
+      type,
+      date,
+      time,
+      details: {}
+    };
+
+    await db.scheduleEntries.add(newEntry);
+    await syncToCloud('scheduleEntries', newEntry);
+    if (type === 'check_out') {
+      localStorage.setItem(`last_checkout_${selectedUser}_${date}`, time);
+    }
+    showToast(type === 'check_in' ? 'Ingreso registrado' : 'Salida registrada', 'success');
+  };
 
   const weekDates = getWeekDates(currentDate);
   const monthDates = getMonthDates(currentDate);
@@ -372,31 +402,53 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
           <h2 className="text-3xl md:text-4xl font-black uppercase tracking-widest text-stone-900 dark:text-stone-100 mb-2">
             Calendario
           </h2>
-          <p className="text-stone-600 dark:text-stone-400 text-sm">Gestiona el horario del equipo</p>
+          <p className="text-stone-600 dark:text-stone-400 text-sm font-bold uppercase tracking-widest">
+            Hola, {selectedUser === 'alejandro' ? 'Alejhandro' : selectedUser === 'anthony' ? 'Anthony' : 'Isai'}
+          </p>
         </div>
         
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              setEditingEntry(null);
-              setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5), user_id: 'isai' });
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded font-bold uppercase tracking-widest text-sm hover:opacity-90 transition-opacity"
-          >
-            <Plus size={16} />
-            Agregar
-          </button>
-          
-          {onBack && (
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Quick Check In/Out Buttons */}
+          <div className="flex gap-2 bg-stone-100 dark:bg-stone-900 p-1 rounded-lg">
             <button
-              onClick={onBack}
-              className="flex items-center gap-2 px-4 py-2 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 rounded font-bold uppercase tracking-widest text-sm hover:border-stone-900 dark:hover:border-stone-100 transition-colors"
+              onClick={() => handleQuickCheck('check_in')}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white dark:bg-stone-800 text-emerald-600 dark:text-emerald-400 shadow-sm rounded transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              <ChevronLeft size={16} />
-              Salir
+              Marcar Ingreso
             </button>
-          )}
+            <button
+              onClick={() => handleQuickCheck('check_out')}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white dark:bg-stone-800 text-rose-600 dark:text-rose-400 shadow-sm rounded transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Marcar Salida
+            </button>
+          </div>
+
+          <div className="h-8 w-px bg-stone-200 dark:bg-stone-800 hidden sm:block"></div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setEditingEntry(null);
+                setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5), user_id: selectedUser || 'isai' });
+                setShowAddModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded font-bold uppercase tracking-widest text-sm hover:opacity-90 transition-opacity"
+            >
+              <Plus size={16} />
+              Agregar
+            </button>
+            
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 px-4 py-2 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 rounded font-bold uppercase tracking-widest text-sm hover:border-stone-900 dark:hover:border-stone-100 transition-colors"
+              >
+                <ChevronLeft size={16} />
+                Salir
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

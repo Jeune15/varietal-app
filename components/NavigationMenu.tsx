@@ -137,12 +137,13 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSa
             </div>
           </div>
 
-          {/* Option 2: Ventas (No password) */}
+          {/* Option 2: Ventas */}
           <div 
-            className="relative flex-1 group cursor-pointer overflow-hidden transition-all duration-1000 border-t md:border-t-0 md:border-l border-white/10"
+            className={`relative group cursor-pointer overflow-hidden transition-all duration-1000 border-t md:border-t-0 md:border-l border-white/10 ${activeOption ? 'w-0 opacity-0 hidden md:block md:w-0' : 'flex-1 opacity-100'}`}
             onClick={() => {
-              if (!activeOption && onSalesOpen) {
+              if (onSalesOpen) {
                 onSalesOpen();
+                onClose();
               }
             }}
           >
@@ -157,9 +158,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSa
             <div className="relative z-10 w-full h-full flex items-center justify-center p-8">
               <div className="w-full max-w-sm mx-auto">
                 <div className="flex flex-col items-center text-center">
-                  <DollarSign className="w-8 h-8 text-emerald-300 mb-2 opacity-80" />
                   <span className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">Ventas</span>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-300/70 mt-2">Acceso directo</span>
                 </div>
               </div>
             </div>
