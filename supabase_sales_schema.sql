@@ -82,8 +82,38 @@ CREATE POLICY "Public Access for salesOrders" ON "salesOrders" FOR ALL USING (tr
 CREATE POLICY "Public Access for cashRegisters" ON "cashRegisters" FOR ALL USING (true) WITH CHECK (true);
 
 -- 7. Setup Realtime Replication for new tables
--- Add tables to supabase_realtime publication
-ALTER PUBLICATION supabase_realtime ADD TABLE "salesCategories";
-ALTER PUBLICATION supabase_realtime ADD TABLE "salesProducts";
-ALTER PUBLICATION supabase_realtime ADD TABLE "salesOrders";
-ALTER PUBLICATION supabase_realtime ADD TABLE "cashRegisters";
+-- Safe addition to supabase_realtime publication using DO block
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'salesCategories'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE "salesCategories";
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'salesProducts'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE "salesProducts";
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'salesOrders'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE "salesOrders";
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'cashRegisters'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE "cashRegisters";
+    END IF;
+END $$;
