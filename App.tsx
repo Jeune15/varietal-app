@@ -6,7 +6,7 @@ import {
   ClipboardList, 
   Package, 
   Settings, 
-  Receipt, 
+  Receipt,
   Menu,
   X,
   ChevronLeft,
@@ -32,6 +32,7 @@ import DashboardView from './views/DashboardView';
 import CalendarPage from './views/CalendarPage';
 import SalesPage from './views/SalesPage';
 import SalesHistorialTab from './views/sales/SalesHistorialTab';
+import ExpensesView from './views/ExpensesView';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
 import ModulesView from './views/ModulesView';
@@ -88,6 +89,7 @@ const AppContent: React.FC = () => {
     if (stored && ['roasted', 'utility'].includes(stored)) return stored as any;
     return 'roasted';
   });
+  const [billingTab, setBillingTab] = useState<'historial' | 'gastos'>('historial');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -347,7 +349,7 @@ const AppContent: React.FC = () => {
     { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
     { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
-    { id: 'sales-history', label: 'Ventas (Historial)', icon: Receipt, roles: ['admin'] }
+    { id: 'sales-history', label: 'Facturación', icon: Receipt, roles: ['admin'] }
   ].filter(item => !userRole || (item.roles.includes(userRole)));
 
   // If loading (initial or transition)
@@ -363,9 +365,9 @@ const AppContent: React.FC = () => {
           onMenuOpen={() => setIsNavMenuOpen(true)} 
           onCalendarOpen={() => {
             setIsCalendarIndependent(true);
-            sessionStorage.setItem('varietal_calendar_independent', 'true');
             setActiveTab('calendar');
           }}
+          onSalesOpen={() => setIsSalesPage(true)}
         />
         <NavigationMenu 
           isOpen={isNavMenuOpen} 
@@ -549,8 +551,28 @@ const AppContent: React.FC = () => {
                 <OrdersView orders={orders} />
               ) : activeTab === 'sales-history' ? (
                 <div className="space-y-8">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
+                    <div>
+                      <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Facturación</h2>
+                    </div>
+                    <div className="flex gap-4 md:gap-8">
+                      {['historial', 'gastos'].map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setBillingTab(tab as any)}
+                          className={`pb-2 text-xs font-bold uppercase tracking-widest transition-all relative ${
+                            billingTab === tab 
+                              ? 'text-black dark:text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-black dark:after:bg-white' 
+                              : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                          }`}
+                        >
+                          {tab === 'historial' ? 'Ventas' : 'Gastos'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
-                    <SalesHistorialTab />
+                    {billingTab === 'historial' ? <SalesHistorialTab /> : <ExpensesView />}
                   </div>
                 </div>
               ) : activeTab === 'stock' ? (

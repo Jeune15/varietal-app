@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Plus, Trash2, Search, Filter, DollarSign, FileText, Calendar, CheckCircle, X, User } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 
-export const ExpensesView = () => {
+const ExpensesView = () => {
   const { canEdit } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -77,9 +77,9 @@ export const ExpensesView = () => {
 
   return (
     <>
-    <div className="h-full flex flex-col gap-6 animate-fade-in pb-48">
+    <div className="h-full flex flex-col gap-6 animate-fade-in pb-12 p-4 md:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
         <div className="space-y-2">
           <h3 className="text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Gastos</h3>
           <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">Historial de Egresos</p>

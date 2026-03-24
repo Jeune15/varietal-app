@@ -1,12 +1,13 @@
 import React from 'react';
-import { PlayCircle, Calendar } from 'lucide-react';
+import { PlayCircle, Calendar, Receipt } from 'lucide-react';
 
 interface Props {
   onMenuOpen: () => void;
   onCalendarOpen: () => void;
+  onSalesOpen?: () => void;
 }
 
-const LandingPage: React.FC<Props> = ({ onMenuOpen, onCalendarOpen }) => {
+const LandingPage: React.FC<Props> = ({ onMenuOpen, onCalendarOpen, onSalesOpen }) => {
   const renderWord = (word: string, key: string) => (
     <span key={key} className="word-split-item">
       {word}
@@ -49,6 +50,17 @@ const LandingPage: React.FC<Props> = ({ onMenuOpen, onCalendarOpen }) => {
             <span>Iniciar</span>
             <PlayCircle className="w-5 h-5" />
           </button>
+
+          {onSalesOpen && (
+            <button
+              type="button"
+              onClick={onSalesOpen}
+              aria-label="Ventas"
+              className="inline-flex items-center justify-center w-[44px] h-[44px] border border-black bg-black text-white hover:bg-white hover:text-black transition-colors transition-transform active:scale-95"
+            >
+              <Receipt className="w-5 h-5 text-white" />
+            </button>
+          )}
 
           <button
             type="button"
