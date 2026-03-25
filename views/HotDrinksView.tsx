@@ -14,6 +14,34 @@ const hotDrinks = [
     sensory: 'Intenso, cuerpo pesado, acidez brillante y final prolongado.'
   },
   {
+    name: 'Ristretto',
+    history: 'Del italiano "restringido". Una variante del espresso diseñada para capturar solo la primera fase de la extracción, donde se concentran los sabores más dulces y los aceites.',
+    characteristics: 'Taza de 30 ml (demitasse). Volumen muy pequeño (15-20 ml).',
+    preparation: 'Misma dosis de café que un espresso (ej. 18g) pero se detiene la extracción antes (15-20 segundos) para obtener ~18-20g de bebida (ratio 1:1 o 1:1.5).',
+    sensory: 'Muy intenso, jaraboso, menos amargo que el espresso, acidez muy pronunciada y dulzor concentrado.'
+  },
+  {
+    name: 'Lungo',
+    history: 'Del italiano "largo". Se popularizó para aquellos que encontraban el espresso demasiado fuerte pero querían una bebida extraída a presión.',
+    characteristics: 'Taza de 60-90 ml. Crema más pálida y fina.',
+    preparation: 'Misma dosis de café que un espresso, pero se deja correr el agua por más tiempo (35-45 segundos) hasta obtener ~50-60g de bebida (ratio 1:3).',
+    sensory: 'Menos cuerpo que el espresso, más amargo (debido a la mayor extracción de componentes solubles) y notas más asadas.'
+  },
+  {
+    name: 'Stumpy',
+    history: 'Originado en la famosa cafetería Stumptown Coffee Roasters. Es una versión muy específica y regional de una bebida corta con leche.',
+    characteristics: 'Taza pequeña o vaso de 150 ml (5 oz).',
+    preparation: 'Se prepara con un shot de espresso extraído sobre una pequeña cantidad de leche texturizada, similar a un cortado pero con una proporción específica de la casa.',
+    sensory: 'Sabor a café muy presente y robusto, con la leche aportando textura y dulzor sin opacar el perfil del espresso.'
+  },
+  {
+    name: 'Gibraltar',
+    history: 'Creado en Blue Bottle Coffee (San Francisco) en 2005. Su nombre proviene del vaso de cristal de la marca Libbey llamado "Gibraltar" en el que se sirve.',
+    characteristics: 'Vaso de cristal facetado de 4.5 oz (135 ml).',
+    preparation: 'Un espresso doble ristretto mezclado con leche texturizada (un poco más fría que un latte) para consumirse inmediatamente.',
+    sensory: 'Cálido (no muy caliente), equilibrio perfecto entre el dulzor de la leche y la acidez/cuerpo del ristretto. Textura muy sedosa.'
+  },
+  {
     name: 'Americano',
     history: 'Creado durante la Segunda Guerra Mundial cuando los soldados estadounidenses en Italia diluían el espresso con agua caliente para imitar el café de filtro de su país.',
     characteristics: 'Taza de 150-200 ml. Aspecto de café negro tradicional pero con aceites del espresso.',

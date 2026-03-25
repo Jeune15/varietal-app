@@ -25,16 +25,64 @@ const coldDrinks = [
     sensory: 'Muy bajo en acidez, cuerpo pesado y licoroso, notas a chocolate y dulzor natural elevado. Mayor contenido de cafeína.'
   },
   {
+    name: 'Cold Brew Orange',
+    characteristics: 'Refrescante combinación de Cold Brew con jugo de naranja.',
+    preparation: 'Llenar un vaso con hielo, verter jugo de naranja fresco hasta la mitad y completar suavemente con Cold Brew concentrado para crear capas.',
+    sensory: 'Contraste dulce-ácido de la naranja con las notas achocolatadas del Cold Brew. Muy vibrante.'
+  },
+  {
+    name: 'Cold Brew Tonic',
+    characteristics: 'Versión efervescente del Cold Brew usando agua tónica.',
+    preparation: 'Hielo en vaso, 150ml de agua tónica, y coronar con 50-60ml de Cold Brew concentrado. Decorar con piel de limón o naranja.',
+    sensory: 'Efervescente, refrescante, con el amargor botánico de la tónica equilibrando el dulzor del Cold Brew.'
+  },
+  {
+    name: 'Nitro Cold Brew',
+    characteristics: 'Cold Brew infundido con gas nitrógeno. Se sirve de barril.',
+    preparation: 'Cold Brew guardado en un barril y servido a presión con nitrógeno a través de un grifo especial tipo stout.',
+    sensory: 'Textura extremadamente cremosa y aterciopelada (como cerveza Guinness), espuma densa, dulzor percibido mayor sin añadir azúcar.'
+  },
+  {
     name: 'Espresso Tonic',
     characteristics: 'Vaso de 10-12 oz. Bebida burbujeante y brillante, muy popular en verano.',
     preparation: 'Llenar un vaso con hielo, añadir 150ml de agua tónica de buena calidad, exprimir un poco de limón o naranja (opcional) y verter un espresso doble suavemente por encima.',
     sensory: 'Agridulce, efervescente, cítrico y con el toque amargo del espresso y la quinina. Complejo y vibrante.'
   },
   {
+    name: 'Shakerato',
+    characteristics: 'Clásico italiano. Espresso agitado intensamente con hielo.',
+    preparation: 'En una coctelera, poner hielo, un espresso doble y un toque de jarabe simple. Agitar vigorosamente y colar en una copa de martini o vaso corto.',
+    sensory: 'Frío, espumoso (crema espesa por la agitación), equilibrado y elegante.'
+  },
+  {
+    name: 'Affogato',
+    characteristics: 'Mitad postre, mitad bebida. Del italiano "ahogado".',
+    preparation: 'Colocar una bola (scoop) generosa de helado de vainilla en una taza o vaso pequeño y verter un espresso doble caliente directamente encima.',
+    sensory: 'Contraste extremo de temperaturas. El helado se derrite creando una crema dulce que contrarresta la intensidad del espresso.'
+  },
+  {
+    name: 'Iced Mocha',
+    characteristics: 'La versión helada del clásico Mocha.',
+    preparation: 'Mezclar espresso caliente con salsa de chocolate, verter sobre hielo y leche fría. Revolver bien. Opcional: crema batida.',
+    sensory: 'Dulce, chocolatoso, muy indulgente y refrescante.'
+  },
+  {
+    name: 'Iced Vanilla',
+    characteristics: 'Iced Latte clásico endulzado con vainilla.',
+    preparation: 'Hielo, leche fría, jarabe de vainilla (1-2 pumps) y coronar con espresso doble. Mezclar antes de beber.',
+    sensory: 'Perfil lácteo y dulce con las notas florales de la vainilla complementando al café.'
+  },
+  {
+    name: 'Iced Caramel',
+    characteristics: 'Iced Latte endulzado y decorado con caramelo.',
+    preparation: 'Decorar el vaso con salsa de caramelo, añadir hielo, leche, jarabe de vainilla o caramelo, y espresso doble. Opcional: crema batida y más caramelo arriba.',
+    sensory: 'Muy dulce, notas ricas a caramelo tostado y mantequilla que se mezclan con el espresso.'
+  },
+  {
     name: 'Frappé',
-    characteristics: 'Bebida licuada con hielo, textura tipo granizado.',
-    preparation: 'Licuar hielo, espresso o café soluble, leche, azúcar o jarabe, y una base en polvo (frappe base) para dar textura. Servir con crema batida.',
-    sensory: 'Textura de postre, muy dulce, frío intenso, sabor a café suave opacado por los saborizantes.'
+    characteristics: 'Bebida licuada con hielo, textura tipo granizado. Dulce y refrescante.',
+    preparation: 'Licuar hielo, un shot de espresso, un poco de base de helado, un scoop de leche en polvo y jarabe simple al gusto hasta obtener una textura homogénea.',
+    sensory: 'Textura de postre espesa, muy dulce, frío intenso, sabor a café suave balanceado con la cremosidad de la base.'
   },
   {
     name: 'Mazagran',
