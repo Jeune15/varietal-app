@@ -452,21 +452,8 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
         </div>
       </div>
 
-      {/* User Selector & View Mode */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-stone-900 dark:text-stone-100 text-sm uppercase tracking-widest">Usuario:</span>
-          <select
-            value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            className="px-3 py-2 border border-stone-200 dark:border-stone-800 rounded bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 text-sm font-medium focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all uppercase"
-          >
-            {teamMembers?.map(member => (
-              <option key={member.id} value={member.id}>{member.name}</option>
-            ))}
-          </select>
-        </div>
-
+      {/* View Mode & Hours Summary */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex gap-2 bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
           {['week', 'month'].map(mode => (
             <button
@@ -482,35 +469,24 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Hours Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-pink-50 dark:bg-pink-900/10 border border-pink-200 dark:border-pink-900/30 rounded-lg p-5 transition-transform hover:-translate-y-1 duration-300">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-pink-500" />
-            <h4 className="font-black text-pink-900 dark:text-pink-100 text-xs uppercase tracking-widest">Semanal</h4>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="bg-pink-50 dark:bg-pink-900/10 border border-pink-200 dark:border-pink-900/30 rounded-lg p-5 transition-transform hover:-translate-y-1 duration-300 min-w-[140px]">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-pink-500" />
+              <h4 className="font-black text-pink-900 dark:text-pink-100 text-xs uppercase tracking-widest">Semanal</h4>
+            </div>
+            <p className="text-4xl font-black text-pink-600 dark:text-pink-400">{hoursData.weekly.toFixed(1)}h</p>
           </div>
-          <p className="text-4xl font-black text-pink-600 dark:text-pink-400">{hoursData.weekly.toFixed(1)}h</p>
-        </div>
-        
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-5 transition-transform hover:-translate-y-1 duration-300">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-4 h-4 text-stone-400" />
-            <h4 className="font-black text-stone-900 dark:text-stone-100 text-xs uppercase tracking-widest">Mensual</h4>
+          
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg p-5 transition-transform hover:-translate-y-1 duration-300 min-w-[140px]">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="w-4 h-4 text-stone-400" />
+              <h4 className="font-black text-stone-900 dark:text-stone-100 text-xs uppercase tracking-widest">Mensual</h4>
+            </div>
+            <p className="text-4xl font-black text-stone-900 dark:text-stone-100">{hoursData.monthly.toFixed(1)}h</p>
           </div>
-          <p className="text-4xl font-black text-stone-900 dark:text-stone-100">{hoursData.monthly.toFixed(1)}h</p>
         </div>
       </div>
-
-      {/* Check In/Out Button */}
-      <button
-        onClick={() => handleCheckIn(selectedUser)}
-        className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-pink-500 text-white rounded-lg font-black uppercase tracking-widest text-sm hover:bg-pink-600 transition-all active:scale-95 shadow-lg shadow-pink-500/20"
-      >
-        <Clock size={20} />
-        Check In/Out
-      </button>
 
       {/* Week View */}
       {viewMode === 'week' && (
