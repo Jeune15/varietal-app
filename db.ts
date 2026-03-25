@@ -238,11 +238,14 @@ export async function pullFromCloud() {
     console.error('Error checking for reset signal:', err);
   }
 
+  // 2. Fetch all tables using exactly the casing Supabase expects
+  // In Supabase, if a table was created with quotes like "salesCategories", we MUST query it as "salesCategories"
   const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
   let success = true;
 
   for (const table of tables) {
     try {
+      // In Supabase client, we use the exact string name
       const { data, error } = await supabase.from(table).select('*');
       
       if (error) {
@@ -396,7 +399,21 @@ export function subscribeToChanges() {
         const { table, eventType, new: newRecord, old: oldRecord } = payload;
         
         // Case-insensitive match for table names
-        const targetTable = tables.find(t => t.toLowerCase() === table.toLowerCase());
+        // Special case for salesCategories which in Supabase is created as salesCategories but postgres returns it as salescategories (all lowercase)
+        // Ensure accurate mapping by standardizing to our known Dexie table names
+        let targetTable = tables.find(t => t.toLowerCase() === table.toLowerCase());
+        
+        // Sometimes postgres returns quotes or exact cases, let's have a fallback map just in case
+        if (!targetTable) {
+            const tableMap: Record<string, string> = {
+                'salescategories': 'salesCategories',
+                'salesproducts': 'salesProducts',
+                'salesorders': 'salesOrders',
+                'cashregisters': 'cashRegisters',
+                'scheduleentries': 'scheduleEntries'
+            };
+            targetTable = tableMap[table.toLowerCase()] || undefined;
+        }
         
         if (targetTable) {
             console.log('Realtime update:', table, eventType);
