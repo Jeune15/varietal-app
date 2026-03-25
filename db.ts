@@ -137,7 +137,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
     'deleted'
   ],
   teamMembers: ['id', 'name'],
-  scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'details'],
+  scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'endDate', 'details'],
   salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
   salesCategories: ['id', 'name', 'createdAt'],
   salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source', 'deliveredAt', 'despachadoAt', 'invoicedAt', 'usedRoastedCoffee', 'usedRetailBags', 'usedUtilityBags', 'shippingCost', 'shippingPaidBy'],

@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS "scheduleEntries" (
   type TEXT NOT NULL,
   date TEXT NOT NULL,
   time TEXT NOT NULL,
+  "endDate" TEXT,
   details JSONB
 );
 

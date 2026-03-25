@@ -379,9 +379,10 @@ export interface TeamMember {
 export interface ScheduleEntry {
   id: string;
   user_id: string;
-  type: 'check_in' | 'check_out' | 'task' | 'event';
+  type: 'check_in' | 'check_out' | 'event';
   date: string;
-  time: string;
+  time: string; // Used for start time of events, or time of check_in/out
+  endDate?: string; // Used only for events
   details: any; // jsonb
 }
 

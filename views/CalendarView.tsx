@@ -19,14 +19,14 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
   const { showToast } = useToast();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'task' | 'event'>('task');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0, 5),
+    endDate: new Date().toISOString().split('T')[0],
     user_id: 'alejandro'
   });
   const [hoursData, setHoursData] = useState<HoursData>({ weekly: 0, monthly: 0, annual: 0 });
@@ -182,7 +182,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
   };
 
   const handleAddEntry = async () => {
-    if (!formData.title || !formData.date || !formData.time) {
+    if (!formData.title || !formData.date || !formData.endDate) {
       showToast('Completa todos los campos', 'error');
       return;
     }
@@ -193,11 +193,12 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
     }
 
     const entry: ScheduleEntry = {
-      id: `${formData.user_id}_${formData.date}_${formData.time}_${modalType}_${Date.now()}`,
+      id: crypto.randomUUID(),
       user_id: formData.user_id,
-      type: modalType,
+      type: 'event',
       date: formData.date,
-      time: formData.time,
+      endDate: formData.endDate,
+      time: '00:00', // Time is no longer used for events, but required by interface
       details: {
         title: formData.title,
         description: formData.description
@@ -207,9 +208,11 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
     await db.scheduleEntries.add(entry);
     await syncToCloud('scheduleEntries', entry);
     setShowAddModal(false);
-    setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5), user_id: 'isai' });
-    showToast(`${modalType === 'task' ? 'Tarea' : 'Evento'} agregado ✓`, 'success');
+    setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], user_id: 'isai' });
+    showToast('Evento agregado ✓', 'success');
   };
+
+  const [selectedDayEntries, setSelectedDayEntries] = useState<{ date: string; entries: ScheduleEntry[] } | null>(null);
 
   const getWeekDates = (date: Date) => {
     const start = new Date(date);
@@ -224,10 +227,39 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
   };
 
   const getEntriesForDate = (date: string, userId?: string) => {
-    return scheduleEntries?.filter(e => 
-      e.date === date && 
-      (!userId || e.user_id === userId)
-    ).sort((a, b) => a.time.localeCompare(b.time)) || [];
+    if (!scheduleEntries) return [];
+    
+    // Convert to Date object once for comparisons
+    const currentDate = new Date(date);
+    currentDate.setHours(0,0,0,0);
+    
+    return scheduleEntries
+      .filter(entry => {
+        // Filter by user if specified
+        if (userId && entry.user_id !== userId) return false;
+
+        // For check_in/check_out, match exact date
+        if (entry.type !== 'event') {
+          return entry.date === date;
+        }
+        
+        // For events, check if current date is between start and end dates (inclusive)
+        const eventStart = new Date(entry.date);
+        eventStart.setHours(0,0,0,0);
+        
+        const eventEnd = entry.endDate ? new Date(entry.endDate) : eventStart;
+        eventEnd.setHours(0,0,0,0);
+        
+        return currentDate >= eventStart && currentDate <= eventEnd;
+      })
+      .sort((a, b) => {
+        // For events that span multiple days, put them at the top
+        if (a.type === 'event' && b.type !== 'event') return -1;
+        if (a.type !== 'event' && b.type === 'event') return 1;
+        
+        // Then sort by time
+        return a.time.localeCompare(b.time);
+      });
   };
 
   const getMonthDates = (date: Date) => {
@@ -275,12 +307,12 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
 
   const startEdit = (entry: ScheduleEntry) => {
     setEditingEntry(entry);
-    setModalType(entry.type === 'task' || entry.type === 'event' ? entry.type : 'task');
+    setModalType('event');
     setFormData({
       title: entry.details?.title || '',
       description: entry.details?.description || '',
       date: entry.date,
-      time: entry.time,
+      endDate: entry.endDate || entry.date,
       user_id: entry.user_id
     });
     setShowAddModal(true);
@@ -289,9 +321,9 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
   const saveEdit = async () => {
     if (!editingEntry) return;
     const updates = {
-      type: modalType,
+      type: 'event' as const,
       date: formData.date,
-      time: formData.time,
+      endDate: formData.endDate,
       user_id: formData.user_id,
       details: {
         title: formData.title,
@@ -430,7 +462,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
             <button
               onClick={() => {
                 setEditingEntry(null);
-                setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5), user_id: selectedUser || 'isai' });
+                setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], user_id: selectedUser || 'isai' });
                 setShowAddModal(true);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded font-bold uppercase tracking-widest text-sm hover:opacity-90 transition-opacity"
@@ -455,7 +487,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
       {/* View Mode & Hours Summary */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex gap-2 bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
-          {['week', 'month'].map(mode => (
+          {['month', 'week'].map(mode => (
             <button
               key={mode}
               onClick={() => setViewMode(mode as any)}
@@ -465,7 +497,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
                   : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
               }`}
             >
-              {mode === 'week' ? 'Semana' : 'Mes'}
+              {mode === 'month' ? 'Mes' : 'Semana'}
             </button>
           ))}
         </div>
@@ -551,8 +583,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
                         let bgClass = 'bg-stone-50 dark:bg-stone-900';
                         if (entry.type === 'check_in') { borderClass = 'border-l-stone-900 dark:border-l-stone-100'; }
                         if (entry.type === 'check_out') { borderClass = 'border-l-stone-400 dark:border-l-stone-600'; }
-                        if (entry.type === 'task') { borderClass = 'border-l-pink-500'; bgClass = 'bg-pink-50/50 dark:bg-pink-900/10'; }
-                        if (entry.type === 'event') { borderClass = 'border-l-pink-300'; bgClass = 'bg-pink-50/30 dark:bg-pink-900/5'; }
+                        if (entry.type === 'event') { borderClass = 'border-l-pink-500'; bgClass = 'bg-pink-50/50 dark:bg-pink-900/10'; }
 
                         return (
                           <div
@@ -561,11 +592,16 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
                           >
                             <div className="flex justify-between items-center cursor-pointer gap-2" onClick={() => toggleExpand(entry.id)}>
                               <span className="font-bold truncate flex-1">{nameLabel}</span>
-                              <span className="font-mono opacity-60 text-[10px]">{entry.time}</span>
+                              <span className="font-mono opacity-60 text-[10px]">{entry.type !== 'event' && entry.time}</span>
                             </div>
                             {isExpanded && (
                               <div className="mt-2 pt-2 border-t border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 space-y-2">
                                 {entry.details?.description && <div className="italic">{entry.details.description}</div>}
+                                {entry.type === 'event' && (
+                                  <div className="text-[10px] font-bold mt-1 text-pink-600 dark:text-pink-400">
+                                    {entry.date} al {entry.endDate || entry.date}
+                                  </div>
+                                )}
                                 <div className="flex gap-2 justify-end">
                                   <button onClick={() => startEdit(entry)} className="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded text-stone-600">
                                     <Edit size={12} />
@@ -635,7 +671,12 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
               return (
                 <div
                   key={dateStr}
-                  className={`border rounded-lg p-2 min-h-[80px] text-xs transition-colors flex flex-col justify-between ${
+                  onClick={() => {
+                    if (dayEntries.length > 0) {
+                      setSelectedDayEntries({ date: dateStr, entries: dayEntries });
+                    }
+                  }}
+                  className={`border rounded-lg p-2 min-h-[80px] text-xs transition-colors flex flex-col justify-between cursor-pointer ${
                     !isCurrentMonth ? 'bg-stone-50 dark:bg-stone-900/30 text-stone-300 border-transparent' :
                     isToday ? 'bg-white dark:bg-stone-950 border-pink-500 dark:border-pink-500 border-2 shadow-md relative z-10' :
                     'bg-white dark:bg-stone-950 border-stone-200 dark:border-stone-800 hover:border-stone-400'
@@ -644,19 +685,35 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
                   <div className={`font-black mb-1 ${isToday ? 'text-pink-600 dark:text-pink-400' : 'text-stone-900 dark:text-stone-100'}`}>
                     {date.getDate()}
                   </div>
-                  <div className="flex flex-wrap gap-1 content-end">
-                    {dayEntries.map(entry => (
-                      <div
-                        key={entry.id}
-                        className={`w-2 h-2 rounded-full ${
-                          entry.type === 'check_in' ? 'bg-stone-900 dark:bg-stone-100' :
-                          entry.type === 'check_out' ? 'bg-stone-400 dark:bg-stone-600' :
-                          entry.type === 'task' ? 'bg-pink-500' :
-                          'bg-pink-300'
-                        }`}
-                        title={`${entry.type} - ${entry.time}`}
-                      />
-                    ))}
+                  <div className="flex flex-col gap-1 content-end h-full justify-end mt-2">
+                    {dayEntries.map(entry => {
+                      const userColor = entry.user_id === 'alejandro' ? 'bg-brand' : entry.user_id === 'anthony' ? 'bg-blue-500' : 'bg-stone-500';
+                      
+                      if (entry.type === 'event') {
+                        return (
+                          <div 
+                            key={entry.id} 
+                            className="w-full px-1 py-0.5 rounded text-[8px] font-bold text-white bg-pink-500 truncate"
+                            title={entry.details?.title}
+                          >
+                            {entry.details?.title || 'Evento'}
+                          </div>
+                        );
+                      }
+                      
+                      // Check in/out dots
+                      return (
+                        <div key={entry.id} className="flex items-center gap-1">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              entry.type === 'check_in' ? userColor : 'bg-transparent border border-current ' + userColor.replace('bg-', 'text-')
+                            }`}
+                            title={`${entry.type === 'check_in' ? 'Entrada' : 'Salida'} - ${entry.time}`}
+                          />
+                          <span className="text-[8px] font-mono text-stone-500 scale-75 origin-left">{entry.time}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -667,13 +724,87 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
 
 
 
+      {/* Day Summary Modal */}
+      {selectedDayEntries && (
+        <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setSelectedDayEntries(null)}>
+          <div className="bg-white dark:bg-stone-900 rounded-2xl p-6 w-full max-w-sm max-h-[80vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-stone-800" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 border-b border-stone-100 dark:border-stone-800 pb-4">
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-stone-900 dark:text-stone-100">
+                  Resumen del Día
+                </h3>
+                <p className="text-sm font-bold text-pink-500 uppercase tracking-widest mt-1">
+                  {new Date(selectedDayEntries.date + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+              </div>
+              <button onClick={() => setSelectedDayEntries(null)} className="p-2 bg-stone-100 dark:bg-stone-800 rounded-full text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {selectedDayEntries.entries.map(entry => {
+                const isEvent = entry.type === 'event';
+                const userColor = entry.user_id === 'alejandro' ? 'bg-brand text-white' : entry.user_id === 'anthony' ? 'bg-blue-500 text-white' : 'bg-stone-500 text-white';
+                const userName = entry.user_id.charAt(0).toUpperCase() + entry.user_id.slice(1);
+                
+                return (
+                  <div key={entry.id} className={`p-4 rounded-xl border ${isEvent ? 'border-pink-200 bg-pink-50 dark:border-pink-900/30 dark:bg-pink-900/10' : 'border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-950'} relative overflow-hidden group`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        {isEvent ? (
+                          <span className="px-2 py-1 bg-pink-500 text-white text-[10px] font-black uppercase tracking-widest rounded">Evento</span>
+                        ) : (
+                          <span className={`px-2 py-1 ${userColor} text-[10px] font-black uppercase tracking-widest rounded`}>
+                            {userName}
+                          </span>
+                        )}
+                        {!isEvent && (
+                          <span className={`text-[10px] font-bold uppercase tracking-widest ${entry.type === 'check_in' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {entry.type === 'check_in' ? 'Entrada' : 'Salida'}
+                          </span>
+                        )}
+                      </div>
+                      {!isEvent && <span className="font-mono text-xs font-bold opacity-70">{entry.time}</span>}
+                    </div>
+                    
+                    {isEvent ? (
+                      <div>
+                        <h4 className="font-black text-lg text-stone-900 dark:text-stone-100">{entry.details?.title}</h4>
+                        {entry.details?.description && (
+                          <p className="text-sm text-stone-600 dark:text-stone-400 mt-2 leading-relaxed">{entry.details.description}</p>
+                        )}
+                        <div className="mt-3 pt-3 border-t border-pink-200/50 dark:border-pink-900/30 flex gap-4 text-xs font-bold text-stone-500">
+                          <span>Del: {entry.date}</span>
+                          <span>Al: {entry.endDate || entry.date}</span>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Acciones Rápidas (Editar/Eliminar) */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                       <button onClick={() => { setSelectedDayEntries(null); startEdit(entry); }} className="p-1.5 bg-white dark:bg-stone-800 rounded shadow hover:text-pink-500 transition-colors">
+                         <Edit size={14} />
+                       </button>
+                       <button onClick={() => { setSelectedDayEntries(null); deleteEntry(entry.id); }} className="p-1.5 bg-white dark:bg-stone-800 rounded shadow text-rose-500 hover:bg-rose-50 transition-colors">
+                         <Trash2 size={14} />
+                       </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white dark:bg-stone-900 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-stone-800">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-black uppercase tracking-widest text-stone-900 dark:text-stone-100">
-                {editingEntry ? 'Editar' : 'Agregar'} {modalType === 'task' ? 'Tarea' : 'Evento'}
+                {editingEntry ? 'Editar Evento' : 'Agregar Evento'}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors">
                 <X size={20} />
@@ -681,29 +812,6 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
             </div>
             
             <div className="space-y-6">
-              <div className="flex gap-2 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
-                <button
-                  onClick={() => setModalType('task')}
-                  className={`flex-1 py-3 px-4 rounded-lg font-black uppercase tracking-widest text-xs transition-all ${
-                    modalType === 'task' 
-                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm' 
-                      : 'text-stone-500 hover:text-stone-700'
-                  }`}
-                >
-                  Tarea
-                </button>
-                <button
-                  onClick={() => setModalType('event')}
-                  className={`flex-1 py-3 px-4 rounded-lg font-black uppercase tracking-widest text-xs transition-all ${
-                    modalType === 'event' 
-                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm' 
-                      : 'text-stone-500 hover:text-stone-700'
-                  }`}
-                >
-                  Evento
-                </button>
-              </div>
-              
               <div className="space-y-1">
                 <label className="text-xs font-black uppercase tracking-widest text-stone-500 ml-1">Título</label>
                 <input
@@ -728,7 +836,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-black uppercase tracking-widest text-stone-500 ml-1">Fecha</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-stone-500 ml-1">Fecha Inicio</label>
                   <input
                     type="date"
                     value={formData.date}
@@ -738,11 +846,12 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
                 </div>
                 
                 <div className="space-y-1">
-                  <label className="text-xs font-black uppercase tracking-widest text-stone-500 ml-1">Hora</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-stone-500 ml-1">Fecha Fin</label>
                   <input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({...formData, time: e.target.value})}
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                    min={formData.date}
                     className="w-full px-4 py-3 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 text-sm font-medium focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
                   />
                 </div>
