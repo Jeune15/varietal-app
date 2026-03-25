@@ -226,7 +226,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
     return dates;
   };
 
-  const getEntriesForDate = (date: string, userId?: string) => {
+  const getEntriesForDate = (date: string) => {
     if (!scheduleEntries) return [];
     
     // Convert to Date object once for comparisons
@@ -235,9 +235,6 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
     
     return scheduleEntries
       .filter(entry => {
-        // Filter by user if specified
-        if (userId && entry.user_id !== userId) return false;
-
         // For check_in/check_out, match exact date
         if (entry.type !== 'event') {
           return entry.date === date;
@@ -554,7 +551,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
             {weekDates.map(date => {
               const dateStr = date.toISOString().split('T')[0];
-              const dayEntries = getEntriesForDate(dateStr, selectedUser);
+              const dayEntries = getEntriesForDate(dateStr);
               const isToday = dateStr === new Date().toISOString().split('T')[0];
               
               return (
@@ -664,7 +661,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
             
             {monthDates.map(date => {
               const dateStr = date.toISOString().split('T')[0];
-              const dayEntries = getEntriesForDate(dateStr, selectedUser);
+              const dayEntries = getEntriesForDate(dateStr);
               const isCurrentMonth = date.getMonth() === currentDate.getMonth();
               const isToday = dateStr === new Date().toISOString().split('T')[0];
               
