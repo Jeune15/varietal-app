@@ -19,7 +19,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
   const { showToast } = useToast();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'week' | 'month' | 'history'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'task' | 'event'>('task');
   const [formData, setFormData] = useState({
@@ -468,7 +468,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
         </div>
 
         <div className="flex gap-2 bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
-          {['week', 'month', 'history'].map(mode => (
+          {['week', 'month'].map(mode => (
             <button
               key={mode}
               onClick={() => setViewMode(mode as any)}
@@ -478,14 +478,14 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
                   : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
               }`}
             >
-              {mode === 'week' ? 'Semana' : mode === 'month' ? 'Mes' : 'Historial'}
+              {mode === 'week' ? 'Semana' : 'Mes'}
             </button>
           ))}
         </div>
       </div>
 
       {/* Hours Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-pink-50 dark:bg-pink-900/10 border border-pink-200 dark:border-pink-900/30 rounded-lg p-5 transition-transform hover:-translate-y-1 duration-300">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-pink-500" />
@@ -500,14 +500,6 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
             <h4 className="font-black text-stone-900 dark:text-stone-100 text-xs uppercase tracking-widest">Mensual</h4>
           </div>
           <p className="text-4xl font-black text-stone-900 dark:text-stone-100">{hoursData.monthly.toFixed(1)}h</p>
-        </div>
-        
-        <div className="bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-lg p-5 transition-transform hover:-translate-y-1 duration-300">
-          <div className="flex items-center gap-2 mb-2">
-            <History className="w-4 h-4 text-stone-400" />
-            <h4 className="font-black text-stone-500 dark:text-stone-400 text-xs uppercase tracking-widest">Anual</h4>
-          </div>
-          <p className="text-4xl font-black text-stone-500 dark:text-stone-400">{hoursData.annual.toFixed(1)}h</p>
         </div>
       </div>
 
@@ -697,55 +689,7 @@ const CalendarView = ({ onBack }: CalendarViewProps) => {
         </div>
       )}
 
-      {/* History View */}
-      {viewMode === 'history' && (
-        <div className="space-y-4 animate-fade-in">
-           <div className="flex items-center justify-between mb-4">
-             <h3 className="font-black text-stone-900 dark:text-stone-100 uppercase tracking-widest">Historial Reciente</h3>
-             <div className="flex items-center gap-2 text-xs text-stone-500">
-               <Filter size={14} />
-               <span>Últimos 30 días</span>
-             </div>
-           </div>
 
-           <div className="space-y-2">
-             {scheduleEntries && scheduleEntries
-               .filter(e => (!selectedUser || e.user_id === selectedUser))
-               .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time))
-               .slice(0, 50)
-               .map(entry => (
-                 <div key={entry.id} className="flex items-center gap-4 p-3 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg hover:shadow-sm transition-shadow">
-                    <div className={`w-2 h-12 rounded-full ${
-                       entry.type === 'check_in' ? 'bg-stone-900 dark:bg-stone-100' :
-                       entry.type === 'check_out' ? 'bg-stone-400 dark:bg-stone-600' :
-                       entry.type === 'task' ? 'bg-pink-500' :
-                       'bg-pink-300'
-                    }`} />
-                    <div className="flex-1">
-                       <div className="flex justify-between items-start">
-                         <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm uppercase">
-                           {entry.type === 'check_in' ? 'Entrada' : 
-                            entry.type === 'check_out' ? 'Salida' : 
-                            entry.details?.title || entry.type}
-                         </h4>
-                         <span className="text-xs font-mono text-stone-500">{entry.date} {entry.time}</span>
-                       </div>
-                       {entry.details?.description && (
-                         <p className="text-xs text-stone-500 mt-1">{entry.details.description}</p>
-                       )}
-                    </div>
-                    <button onClick={() => deleteEntry(entry.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-stone-300 hover:text-red-500 rounded transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                 </div>
-               ))
-             }
-             {(!scheduleEntries || scheduleEntries.length === 0) && (
-               <div className="text-center py-12 text-stone-400 italic">No hay registros recientes</div>
-             )}
-           </div>
-        </div>
-      )}
 
       {/* Add Modal */}
       {showAddModal && (

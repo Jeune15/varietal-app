@@ -137,34 +137,7 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSa
             </div>
           </div>
 
-          {/* Option 2: Ventas */}
-          <div 
-            className={`relative group cursor-pointer overflow-hidden transition-all duration-1000 border-t md:border-t-0 md:border-l border-white/10 ${activeOption ? 'w-0 opacity-0 hidden md:block md:w-0' : 'flex-1 opacity-100'}`}
-            onClick={() => {
-              if (onSalesOpen) {
-                onSalesOpen();
-                onClose();
-              }
-            }}
-          >
-            {/* Background Image */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-              style={{ backgroundImage: 'url(/ventas.webp)' }}
-            />
-            <div className={`absolute inset-0 transition-colors duration-1000 ${activeOption ? 'bg-black/60' : 'bg-black/40 group-hover:bg-black/50'}`} />
-
-            {/* Content */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center p-8">
-              <div className="w-full max-w-sm mx-auto">
-                <div className="flex flex-col items-center text-center">
-                  <span className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">Ventas</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Option 3: Alumnos */}
+          {/* Option 2: Alumnos */}
           <div 
             className="relative flex-1 group cursor-pointer overflow-hidden transition-all duration-1000 border-t md:border-t-0 md:border-l border-white/10"
             onClick={() => !activeOption && handleOptionClick('student')}

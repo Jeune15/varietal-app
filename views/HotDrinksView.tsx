@@ -142,44 +142,46 @@ export const HotDrinksView: React.FC<Props> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<'drinks' | 'syrups'>('drinks');
 
   return (
-    <div className="h-full flex flex-col gap-6 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors mb-2"
-          >
-            <ChevronLeft size={16} />
-            <span className="text-xs font-bold uppercase tracking-widest">Volver a Herramientas</span>
-          </button>
-          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase flex items-center gap-3">
-            <Coffee className="w-8 h-8 text-brand" />
-            Bebidas Calientes
-          </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1 uppercase tracking-widest">
-            Clásicos de cafetería y recetas de jarabes
-          </p>
+    <div className="min-h-screen bg-stone-100 dark:bg-black font-sans selection:bg-brand/30 pb-32">
+      {/* Header & Tabs Container - Sticky */}
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 hover:bg-stone-100 dark:bg-stone-800 rounded-xl transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
+            </button>
+            <div>
+              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                 Bebidas Calientes
+              </h1>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
+                Clásicos de cafetería y recetas de jarabes
+              </p>
+            </div>
+          </div>
         </div>
-        
+
         {/* Tabs */}
-        <div className="flex bg-stone-100 dark:bg-stone-900 p-1 rounded-lg">
+        <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab('drinks')}
-            className={`px-6 py-2.5 text-xs font-bold uppercase tracking-widest rounded-md transition-all ${
-              activeTab === 'drinks' 
-                ? 'bg-white dark:bg-stone-800 text-black dark:text-white shadow-sm' 
-                : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-100'
+            className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === 'drinks'
+                ? 'border-brand text-brand'
+                : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
             }`}
           >
             Bebidas
           </button>
           <button
             onClick={() => setActiveTab('syrups')}
-            className={`px-6 py-2.5 text-xs font-bold uppercase tracking-widest rounded-md transition-all ${
-              activeTab === 'syrups' 
-                ? 'bg-white dark:bg-stone-800 text-black dark:text-white shadow-sm' 
-                : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-100'
+            className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === 'syrups'
+                ? 'border-brand text-brand'
+                : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
             }`}
           >
             Jarabes
@@ -187,32 +189,38 @@ export const HotDrinksView: React.FC<Props> = ({ onBack }) => {
         </div>
       </div>
 
+      <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
+
       {activeTab === 'drinks' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hotDrinks.map((drink, idx) => (
-            <div key={idx} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 flex flex-col h-full hover:border-black dark:hover:border-white transition-colors group">
-              <h3 className="text-2xl font-black uppercase tracking-tight mb-4 group-hover:text-brand transition-colors">{drink.name}</h3>
+            <div key={idx} className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50 dark:bg-stone-950 hover:border-brand dark:hover:border-brand transition-all duration-300 h-full text-left overflow-hidden">
+              <div className="w-full space-y-4 relative z-10 transition-all duration-300">
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-2">
+                  {drink.name}
+                </h3>
               
-              <div className="space-y-4 flex-1">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1">Historia y Origen</p>
-                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">{drink.history}</p>
-                </div>
-                
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1">Características</p>
-                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">{drink.characteristics}</p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-brand mb-1 font-bold">Historia y Origen</p>
+                    <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-relaxed">{drink.history}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-1 font-bold">Características</p>
+                    <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-relaxed">{drink.characteristics}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-green-600 mb-1 font-bold">Preparación</p>
+                    <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-relaxed">{drink.preparation}</p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1">Preparación</p>
-                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">{drink.preparation}</p>
+                <div className="pt-4 mt-4 border-t border-stone-100 dark:border-stone-800">
+                  <p className="text-[10px] uppercase tracking-widest text-purple-500 mb-1 font-bold">Perfil Sensorial</p>
+                  <p className="text-[11px] italic text-stone-500 dark:text-stone-400 leading-relaxed">{drink.sensory}</p>
                 </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-stone-100 dark:border-stone-800">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1">Perfil Sensorial</p>
-                <p className="text-xs italic text-stone-500 dark:text-stone-400">{drink.sensory}</p>
               </div>
             </div>
           ))}
@@ -222,20 +230,19 @@ export const HotDrinksView: React.FC<Props> = ({ onBack }) => {
       {activeTab === 'syrups' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {syrups.map((syrup, idx) => (
-            <div key={idx} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 flex flex-col h-full">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
-                  <Droplet className="w-5 h-5 text-stone-600 dark:text-stone-400" />
-                </div>
-                <h3 className="text-xl font-black uppercase tracking-tight">{syrup.name}</h3>
+            <div key={idx} className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50 dark:bg-stone-950 hover:border-brand dark:hover:border-brand transition-all duration-300 h-full text-left overflow-hidden">
+              <div className="w-full space-y-4 relative z-10 transition-all duration-300">
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-2">
+                  {syrup.name}
+                </h3>
               </div>
               
-              <div className="space-y-6 flex-1">
+              <div className="space-y-6 flex-1 w-full relative z-10">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-3">Ingredientes</p>
-                  <ul className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">Ingredientes</p>
+                  <ul className="space-y-1">
                     {syrup.ingredients.map((ing, i) => (
-                      <li key={i} className="text-xs text-stone-600 dark:text-stone-300 flex items-start gap-2">
+                      <li key={i} className="text-[11px] text-stone-600 dark:text-stone-300 flex items-start gap-2 leading-relaxed">
                         <span className="w-1 h-1 rounded-full bg-stone-400 mt-1.5 shrink-0" />
                         {ing}
                       </li>
@@ -244,26 +251,27 @@ export const HotDrinksView: React.FC<Props> = ({ onBack }) => {
                 </div>
                 
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-3">Instrucciones</p>
-                  <ol className="space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-green-600 mb-2">Instrucciones</p>
+                  <ol className="space-y-2">
                     {syrup.steps.map((step, i) => (
-                      <li key={i} className="text-xs text-stone-600 dark:text-stone-300 flex items-start gap-3">
+                      <li key={i} className="text-[11px] text-stone-600 dark:text-stone-300 flex items-start gap-3 leading-relaxed">
                         <span className="font-mono text-[10px] text-stone-400 font-bold mt-0.5">{i + 1}.</span>
                         <span>{step}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
-              </div>
 
-              <div className="mt-6 pt-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 p-4 rounded-lg">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-brand mb-1">Uso Sugerido</p>
-                <p className="text-xs text-stone-600 dark:text-stone-400">{syrup.usage}</p>
+                <div className="pt-4 border-t border-stone-100 dark:border-stone-800 mt-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand mb-1">Uso Sugerido</p>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{syrup.usage}</p>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };

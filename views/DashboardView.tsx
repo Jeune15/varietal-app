@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Roast, Order, ProductionItem, RoastedStock, SalesOrder } from '../types';
 import { exportDatabaseToJson, initSupabase, db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X, DollarSign } from 'lucide-react';
+import { Package, Clock, Flame, Download, Link, Globe, Info, BarChart as BarChartIcon, PieChart as PieChartIcon, X, DollarSign, ClipboardList } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -56,11 +56,10 @@ const DashboardView: React.FC<Props> = ({ roasts, orders, productionInventory, r
   const activeOrders = orders.filter(o => o.status !== 'Facturado' && o.status !== 'Enviado');
   const totalOrders = activeOrders.length;
   
-  const salesOrdersToday = salesOrders.filter(o => o.createdAt.startsWith(today)).length;
-  const salesOrdersThisWeek = salesOrders.filter(o => o.createdAt >= startOfWeek && o.createdAt <= today).length;
+  const salesOrdersToday = salesOrders.filter(o => o.createdAt.startsWith(today) && !!o.invoicedAt).length;
   
   const salesTotalToday = salesOrders
-    .filter(o => o.createdAt.startsWith(today))
+    .filter(o => o.createdAt.startsWith(today) && !!o.invoicedAt)
     .reduce((acc, curr) => acc + curr.total, 0);
     
   const salesTotalThisWeek = salesOrders
@@ -195,10 +194,10 @@ const DashboardView: React.FC<Props> = ({ roasts, orders, productionInventory, r
           description={`Pedidos hoy: ${salesOrdersToday}`}
         />
         <MetricCard
-          label="Ventas Semana"
-          value={`S/ ${salesTotalThisWeek.toFixed(2)}`}
-          icon={<DollarSign strokeWidth={1.5} />}
-          description={`Pedidos semana: ${salesOrdersThisWeek}`}
+          label="Pedidos Pendientes"
+          value={totalOrders}
+          icon={<ClipboardList strokeWidth={1.5} />}
+          description="Órdenes por facturar/enviar"
         />
         <MetricCard
           label="Stock café tostado"
