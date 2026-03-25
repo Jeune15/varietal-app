@@ -107,8 +107,86 @@ const AppContent: React.FC = () => {
   const [showAdminScrollTop, setShowAdminScrollTop] = useState(false);
   const studentContentRef = useRef<HTMLDivElement | null>(null);
   const [showStudentScrollTop, setShowStudentScrollTop] = useState(false);
-  const [isCalendarIndependent, setIsCalendarIndependent] = useState(() => sessionStorage.getItem('varietal_calendar_independent') === 'true'); // Track if calendar is accessed from landing
-  const [isSalesPage, setIsSalesPage] = useState(() => sessionStorage.getItem('varietal_sales_page') === 'true'); // Track if sales page is accessed from landing
+  const [isCalendarIndependent, setIsCalendarIndependent] = useState(false); // Track if calendar is accessed from landing
+  const [isSalesPage, setIsSalesPage] = useState(false); // Track if sales page is accessed from landing
+
+  // ---- HISTORY API SYNC ----
+  // Sync state to URL
+  const updateURL = (state: {
+    view: 'landing' | 'app';
+    role?: 'admin' | 'student' | null;
+    tab?: string;
+    sales?: boolean;
+    calendar?: boolean;
+  }) => {
+    const params = new URLSearchParams();
+    params.set('view', state.view);
+    if (state.role) params.set('role', state.role);
+    if (state.tab && state.view === 'app' && state.role === 'admin') params.set('tab', state.tab);
+    if (state.sales) params.set('sales', 'true');
+    if (state.calendar) params.set('calendar', 'true');
+    
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState(state, '', newUrl);
+  };
+
+  // Replace State (for initial load to not break history back)
+  const replaceURL = (state: any) => {
+    const params = new URLSearchParams();
+    params.set('view', state.view);
+    if (state.role) params.set('role', state.role);
+    if (state.tab && state.view === 'app' && state.role === 'admin') params.set('tab', state.tab);
+    if (state.sales) params.set('sales', 'true');
+    if (state.calendar) params.set('calendar', 'true');
+    
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(state, '', newUrl);
+  };
+
+  // Listen to PopState (Back/Forward buttons)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state) {
+        setViewState(state.view || 'landing');
+        setUserRole(state.role || null);
+        if (state.tab) setActiveTab(state.tab);
+        setIsSalesPage(!!state.sales);
+        setIsCalendarIndependent(!!state.calendar);
+      } else {
+        // Fallback if no state object
+        const params = new URLSearchParams(window.location.search);
+        setViewState((params.get('view') as 'landing' | 'app') || 'landing');
+        setUserRole((params.get('role') as 'admin' | 'student' | null));
+        if (params.get('tab')) setActiveTab(params.get('tab')!);
+        setIsSalesPage(params.get('sales') === 'true');
+        setIsCalendarIndependent(params.get('calendar') === 'true');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Initial Load from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view') as 'landing' | 'app';
+    const role = params.get('role') as 'admin' | 'student' | null;
+    const tab = params.get('tab');
+    const sales = params.get('sales') === 'true';
+    const calendar = params.get('calendar') === 'true';
+
+    if (view) setViewState(view);
+    if (role) setUserRole(role);
+    if (tab) setActiveTab(tab);
+    if (sales) setIsSalesPage(true);
+    if (calendar) setIsCalendarIndependent(true);
+
+    // Set initial state in history
+    replaceURL({ view: view || 'landing', role, tab, sales, calendar });
+  }, []);
+  // ---- END HISTORY API SYNC ----
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -137,6 +215,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     sessionStorage.setItem('varietal_active_tab', activeTab);
+    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
   }, [activeTab]);
 
   useEffect(() => {
@@ -146,12 +225,18 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (isCalendarIndependent) sessionStorage.setItem('varietal_calendar_independent', 'true');
     else sessionStorage.removeItem('varietal_calendar_independent');
+    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
   }, [isCalendarIndependent]);
 
   useEffect(() => {
     if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');
     else sessionStorage.removeItem('varietal_sales_page');
+    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
   }, [isSalesPage]);
+
+  useEffect(() => {
+    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
+  }, [viewState, userRole]);
 
   useEffect(() => {
     const el = adminContentRef.current;
