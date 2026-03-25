@@ -6,11 +6,28 @@ import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, Lock, Unlock, X, Ar
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Utility to format currency
+const formatCurrency = (amount: number) => {
+  return amount.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' });
+};
+
+// --- Updated getMonthRange to reliably get the CURRENT real month ---
 function getMonthRange(date: Date = new Date()) {
-  const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
-  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  
+  // startOfMonth: First day of current month at 00:00:00
+  const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
+  
+  // endOfMonth: Last day of current month at 23:59:59.999
+  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  
+  // Use YYYY-MM format as a stable identifier for the monthStart ID instead of full ISO string
+  // This prevents timezone shifts from creating duplicate registers for the same month
+  const monthIdentifier = `${year}-${String(month + 1).padStart(2, '0')}`;
+  
   return { 
-    monthStart: startOfMonth.toISOString(), 
+    monthStart: monthIdentifier, 
     monthEnd: endOfMonth.toISOString(), 
     startOfMonth, 
     endOfMonth 
@@ -21,37 +38,93 @@ const SalesCajaTab: React.FC = () => {
   const registers = useLiveQuery(() => db.cashRegisters.toArray()) || [];
   const salesOrders = useLiveQuery(() => db.salesOrders.toArray()) || [];
 
+  // 1. Get current month range ONCE when component mounts
   const { monthStart, monthEnd, startOfMonth, endOfMonth } = useMemo(() => getMonthRange(), []);
 
-  const currentRegister = useMemo(
-    () => registers.find(r => r.monthStart === monthStart) || null,
-    [registers, monthStart]
-  );
+  // 2. Safely find the current register using a fuzzy match on the date
+  // (to handle older registers that used ISO strings instead of YYYY-MM format)
+  const currentRegister = useMemo(() => {
+    if (!registers) return null;
+    return registers.find(r => {
+      // Direct match (new format)
+      if (r.monthStart === monthStart) return true;
+      // Fuzzy match for old ISO string format (checks if year and month match)
+      if (r.monthStart.includes(monthStart)) return true;
+      return false;
+    }) || null;
+  }, [registers, monthStart]);
 
-  // Auto-open register if it doesn't exist for current month
+  // 3. Auto-open register if it doesn't exist for current month
+  // This logic is simplified and more aggressive to ensure the box ALWAYS opens
   useEffect(() => {
-    if (!currentRegister && registers.length > 0) { // Check length to ensure DB is loaded
-      const openCurrentMonth = async () => {
-        const id = crypto.randomUUID();
-        const newReg: CashRegister = {
-          id,
-          monthStart,
-          monthEnd,
-          openingAmount: 0,
-          isOpen: true,
-          entries: [],
-          totalIncome: 0,
-          totalExpense: 0,
-        };
-        await db.cashRegisters.add(newReg);
-        await syncToCloud('cashRegisters', newReg);
-      };
-      openCurrentMonth();
-    }
-  }, [currentRegister, registers.length, monthStart, monthEnd]);
+    let mounted = true;
+    
+    const ensureBoxIsOpen = async () => {
+      try {
+        // Double check directly against DB to avoid race conditions with useLiveQuery
+        const dbRegisters = await db.cashRegisters.toArray();
+        const exists = dbRegisters.some(r => r.monthStart === monthStart || r.monthStart.includes(monthStart));
+        
+        if (mounted && !exists) { 
+          console.log("Forzando apertura de caja para el mes:", monthStart);
+          const id = crypto.randomUUID();
+          const newReg: CashRegister = {
+            id,
+            monthStart,
+            monthEnd,
+            openingAmount: 0,
+            isOpen: true,
+            entries: [],
+            totalIncome: 0,
+            totalExpense: 0,
+          };
+          
+          await db.cashRegisters.add(newReg);
+          await syncToCloud('cashRegisters', newReg);
+        }
+      } catch (e) {
+        console.error("Error al intentar abrir la caja automáticamente:", e);
+      }
+    };
+    
+    // Run immediately
+    ensureBoxIsOpen();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [monthStart, monthEnd]); // Removed dependency on currentRegister to prevent re-triggering loops
 
   const [showOpenForm, setShowOpenForm] = useState(false);
-  const [openingAmount, setOpeningAmount] = useState('');
+  const [openingAmountStr, setOpeningAmountStr] = useState('');
+
+  // 4. Force Loading state fallback if somehow still null (should be rare now)
+  if (!registers) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+          <p className="text-stone-500 uppercase tracking-widest text-xs font-bold">Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If registers loaded but currentRegister is still null, show a manual "Abrir Caja" fallback
+  if (!currentRegister && registers.length >= 0) {
+     return (
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <Wallet className="w-12 h-12 text-stone-300" />
+          <p className="text-stone-500 uppercase tracking-widest text-sm font-bold">Iniciando Caja del Mes...</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-black text-white text-xs uppercase font-bold tracking-widest rounded"
+          >
+            Refrescar si no carga
+          </button>
+        </div>
+     );
+  }
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expAmount, setExpAmount] = useState('');
   const [expDesc, setExpDesc] = useState('');
@@ -63,7 +136,7 @@ const SalesCajaTab: React.FC = () => {
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
 
   const openRegister = async () => {
-    const amount = parseFloat(openingAmount);
+    const amount = parseFloat(openingAmountStr);
     if (isNaN(amount) || amount < 0) return;
     const id = crypto.randomUUID();
     const newReg: CashRegister = {
@@ -79,7 +152,7 @@ const SalesCajaTab: React.FC = () => {
     await db.cashRegisters.add(newReg);
     await syncToCloud('cashRegisters', newReg);
     setShowOpenForm(false);
-    setOpeningAmount('');
+    setOpeningAmountStr('');
   };
 
   const addExpense = async () => {
@@ -469,8 +542,8 @@ const SalesCajaTab: React.FC = () => {
                 step="1"
                 min="0"
                 autoFocus
-                value={openingAmount}
-                onChange={e => setOpeningAmount(e.target.value)}
+                value={openingAmountStr}
+                onChange={e => setOpeningAmountStr(e.target.value)}
                 placeholder="0.00"
                 className="w-full px-3 py-2.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
@@ -481,7 +554,7 @@ const SalesCajaTab: React.FC = () => {
               </button>
               <button
                 onClick={openRegister}
-                disabled={!openingAmount}
+                disabled={!openingAmountStr}
                 className="flex-1 py-2.5 bg-emerald-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg disabled:opacity-40 hover:bg-emerald-700 transition-colors"
               >
                 Abrir
