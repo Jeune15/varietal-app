@@ -8,7 +8,7 @@ interface Props {
   onBack: () => void;
 }
 
-const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, onBack }) => {
+export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, onBack }) => {
   const [activeTab, setActiveTab] = useState<'reader' | 'quiz' | 'task'>('reader');
   const [isPlaying, setIsPlaying] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
@@ -264,4 +264,4 @@ const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, onBack })
   );
 };
 
-export default AudiobookReaderView;
+
