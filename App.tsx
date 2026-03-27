@@ -306,7 +306,7 @@ const AppContent: React.FC = () => {
         setIsSalesPage(true);
       } else {
         if (storedRole === 'student') {
-          const desired = storedTab && ['cupping', 'modules', 'recipes'].includes(storedTab) ? storedTab : 'cupping';
+          const desired = storedTab && ['cupping', 'modules', 'recipes', 'audiobooks'].includes(storedTab) ? storedTab : 'cupping';
           setActiveTab(desired);
         } else {
           setActiveTab(storedTab || 'dashboard');
@@ -349,7 +349,7 @@ const AppContent: React.FC = () => {
   }, [user, loading, imagesLoaded]);
 
   useEffect(() => {
-    if (userRole === 'student' && !['cupping', 'modules', 'recipes'].includes(activeTab)) {
+    if (userRole === 'student' && !['cupping', 'modules', 'recipes', 'audiobooks'].includes(activeTab)) {
       setActiveTab('cupping');
     }
   }, [userRole, activeTab]);

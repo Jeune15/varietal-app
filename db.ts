@@ -181,7 +181,8 @@ export async function syncToCloud(table: string, data: any) {
     } else {
       payload = sanitizeRecord(table, data);
     }
-    const { error } = await supabase.from(table).upsert(payload);
+    const supabaseTable = table === 'teamMembers' ? 'team_members' : table;
+    const { error } = await supabase.from(supabaseTable).upsert(payload);
     if (error) throw error;
   } catch (err) {
     console.error(`Error sync ${table}:`, err);
@@ -245,8 +246,9 @@ export async function pullFromCloud() {
 
   for (const table of tables) {
     try {
-      // In Supabase client, we use the exact string name
-      const { data, error } = await supabase.from(table).select('*');
+      // In Supabase client, we use the exact string name or the mapped mapped name
+      const supabaseTable = table === 'teamMembers' ? 'team_members' : table;
+      const { data, error } = await supabase.from(supabaseTable).select('*');
       
       if (error) {
         const message = (error as any)?.message || '';
@@ -290,9 +292,10 @@ export async function pushToCloud(): Promise<{ success: boolean; message?: strin
       const localData = await db[table].toArray();
       if (localData.length > 0) {
         const batchSize = 50;
+        const supabaseTable = table === 'teamMembers' ? 'team_members' : table;
         for (let i = 0; i < localData.length; i += batchSize) {
           const batch = localData.slice(i, i + batchSize).map((record: any) => sanitizeRecord(table, record));
-          const { error } = await supabase.from(table).upsert(batch);
+          const { error } = await supabase.from(supabaseTable).upsert(batch);
           if (error) {
             console.error(`Error pushing batch for ${table}:`, error);
             success = false;
@@ -410,7 +413,8 @@ export function subscribeToChanges() {
                 'salesproducts': 'salesProducts',
                 'salesorders': 'salesOrders',
                 'cashregisters': 'cashRegisters',
-                'scheduleentries': 'scheduleEntries'
+                'scheduleentries': 'scheduleEntries',
+                'team_members': 'teamMembers'
             };
             targetTable = tableMap[table.toLowerCase()] || undefined;
         }
@@ -467,7 +471,8 @@ export async function resetDatabase(excludeUserId?: string) {
   if (supabase) {
     for (const table of tables) {
       try {
-        let query = supabase.from(table).delete();
+        const supabaseTable = table === 'teamMembers' ? 'team_members' : table;
+        let query = supabase.from(supabaseTable).delete();
         let error;
 
         if (table === 'profiles' && excludeUserId) {
