@@ -21,7 +21,8 @@ import {
   Calendar,
   DollarSign,
   LogOut,
-  Settings2
+  Settings2,
+  BookOpen
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getSupabase, pullFromCloud, initSupabase, subscribeToChanges } from './db';
@@ -41,6 +42,9 @@ import SettingsModal from './components/SettingsModal';
 import FullScreenMenu from './components/FullScreenMenu';
 import LandingPage from './views/LandingPage';
 import NavigationMenu from './components/NavigationMenu';
+import { AudiobooksView } from './views/AudiobooksView';
+import { AudiobookChaptersView } from './views/AudiobookChaptersView';
+import { AudiobookReaderView } from './views/AudiobookReaderView';
 import Loader from './components/Loader';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -85,6 +89,8 @@ const AppContent: React.FC = () => {
   const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
 
   const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('varietal_active_tab') || 'dashboard');
+  const [selectedAudiobookCategory, setSelectedAudiobookCategory] = useState<string | null>(null);
+  const [selectedAudiobookChapter, setSelectedAudiobookChapter] = useState<string | null>(null);
   const [stockTab, setStockTab] = useState<'roasted' | 'utility'>(() => {
     const stored = sessionStorage.getItem('varietal_stock_tab');
     if (stored && ['roasted', 'utility'].includes(stored)) return stored as any;
@@ -372,15 +378,32 @@ const AppContent: React.FC = () => {
           console.error("Error al cerrar sesión:", error);
         }
       }
-      // Clear session
+
+      // 1. Update React State
+      setUserRole(null);
+      setViewState('landing');
+      setIsNavMenuOpen(false);
+      setIsCalendarIndependent(false);
+      setIsSalesPage(false);
+
+      // 2. Clear Session Storage
       sessionStorage.removeItem('varietal_access');
       sessionStorage.removeItem('varietal_role');
       sessionStorage.removeItem('varietal_active_tab');
       sessionStorage.removeItem('varietal_stock_tab');
+      sessionStorage.removeItem('varietal_calendar');
       sessionStorage.removeItem('varietal_calendar_independent');
       sessionStorage.removeItem('varietal_sales_page');
       sessionStorage.removeItem('varietal_sales_tab');
-      window.location.reload();
+
+      // 3. Clear URL History API state
+      const params = new URLSearchParams();
+      params.set('view', 'landing');
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({ view: 'landing' }, '', newUrl);
+
+      // 4. Force a hard reload to completely reset the application state (optional but safe)
+      // window.location.reload(); 
   };
 
   const handleAuthenticate = async (role: 'admin' | 'student', password: string): Promise<boolean> => {
@@ -480,6 +503,28 @@ const AppContent: React.FC = () => {
              {activeTab === 'modules' && <ModulesView />}
              
              {activeTab === 'recipes' && <RecipesView />}
+
+             {activeTab === 'audiobooks' && (
+               <>
+                 {!selectedAudiobookCategory && (
+                   <AudiobooksView onSelectCategory={setSelectedAudiobookCategory} />
+                 )}
+                 {selectedAudiobookCategory && !selectedAudiobookChapter && (
+                   <AudiobookChaptersView 
+                     categoryId={selectedAudiobookCategory} 
+                     onBack={() => setSelectedAudiobookCategory(null)}
+                     onSelectChapter={setSelectedAudiobookChapter}
+                   />
+                 )}
+                 {selectedAudiobookCategory && selectedAudiobookChapter && (
+                   <AudiobookReaderView 
+                     categoryId={selectedAudiobookCategory}
+                     chapterId={selectedAudiobookChapter}
+                     onBack={() => setSelectedAudiobookChapter(null)}
+                   />
+                 )}
+               </>
+             )}
            </div>
         </div>
         {showStudentScrollTop && (
@@ -496,16 +541,21 @@ const AppContent: React.FC = () => {
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
           <div className="flex items-center justify-center gap-4 px-2 py-2">
             {[
-              { id: 'cupping', label: 'Catación', icon: BarChart3 },
-              { id: 'modules', label: 'Módulos', icon: Package },
-              { id: 'recipes', label: 'Herramientas', icon: ClipboardList }
-            ].map((item) => {
+               { id: 'cupping', label: 'Catación', icon: BarChart3 },
+               { id: 'modules', label: 'Módulos', icon: Package },
+               { id: 'recipes', label: 'Herramientas', icon: ClipboardList },
+               { id: 'audiobooks', label: 'AudioLibros', icon: BookOpen }
+             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSelectedAudiobookCategory(null);
+                    setSelectedAudiobookChapter(null);
+                  }}
                   className={`flex flex-col items-center gap-1 p-2 min-w-[3.5rem] rounded-xl transition-all duration-300 ${
                     isActive 
                       ? 'text-brand dark:text-brand-light' 
