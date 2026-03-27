@@ -17,7 +17,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 const AudiobooksView: React.FC<Props> = ({ onSelectCategory }) => {
   return (
-    <div className="h-full flex flex-col gap-6 animate-fade-in pb-12">
+    <div className="h-full flex flex-col gap-6 animate-fade-in pb-12 w-full max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

@@ -503,7 +503,7 @@ const AppContent: React.FC = () => {
              {activeTab === 'recipes' && <RecipesView />}
 
              {activeTab === 'audiobooks' && (
-               <>
+               <ErrorBoundary>
                  {!selectedAudiobookCategory && (
                    <AudiobooksView onSelectCategory={setSelectedAudiobookCategory} />
                  )}
@@ -521,7 +521,7 @@ const AppContent: React.FC = () => {
                      onBack={() => setSelectedAudiobookChapter(null)}
                    />
                  )}
-               </>
+               </ErrorBoundary>
              )}
            </div>
         </div>
