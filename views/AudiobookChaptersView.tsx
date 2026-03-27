@@ -8,7 +8,7 @@ interface Props {
   onSelectChapter: (chapterId: string) => void;
 }
 
-export const AudiobookChaptersView: React.FC<Props> = ({ categoryId, onBack, onSelectChapter }) => {
+const AudiobookChaptersView: React.FC<Props> = ({ categoryId, onBack, onSelectChapter }) => {
   const category = audiobooksData.find(c => c.id === categoryId);
 
   if (!category) {
@@ -82,3 +82,5 @@ export const AudiobookChaptersView: React.FC<Props> = ({ categoryId, onBack, onS
     </div>
   );
 };
+
+export default AudiobookChaptersView;

@@ -15,7 +15,7 @@ const iconMap: Record<string, React.ElementType> = {
   Brain
 };
 
-export const AudiobooksView: React.FC<Props> = ({ onSelectCategory }) => {
+const AudiobooksView: React.FC<Props> = ({ onSelectCategory }) => {
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-12">
       {/* Header */}
@@ -71,3 +71,5 @@ export const AudiobooksView: React.FC<Props> = ({ onSelectCategory }) => {
     </div>
   );
 };
+
+export default AudiobooksView;
