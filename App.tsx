@@ -421,7 +421,7 @@ const AppContent: React.FC = () => {
     
     if (role === 'student' && password === 'alumnos.varietal') {
       setUserRole('student');
-      setActiveTab('cupping');
+      setActiveTab('modules');
       sessionStorage.setItem('varietal_access', 'true');
       sessionStorage.setItem('varietal_role', 'student');
       setIsLoading(true); // Trigger loader for transition
@@ -498,8 +498,6 @@ const AppContent: React.FC = () => {
                </button>
              </div>
              
-             {activeTab === 'cupping' && <CuppingView stocks={roastedStocks} mode="free" />}
-             
              {activeTab === 'modules' && <ModulesView />}
              
              {activeTab === 'recipes' && <RecipesView />}
@@ -541,10 +539,9 @@ const AppContent: React.FC = () => {
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
           <div className="flex items-center justify-center gap-4 px-2 py-2">
             {[
-               { id: 'cupping', label: 'Catación', icon: BarChart3 },
                { id: 'modules', label: 'Módulos', icon: Package },
-               { id: 'recipes', label: 'Herramientas', icon: ClipboardList },
-               { id: 'audiobooks', label: 'AudioLibros', icon: BookOpen }
+               { id: 'audiobooks', label: 'AudioLibros', icon: BookOpen },
+               { id: 'recipes', label: 'Herramientas', icon: ClipboardList }
              ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;

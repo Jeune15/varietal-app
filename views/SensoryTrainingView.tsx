@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, BookOpen, Brain, Check, ChevronRight, RefreshCw, Trophy, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
+import CuppingView from './CuppingView';
 
 // --- Data ---
 
@@ -603,7 +604,7 @@ interface Props {
 }
 
 export const SensoryTrainingView: React.FC<Props> = ({ onBack, isEmbedded = false, headerOffset = '0px' }) => {
-  const [activeTab, setActiveTab] = useState<'simulator' | 'dictionary' | 'education'>('simulator');
+  const [activeTab, setActiveTab] = useState<'catacion' | 'dictionary' | 'education' | 'simulator'>('catacion');
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
@@ -636,9 +637,10 @@ export const SensoryTrainingView: React.FC<Props> = ({ onBack, isEmbedded = fals
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
           {[
-            { id: 'simulator', label: 'Simulador' },
+            { id: 'catacion', label: 'Catación' },
             { id: 'dictionary', label: 'Diccionario' },
-            { id: 'education', label: 'Educación' }
+            { id: 'education', label: 'Educación' },
+            { id: 'simulator', label: 'Simulador' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -657,6 +659,11 @@ export const SensoryTrainingView: React.FC<Props> = ({ onBack, isEmbedded = fals
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {activeTab === 'catacion' && (
+          <div className="animate-fade-in -mx-4 -my-8">
+            <CuppingView stocks={[]} mode="free" isEmbedded={true} />
+          </div>
+        )}
         {activeTab === 'simulator' && <Simulator />}
         {activeTab === 'dictionary' && <Dictionary />}
         {activeTab === 'education' && <Education />}

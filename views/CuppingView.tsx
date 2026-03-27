@@ -13,6 +13,7 @@ import { gsap } from 'gsap';
 interface Props {
   stocks: RoastedStock[];
   mode?: 'internal' | 'free' | 'all';
+  isEmbedded?: boolean;
 }
 
 const buildEmptyForm = (): CuppingForm => ({
@@ -55,7 +56,7 @@ const descriptorOptions = {
   ]
 };
 
-const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
+const CuppingView: React.FC<Props> = ({ stocks, mode = 'all', isEmbedded = false }) => {
   const { canEdit } = useAuth();
   const { showToast } = useToast();
   const cursorRef = useRef<HTMLDivElement | null>(null);
@@ -390,43 +391,78 @@ const CuppingView: React.FC<Props> = ({ stocks, mode = 'all' }) => {
 
   return (
     <>
-    <div className="space-y-10 max-w-6xl mx-auto pb-32 relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-8">
-        <div className="space-y-2">
-          <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase transition-all duration-300">Catación</h3>
-          <p className="text-[11px] md:text-xs font-bold text-stone-400 uppercase tracking-widest">
-            Sistema descriptivo de evaluación sensorial
-          </p>
+    <div className={`space-y-10 max-w-6xl mx-auto relative ${isEmbedded ? '' : 'pb-32'}`}>
+      {!isEmbedded && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-8">
+          <div className="space-y-2">
+            <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase transition-all duration-300">Catación</h3>
+            <p className="text-[11px] md:text-xs font-bold text-stone-400 uppercase tracking-widest">
+              Sistema descriptivo de evaluación sensorial
+            </p>
+          </div>
+          <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => requestNavigation(() => {
+                  setActiveTab('form');
+                  setViewStep('type-selection');
+                  setSessionType(null);
+                })}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
+                  activeTab === 'form'
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                    : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
+                }`}
+              >
+                Nueva sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => requestNavigation(() => setActiveTab('recent'))}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
+                  activeTab === 'recent'
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                    : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
+                }`}
+              >
+                Sesiones recientes
+              </button>
+          </div>
         </div>
-        <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => requestNavigation(() => {
-                setActiveTab('form');
-                setViewStep('type-selection');
-                setSessionType(null);
-              })}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
-                activeTab === 'form'
-                  ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                  : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
-              }`}
-            >
-              Nueva sesión
-            </button>
-            <button
-              type="button"
-              onClick={() => requestNavigation(() => setActiveTab('recent'))}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
-                activeTab === 'recent'
-                  ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                  : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
-              }`}
-            >
-              Sesiones recientes
-            </button>
+      )}
+
+      {isEmbedded && (
+        <div className="flex justify-end mb-6">
+          <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => requestNavigation(() => {
+                  setActiveTab('form');
+                  setViewStep('type-selection');
+                  setSessionType(null);
+                })}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
+                  activeTab === 'form'
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                    : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
+                }`}
+              >
+                Nueva sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => requestNavigation(() => setActiveTab('recent'))}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em] border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${
+                  activeTab === 'recent'
+                    ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+                    : 'bg-white text-stone-500 border-stone-200 hover:border-black hover:text-black dark:bg-stone-900 dark:text-stone-400 dark:border-stone-700 dark:hover:border-white dark:hover:text-white'
+                }`}
+              >
+                Sesiones recientes
+              </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {!canEdit && activeTab === 'form' && (
         <div className="border border-dashed border-stone-300 dark:border-stone-700 p-10 text-center text-sm text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest">

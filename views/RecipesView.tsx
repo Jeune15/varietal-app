@@ -8,6 +8,7 @@ import { RoastingToolView } from './RoastingToolView';
 import { LatteArtView } from './LatteArtView';
 import { HotDrinksView } from './HotDrinksView';
 import { ColdDrinksView } from './ColdDrinksView';
+import CuppingView from './CuppingView';
 import { Coffee, Filter, Droplet, ChevronRight, ArrowLeft, Brain, Leaf, Flame, AlertTriangle, Eye, Trash2, X, FileDown, Palette, Snowflake } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 import { useToast } from '../contexts/ToastContext';
