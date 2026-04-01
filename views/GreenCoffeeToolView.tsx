@@ -1188,34 +1188,33 @@ const TechStandardsTab: React.FC = () => {
         </p>
       </div>
 
-      {/* Sub-section toggles */}
-      <div className="flex p-1 bg-stone-100 dark:bg-stone-800 rounded-xl overflow-x-auto">
+      <div className="flex gap-6 overflow-x-auto scrollbar-hide border-b border-stone-200 dark:border-stone-800">
         <button
           onClick={() => { setTechSection('standards'); setSelectedId(null); }}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 ${
             techSection === 'standards'
-              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
-              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+              ? 'border-brand text-brand'
+              : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
           }`}
         >
           Estándares
         </button>
         <button
           onClick={() => { setTechSection('defects'); setSelectedId(null); }}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 ${
             techSection === 'defects'
-              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
-              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+              ? 'border-brand text-brand'
+              : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
           }`}
         >
           Defectos
         </button>
         <button
           onClick={() => { setTechSection('geo'); setSelectedId(null); }}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 ${
             techSection === 'geo'
-              ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm'
-              : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
+              ? 'border-brand text-brand'
+              : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
           }`}
         >
           Influencia Geográfica

@@ -1,68 +1,70 @@
-import React, { useRef } from 'react';
-import { BookOpen, ChevronRight, Leaf, Flame, Coffee, Droplet, Filter, Brain } from 'lucide-react';
+import React from 'react';
+import { BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { audiobooksData } from '../data/audiobooks';
 
 interface Props {
   onSelectCategory: (categoryId: string) => void;
 }
 
-const iconMap: Record<string, React.ElementType> = {
-  Leaf,
-  Flame,
-  Coffee,
-  Droplet,
-  Filter,
-  Brain
-};
-
 export const AudiobooksView: React.FC<Props> = ({ onSelectCategory }) => {
   return (
-    <div className="h-full flex flex-col gap-6 animate-fade-in pb-12 w-full max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8 flex flex-col gap-8 w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase flex items-center gap-3">
-            <BookOpen className="w-8 h-8 text-brand" />
-            Audiolibros
-          </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1 uppercase tracking-widest">
-            Aprende, escucha y evalúa tus conocimientos
-          </p>
+      <div className="space-y-2 mb-4">
+        <h1 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">
+          Audiolibros
+        </h1>
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+          Aprende, escucha y evalúa tus conocimientos
+        </p>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="flex flex-wrap gap-6 px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-black text-black dark:text-white">{audiobooksData.length}</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Módulos</span>
+        </div>
+        <div className="w-px h-6 bg-stone-200 dark:bg-stone-800" />
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-black text-black dark:text-white">
+            {audiobooksData.reduce((acc, cat) => acc + cat.chapters.length, 0)}
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Capítulos</span>
+        </div>
+        <div className="w-px h-6 bg-stone-200 dark:bg-stone-800" />
+        <div className="flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 text-stone-400" />
+          <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Quiz + Tarea en cada capítulo</span>
         </div>
       </div>
 
-      {/* Grid de Categorías */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Category Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {audiobooksData.map((category) => {
-          const IconComponent = iconMap[category.icon] || BookOpen;
-          
           return (
             <button
               key={category.id}
               onClick={() => onSelectCategory(category.id)}
-              className="relative group flex flex-col items-start justify-between gap-6 p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-black dark:hover:border-white transition-all duration-300 h-full text-left overflow-hidden"
+              className="group relative flex flex-col justify-between p-6 md:p-8 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 rounded-2xl hover:border-black dark:hover:border-white hover:shadow-xl transition-all duration-300 text-left"
             >
-              <div className="w-full space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black`}>
-                    <IconComponent className="w-6 h-6" />
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300">
-                    {category.chapters.length} Capítulos
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-1">
-                    {category.title}
-                  </h3>
-                </div>
-                <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+              <div className="flex-1 space-y-4 mb-8">
+                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight text-black dark:text-white leading-tight">
+                  {category.title}
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-medium">
                   {category.description}
                 </p>
               </div>
-              <div className="w-full pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between group-hover:pl-2 transition-all">
-                <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white">Explorar</span>
-                <ChevronRight className="w-4 h-4 text-black dark:text-white" />
+
+              <div className="pt-6 border-t border-stone-100 dark:border-stone-800 flex items-end justify-between w-full">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-2xl md:text-3xl font-black text-black dark:text-white leading-none group-hover:scale-105 transition-transform origin-left">{category.chapters.length}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Capítulos</span>
+                </div>
+                <div className="w-10 h-10 rounded-full border border-stone-200 dark:border-stone-700 flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white transition-all transform group-hover:translate-x-1 shadow-sm">
+                  <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-white dark:group-hover:text-black transition-colors" />
+                </div>
               </div>
             </button>
           );
@@ -71,5 +73,3 @@ export const AudiobooksView: React.FC<Props> = ({ onSelectCategory }) => {
     </div>
   );
 };
-
-

@@ -15,43 +15,43 @@ interface RoastItem {
 const ROAST_VARIABLES: RoastItem[] = [
   {
     id: 'charge-temp', name: 'Temperatura de carga', type: 'Temperatura inicial del tambor al introducir el café.',
-    description: 'La temperatura del tambor en el momento de cargar el café verde. Determina la agresividad del inicio del tueste y la velocidad con que el grano comienza a absorber calor.',
-    impact: ['Carga alta → secado rápido, riesgo de scorching.', 'Carga baja → secado lento, riesgo de baking.', 'Debe ajustarse según densidad y humedad del grano.']
+    description: 'Es la temperatura que tiene el tambor en el momento exacto en que se introduce el café verde. Esta variable determina la agresividad con la que el grano comienza a absorber calor desde el primer segundo, afectando la velocidad del secado inicial y el riesgo de defectos superficiales. Una carga bien calibrada es la base de toda la curva: si falla el inicio, es muy difícil recuperar el perfil deseado.',
+    impact: ['Carga alta → secado rápido, riesgo de scorching en la superficie.', 'Carga baja → secado lento, riesgo de baking en la fase de Maillard.', 'Debe ajustarse según la densidad, humedad y tamaño del batch de café verde.']
   },
   {
     id: 'ror', name: 'Rate of Rise (RoR)', type: 'Velocidad de incremento de temperatura (°C/min o °F/min).',
-    description: 'Mide cuántos grados sube la temperatura de la masa de café por minuto. Es el indicador principal para controlar el perfil de tueste en tiempo real.',
-    impact: ['RoR alto → desarrollo rápido, riesgo de tipping.', 'RoR bajo → desarrollo lento, riesgo de baking.', 'Un RoR decreciente y controlado es generalmente ideal.']
+    description: 'El RoR mide cuántos grados sube la temperatura del grano por minuto. Es el indicador más importante para controlar el tueste en tiempo real porque no dice dónde está la temperatura, sino hacia dónde va y con qué fuerza. Un RoR decreciente y controlado es el estándar en café de especialidad, ya que permite un desarrollo uniforme y evita los defectos más comunes.',
+    impact: ['RoR alto → desarrollo rápido y agresivo, riesgo de tipping.', 'RoR bajo o plano → desarrollo lento que puede causar baking y sabores apagados.', 'Un RoR que cae a cero o se vuelve negativo en desarrollo es un error crítico.']
   },
   {
     id: 'dev-time', name: 'Tiempo de desarrollo', type: 'Duración desde el primer crack hasta la descarga.',
-    description: 'El periodo entre el primer crack y el punto de descarga. Es donde se generan la mayoría de las reacciones de Maillard y caramelización que definen el perfil final.',
-    impact: ['Demasiado corto → subdesarrollado, notas verdes.', 'Demasiado largo → plano, sin brillo, notas a cereal.', 'Generalmente: 15–25% del tiempo total del tueste.']
+    description: 'Es el período que transcurre entre el inicio del primer crack y la descarga al enfriador. Durante este tiempo se completan las reacciones de Maillard avanzadas, la caramelización y la degradación de ácidos, definiendo el balance final entre acidez, dulzor, cuerpo y amargor. La relación entre este tiempo y el tiempo total (DTR) es la métrica clave para replicar y comparar perfiles.',
+    impact: ['Demasiado corto (< 15% del total) → subdesarrollado, notas verdes y acidez agresiva.', 'Demasiado largo (> 25% del total) → plano, sin brillo, notas a cereal y pérdida de acidez.', 'El rango objetivo generalmente se sitúa entre el 15% y el 22% del tiempo total.']
   },
   {
     id: 'airflow', name: 'Flujo de aire (Airflow)', type: 'Cantidad de aire caliente circulando dentro del tambor.',
-    description: 'Controla la convección dentro de la tostadora. Más aire = más transferencia de calor por convección. Menos aire = más conducción (contacto con el tambor).',
-    impact: ['Alto airflow → tueste más limpio, mayor claridad.', 'Bajo airflow → más cuerpo, notas más densas.', 'Ayuda a evacuar humo y chaff durante el tueste.']
+    description: 'El airflow controla la intensidad de la convección dentro de la tostadora: cuánto calor llega al grano a través del aire en movimiento versus el calor por conducción directa desde el tambor metálico. Además de transferir calor, cumple una función crítica: evacuar el humo y el chaff liberados durante el tueste, lo que impacta directamente en la limpieza del perfil en taza.',
+    impact: ['Alto airflow → mayor convección, tueste más limpio y con mayor claridad en taza.', 'Bajo airflow → mayor conducción, más cuerpo y notas más densas, pero riesgo de humo reabsorbido.', 'Ayuda a evacuar humo y chaff durante el tueste, mejorando la limpieza en taza.']
   },
   {
     id: 'drum-speed', name: 'Velocidad del tambor (RPM)', type: 'Rotaciones por minuto del tambor.',
-    description: 'Determina la agitación mecánica del café dentro del tambor. Más RPM = más uniformidad de contacto pero menos tiempo de contacto individual con la pared.',
-    impact: ['RPM alto → tueste más uniforme, menor riesgo de quemaduras.', 'RPM bajo → mayor contacto con el metal, riesgo de scorching.', 'Debe balancearse con gas y airflow.']
+    description: 'Las RPM determinan con qué frecuencia cada grano entra en contacto con la pared metálica caliente y cuánto tiempo permanece en el flujo de aire central. A mayor velocidad de rotación, mayor agitación mecánica y distribución más uniforme del calor entre todos los granos del batch. Esta variable rara vez se ajusta durante el tueste, pero su configuración inicial es determinante para la uniformidad del resultado.',
+    impact: ['RPM alto → tueste más uniforme, menor riesgo de quemaduras localizadas.', 'RPM bajo → mayor tiempo de contacto con el metal caliente, riesgo de scorching puntual.', 'Debe balancearse con el gas y el airflow para lograr la transferencia de calor deseada.']
   },
   {
     id: 'turning-point', name: 'Punto de inflexión (Turning Point)', type: 'Punto de temperatura mínima después de la carga.',
-    description: 'Cuando el café verde frío se carga en el tambor caliente, la temperatura cae bruscamente. El turning point es donde la temperatura deja de caer y empieza a subir. Marca el inicio real del tueste.',
-    impact: ['Turning point alto → carga demasiado caliente o batch pequeño.', 'Turning point bajo → carga fría o batch grande.', 'Idealmente alcanzar en 1-2 minutos después de la carga.']
+    description: 'Cuando el café verde se introduce en el tambor caliente, la sonda registra una caída inmediata de temperatura porque el grano absorbe el calor del entorno. El turning point es el momento exacto en que esa caída se detiene y la temperatura comienza a recuperarse. Es un indicador directo de la relación entre la energía disponible en el sistema y la masa de café cargada.',
+    impact: ['Turning point alto → la carga fue demasiado caliente o el batch es demasiado pequeño.', 'Turning point bajo → carga fría o batch grande que absorbió mucha energía inicial.', 'Lo ideal es alcanzarlo entre 1 y 2 minutos después de la carga para un inicio controlado.']
   },
   {
     id: 'gas-power', name: 'Potencia de gas / calor', type: 'Energía térmica aplicada al sistema.',
-    description: 'La cantidad de energía calorífica que alimenta al tambor. Es la herramienta principal junto con el airflow para controlar el RoR y el perfil de la curva.',
-    impact: ['Gas alto → RoR sube rápido, tueste agresivo.', 'Gas bajo → RoR cae, tueste más suave.', 'Los ajustes de gas tienen un delay de respuesta de 30-60 segundos.']
+    description: 'Es la cantidad de energía calorífica que alimenta a los quemadores del tambor, generalmente expresada en porcentaje o BTU/h. Junto con el airflow, el gas es la herramienta principal para controlar el RoR en cada momento del tueste. Un punto crítico: los ajustes de gas no tienen efecto inmediato, existe un delay de respuesta de 30 a 60 segundos antes de que el cambio se manifieste en la temperatura del grano.',
+    impact: ['Gas alto → el RoR sube rápido, generando un tueste más agresivo.', 'Gas bajo → el RoR cae gradualmente, desacelerando el tueste para un desarrollo más suave.', 'Los cambios bruscos de gas son el error más común: siempre deben hacerse de forma gradual.']
   },
   {
     id: 'end-temp', name: 'Temperatura de descarga', type: 'Temperatura final del grano al sacar del tambor.',
-    description: 'La temperatura a la cual se detiene el tueste y se descarga el café al enfriador. Es un indicador (no definitivo) del grado de tueste.',
-    impact: ['No es un valor absoluto (varía entre tostadoras y sondas).', 'Sirve como referencia para replicar un perfil.', 'Debe complementarse con color, tiempo y datos sensoriales.']
+    description: 'Es la temperatura registrada por la sonda cuando el café cae al enfriador. Funciona como referencia práctica para replicar el grado de tueste de un batch a otro, aunque su valor absoluto varía entre tostadoras y tipos de sonda. Por eso nunca debe analizarse de forma aislada: siempre debe combinarse con el color del grano, el tiempo de desarrollo y los datos sensoriales.',
+    impact: ['No es un valor absoluto universal: varía entre tostadoras, sondas y su posición.', 'Sirve como referencia interna confiable para replicar perfiles en la misma máquina.', 'Debe complementarse siempre con color Agtron, tiempo de desarrollo y evaluación sensorial.']
   }
 ];
 
@@ -307,7 +307,7 @@ const RoastSimulator: React.FC = () => {
             else if (feedback) buttonStyle = 'border-stone-100 bg-stone-50 text-stone-300 dark:border-stone-800 dark:bg-stone-900/50 dark:text-stone-600 opacity-50';
             return (
               <button key={opt.id} onClick={() => handleSelect(opt.id)} disabled={!!feedback}
-                className={`p-6 rounded-xl text-sm font-bold uppercase tracking-wider transition-all border-2 w-full flex items-center justify-center text-center break-words hyphens-auto ${buttonStyle}`}
+                className={`p-6 rounded-xl text-sm font-bold uppercase tracking-wider transition-all border-2 w-full flex items-center justify-center text-center break-words ${buttonStyle}`}
               >{opt.name}</button>
             );
           })}

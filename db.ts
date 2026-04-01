@@ -27,7 +27,7 @@ type VarietalDB = Dexie & {
 
 const db = new Dexie('VarietalDB') as VarietalDB;
 
-db.version(11).stores({
+db.version(12).stores({
   greenCoffees: 'id, clientName, variety',
   roasts: 'id, clientName, greenCoffeeId',
   orders: 'id, clientName, status',
@@ -39,7 +39,7 @@ db.version(11).stores({
   profiles: 'id, email, role',
   cuppingSessions: 'id, roastStockId, tasterName, date',
   espressoSessions: 'id, date, coffeeName',
-  filterSessions: 'id, date, coffeeName, method',
+  filterSessions: 'id, date, brewerName, coffeeName',
   filterRecipes: 'id, method, coffeeName',
   teamMembers: 'id, name',
   scheduleEntries: 'id, user_id, type, date',
@@ -111,7 +111,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   profiles: ['id', 'email', 'role', 'isActive'],
   cuppingSessions: ['id', 'roastStockId', 'roastId', 'coffeeName', 'clientName', 'tasterName', 'date', 'objective', 'form', 'notes', 'sessionType', 'samples', 'deleted'],
   espressoSessions: ['id', 'date', 'baristaName', 'coffeeName', 'shots', 'notes', 'coffeeOrigin', 'coffeeProcess', 'roastDate', 'deleted'],
-  filterSessions: ['id', 'date', 'brewerName', 'coffeeName', 'method', 'pours', 'notes', 'deleted'],
+  filterSessions: ['id', 'date', 'brewerName', 'coffeeName', 'coffeeOrigin', 'coffeeProcess', 'roastDate', 'recipes', 'notes', 'deleted'],
   filterRecipes: [
     'id',
     'createdAt',

@@ -199,8 +199,10 @@ export interface FilterSession {
   date: string;
   brewerName: string;
   coffeeName: string;
-  method: string;
-  pours: FilterPour[];
+  coffeeOrigin?: string;
+  coffeeProcess?: string;
+  roastDate?: string;
+  recipes: FilterRecipe[];
   notes?: string;
   deleted?: boolean;
 }
@@ -238,10 +240,6 @@ export interface FilterRecipe {
   updatedAt: string;
   name: string;
   method: BrewMethod;
-  coffeeName: string;
-  coffeeOrigin: string;
-  coffeeProcess?: string; // New field
-  coffeeDate: string;
   doseGrams: number;
   waterTempCelsius: number;
   grinderModel: string;
@@ -252,12 +250,19 @@ export interface FilterRecipe {
   pressureBars: number | null;
   filterType: string;
   waterBrand: string;
-  aeropressPressureProfile?: 'suave' | 'moderada' | 'fuerte'; // Aeropress specific
-  aeropressPressTimeSeconds?: number; // Aeropress specific
+  aeropressPressureProfile?: 'suave' | 'moderada' | 'fuerte';
+  aeropressPressTimeSeconds?: number;
   phases: FilterRecipePhase[];
+  pours: FilterPour[];
   tasting: FilterTastingNotes;
   notes?: string;
   deleted?: boolean;
+  
+  // Legacy top-level fields (kept for backward compatibility, now derived from Session)
+  coffeeName?: string;
+  coffeeOrigin?: string;
+  coffeeProcess?: string;
+  coffeeDate?: string;
 }
 
 export type ProductionActivityType = 

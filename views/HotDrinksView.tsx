@@ -163,6 +163,62 @@ const syrups = [
       'Retira del fuego, añade la vainilla y deja enfriar.'
     ],
     usage: 'La base fundamental para Mochas. También se puede usar para decorar tazas.'
+  },
+  {
+    name: 'Jarabe de Avellana (Hazelnut)',
+    ingredients: [
+      '1 taza de agua',
+      '1 taza de azúcar blanca',
+      '1/2 taza de avellanas tostadas y sin piel, troceadas',
+      '1 cucharadita de extracto de vainilla (opcional, para redondear)'
+    ],
+    steps: [
+      'En una olla, combina el agua y el azúcar y lleva a fuego medio.',
+      'Agrega las avellanas troceadas cuando el azúcar comience a disolverse.',
+      'Mantén a fuego bajo durante 20 minutos para que las avellanas liberen su aceite y sabor.',
+      'Retira del fuego y deja reposar tapado por 30 minutos adicionales.',
+      'Cuela con malla fina presionando bien las avellanas para extraer todo el sabor.',
+      'Añade el extracto de vainilla, embotella y refrigera (dura hasta 2-3 semanas).'
+    ],
+    usage: 'Clásico en Lattes y Flat Whites. Aporta un perfil de fruto seco tostado, dulce y elegante que complementa perfectamente los cafés de tueste medio.'
+  },
+  {
+    name: 'Jarabe de Canela y Miel',
+    ingredients: [
+      '1 taza de agua',
+      '1/2 taza de azúcar blanca',
+      '1/2 taza de miel de abeja pura',
+      '3 ramas de canela',
+      '1 cucharadita de extracto de vainilla'
+    ],
+    steps: [
+      'En una olla, disuelve el azúcar en el agua a fuego medio.',
+      'Agrega las ramas de canela y cocina a fuego bajo por 10 minutos.',
+      'Retira del fuego y deja enfriar a temperatura tibia (no caliente) antes de agregar la miel.',
+      'Incorpora la miel y el extracto de vainilla, revolviendo hasta integrar completamente.',
+      'Cuela para retirar las ramas de canela.',
+      'Embotella y refrigera. Dura hasta 3 semanas.'
+    ],
+    usage: 'Ideal para Cappuccinos, Lattes de temporada y Macchiatos. La miel aporta una dulzura floral compleja que el azúcar sola no puede imitar. Excelente con cafés de origen etíope o yemení.'
+  },
+  {
+    name: 'Jarabe de Cardamomo y Rosa',
+    ingredients: [
+      '1 taza de agua',
+      '1 taza de azúcar blanca',
+      '8 vainas de cardamomo verde, ligeramente machacadas',
+      '2 cucharadas de pétalos de rosa secos (grado culinario)',
+      'Pizca de sal'
+    ],
+    steps: [
+      'Combina el agua, el azúcar y el cardamomo machacado en una olla pequeña.',
+      'Lleva a ebullición suave, luego reduce el fuego y cocina por 10 minutos.',
+      'Retira del fuego, agrega los pétalos de rosa y la sal.',
+      'Tapa y deja infusionar durante 45 minutos a 1 hora.',
+      'Cuela con malla fina y embotella.',
+      'Refrigera. Dura hasta 2 semanas.'
+    ],
+    usage: 'Perfil inspirado en la tradición del café árabe (Qahwa). Extraordinario en Lattes de leche de avena, Cortados o Flat Whites. Aporta una complejidad floral-especiada muy elegante y diferenciadora.'
   }
 ];
 

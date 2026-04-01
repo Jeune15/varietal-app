@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, PlayCircle, BookOpen, Clock, ChevronRight } from 'lucide-react';
+import { ChevronLeft, PlayCircle, BookOpen, Clock, ChevronRight, ArrowLeft } from 'lucide-react';
 import { audiobooksData } from '../data/audiobooks';
 
 interface Props {
@@ -20,61 +20,74 @@ export const AudiobookChaptersView: React.FC<Props> = ({ categoryId, onBack, onS
     );
   }
 
+  const totalDuration = category.chapters.length;
+
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
-        <div>
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors mb-4"
-          >
-            <ChevronLeft size={16} />
-            <span className="text-xs font-bold uppercase tracking-widest">Volver a Audiolibros</span>
-          </button>
-          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase flex items-center gap-3">
-            {category.title}
-          </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-2 uppercase tracking-widest">
-            {category.description}
-          </p>
+      <div className="flex flex-col gap-4 border-b border-stone-200 dark:border-stone-800 pb-6 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="group p-2 -ml-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-all active:scale-95 shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400 group-hover:-translate-x-1 transition-transform" />
+            </button>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white tracking-tighter uppercase leading-none">
+                {category.title}
+              </h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mt-2">
+                {category.chapters.length} Capítulos
+              </p>
+            </div>
+          </div>
+          
+          <div className="hidden sm:block max-w-md shrink-0 self-center">
+             <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed text-right border-l-2 border-brand/30 pl-4 py-1">
+                {category.description}
+             </p>
+          </div>
         </div>
       </div>
 
       {/* Chapters List */}
-      <div className="max-w-4xl space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-stone-400 mb-6">Índice de Capítulos</h3>
-        
+      <div className="max-w-4xl space-y-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-4">Índice de Capítulos</p>
+
         {category.chapters.map((chapter, index) => (
           <button
             key={chapter.id}
             onClick={() => onSelectChapter(chapter.id)}
-            className="w-full group flex flex-col sm:flex-row sm:items-center gap-4 p-4 md:p-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl hover:border-black dark:hover:border-white transition-all duration-300 text-left"
+            className="w-full group flex items-start gap-4 p-4 md:p-5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl hover:border-black dark:hover:border-white hover:shadow-md transition-all duration-300 text-left"
           >
-            {/* Number/Icon */}
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-colors">
-              <span className="font-black text-lg group-hover:hidden">{index + 1}</span>
-              <PlayCircle className="w-6 h-6 hidden group-hover:block" />
+            {/* Number Bubble */}
+            <div className="flex-none w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white transition-colors mt-0.5">
+              <span className="font-black text-sm text-stone-700 dark:text-stone-300 group-hover:text-white dark:group-hover:text-black group-hover:hidden transition-colors">
+                {index + 1}
+              </span>
+              <PlayCircle className="w-5 h-5 text-white dark:text-black hidden group-hover:block" />
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <h4 className="text-lg font-black text-stone-900 dark:text-stone-100 uppercase tracking-tight mb-1 truncate">
+              <h4 className="text-sm md:text-base font-black text-stone-900 dark:text-stone-100 tracking-tight mb-1.5 leading-snug break-words">
                 {chapter.title}
               </h4>
-              <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-stone-400">
+              <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-stone-400">
                 <span className="flex items-center gap-1">
-                  <Clock size={12} /> {chapter.duration}
+                  <Clock size={10} /> {chapter.duration}
                 </span>
                 <span className="flex items-center gap-1">
-                  <BookOpen size={12} /> Leer y Escuchar
+                  <BookOpen size={10} /> Leer · Quiz · Tarea
                 </span>
               </div>
             </div>
 
             {/* Arrow */}
-            <div className="hidden sm:block flex-shrink-0 text-stone-300 group-hover:text-brand transition-colors">
-              <ChevronRight size={24} />
+            <div className="hidden sm:flex flex-none items-center self-center text-stone-300 group-hover:text-black dark:group-hover:text-white transition-colors">
+              <ChevronRight size={20} />
             </div>
           </button>
         ))}
@@ -82,5 +95,3 @@ export const AudiobookChaptersView: React.FC<Props> = ({ categoryId, onBack, onS
     </div>
   );
 };
-
-

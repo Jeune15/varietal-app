@@ -636,10 +636,10 @@ const TopicAccordion: React.FC<{ topics: Topic[] }> = ({ topics }) => {
 const ModuleList: React.FC<{ onSelect: (m: Module) => void; history: HistoryRecord[]; onDeleteHistory: (id: string) => void }> = ({ onSelect, history, onDeleteHistory }) => {
 
   return (
-    <div className="space-y-10 max-w-6xl mx-auto pb-32 animate-fade-in">
-      <div className="space-y-2 mb-8">
-        <h3 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h3>
-        <p className="text-[11px] md:text-xs font-bold text-stone-400 uppercase tracking-widest">
+    <div className="max-w-6xl mx-auto pb-32 animate-fade-in px-4 pt-8 space-y-10 w-full">
+      <div className="space-y-2 mb-12">
+        <h1 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Módulos</h1>
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
           Material educativo y recursos
         </p>
       </div>

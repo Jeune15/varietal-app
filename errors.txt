@@ -1,0 +1,2 @@
+views/FilterToolView.tsx(1332,30): error TS2304: Cannot find name 'AlertTriangle'.
+views/RecipesView.tsx(94,16): error TS2304: Cannot find name 'FilterView'.

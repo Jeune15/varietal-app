@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Coffee, ChevronLeft, Droplet, Snowflake } from 'lucide-react';
+import { Coffee, ChevronLeft, Droplet } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -220,8 +220,8 @@ export const ColdDrinksView: React.FC<Props> = ({ onBack }) => {
               <ChevronLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
             </button>
             <div>
-              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                 <Snowflake className="w-5 h-5 text-blue-500" /> Bebidas Frías
+              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-stone-900 dark:text-stone-100">
+                 Bebidas Frías
               </h1>
               <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
                 Bebidas heladas, siropes y guía de Cold Brew
