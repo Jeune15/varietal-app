@@ -83,6 +83,22 @@ const SalesGeneradorTab: React.FC = () => {
     productos: true,
   });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [mobileScale, setMobileScale] = useState(1);
+
+  useEffect(() => {
+    const calcScale = () => {
+      if (typeof window !== 'undefined') {
+        if (window.innerWidth < 1024) {
+          setMobileScale(Math.min(1, (window.innerWidth - 32) / 750));
+        } else {
+          setMobileScale(1);
+        }
+      }
+    };
+    calcScale();
+    window.addEventListener('resize', calcScale);
+    return () => window.removeEventListener('resize', calcScale);
+  }, []);
 
   const previewRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -188,10 +204,14 @@ const SalesGeneradorTab: React.FC = () => {
     }
   };
 
-  // ---- Download PDF ----
   const handleDownloadPDF = async () => {
     if (!previewRef.current) return;
     setDownloading(true);
+
+    const zoomWrapper = document.getElementById('zoom-wrapper');
+    const origZoom = zoomWrapper?.style.zoom;
+    if (zoomWrapper) zoomWrapper.style.zoom = '1';
+
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
@@ -242,6 +262,9 @@ const SalesGeneradorTab: React.FC = () => {
       console.error('Error generating PDF:', err);
       setToast('✕ Error al generar PDF');
     } finally {
+      if (zoomWrapper && origZoom !== undefined) {
+        zoomWrapper.style.zoom = origZoom;
+      }
       setDownloading(false);
     }
   };
@@ -306,21 +329,13 @@ const SalesGeneradorTab: React.FC = () => {
           {/* Desktop: side-by-side, Mobile: stacked */}
           <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 p-4 lg:p-6">
             {/* LEFT: Form */}
-            <div className={`w-full lg:w-[420px] flex-shrink-0 ${showPreview ? 'hidden lg:block' : ''}`}>
+            <div className={`w-full lg:w-[420px] flex-shrink-0`}>
               <div className="space-y-3">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
                     Generador de Guía
                   </h2>
-                  {showPreview && (
-                    <button
-                      onClick={() => { setShowPreview(false); setViewingGuia(null); }}
-                      className="lg:hidden text-xs font-bold text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 flex items-center gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" /> Formulario
-                    </button>
-                  )}
                 </div>
 
                 {/* Section: Datos Generales */}
@@ -469,44 +484,92 @@ const SalesGeneradorTab: React.FC = () => {
 
             {/* RIGHT: Preview */}
             {showPreview && (
-              <div className="flex-1 min-w-0">
-                {/* Mobile back button */}
-                <div className="lg:hidden flex items-center justify-between mb-3">
-                  <button
-                    onClick={() => { setShowPreview(false); setViewingGuia(null); }}
-                    className="text-xs font-bold text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 flex items-center gap-1"
-                  >
-                    <ChevronUp className="w-3.5 h-3.5 rotate-[-90deg]" /> Volver al formulario
-                  </button>
-                </div>
-
-                {/* Preview Document */}
-                <div className="bg-white rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
-                  <div ref={previewRef}>
-                    <GuiaPreview data={previewData as any} totalProductos={totalProductos} />
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={handleDownloadPDF}
-                    disabled={downloading}
-                    className="flex-1 py-3 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
-                  >
-                    <Download className="w-4 h-4" />
-                    {downloading ? 'Generando...' : 'Descargar PDF'}
-                  </button>
-                  {!viewingGuia && (
+              <div className="
+                fixed inset-0 z-[200] bg-stone-900/60 backdrop-blur-sm lg:static lg:inset-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none flex flex-col items-center justify-center lg:items-stretch lg:justify-start
+              ">
+                {/* Mobile Pop-up Container */}
+                <div className="
+                  flex flex-col w-full h-full bg-stone-100 dark:bg-stone-900 lg:bg-transparent
+                  lg:flex-1 lg:min-w-0 relative lg:h-auto
+                ">
+                  {/* Mobile Header */}
+                  <div className="lg:hidden flex-shrink-0 flex items-center justify-between p-4 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 shadow-sm z-30 w-full relative">
+                    <span className="text-xs font-black uppercase tracking-widest text-stone-700 dark:text-stone-300">
+                      Vista Previa
+                    </span>
                     <button
-                      onClick={handleSave}
-                      disabled={saving || !isFormValid}
-                      className="flex-1 py-3 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
+                      onClick={() => { setShowPreview(false); setViewingGuia(null); }}
+                      className="p-1.5 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 bg-stone-100 dark:bg-stone-800 rounded-full transition-colors active:scale-[0.8]"
                     >
-                      <Save className="w-4 h-4" />
-                      {saving ? 'Guardando...' : 'Guardar'}
+                      <X className="w-5 h-5" />
                     </button>
-                  )}
+                  </div>
+
+                  {/* Scrollable Document Area */}
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden w-full flex justify-center lg:justify-start lg:overflow-visible relative z-20">
+                    <div 
+                      id="zoom-wrapper"
+                      className="origin-top w-full flex justify-center lg:block lg:w-auto py-6 pb-28 lg:pb-0 lg:py-0"
+                      style={{ zoom: mobileScale }}
+                    >
+                      {/* The Preview Card */}
+                      <div className="
+                        bg-white md:rounded-lg shadow-2xl lg:shadow-lg lg:border border-stone-200 dark:border-stone-700
+                        overflow-hidden
+                        w-[750px] lg:w-full
+                      ">
+                        <div ref={previewRef} className="w-[750px] lg:w-full bg-white">
+                          <GuiaPreview data={previewData as any} totalProductos={totalProductos} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - Mobile (fixed bottom) */}
+                  <div className="
+                    lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 z-30 flex gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]
+                  ">
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={downloading}
+                      className="flex-1 py-3 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                    >
+                      <Download className="w-4 h-4" />
+                      {downloading ? 'Generando...' : 'Descargar PDF'}
+                    </button>
+                    {!viewingGuia && (
+                      <button
+                        onClick={handleSave}
+                        disabled={saving || !isFormValid}
+                        className="flex-1 py-3 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                      >
+                        <Save className="w-4 h-4" />
+                        {saving ? 'Guardando...' : 'Guardar Guía'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Desktop Actions */}
+                  <div className="hidden lg:flex gap-3 mt-4">
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={downloading}
+                      className="flex-1 py-3 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
+                    >
+                      <Download className="w-4 h-4" />
+                      {downloading ? 'Generando...' : 'Descargar PDF'}
+                    </button>
+                    {!viewingGuia && (
+                      <button
+                        onClick={handleSave}
+                        disabled={saving || !isFormValid}
+                        className="flex-1 py-3 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
+                      >
+                        <Save className="w-4 h-4" />
+                        {saving ? 'Guardando...' : 'Guardar'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
