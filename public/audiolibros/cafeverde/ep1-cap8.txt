@@ -1,0 +1,29 @@
+La clasificación del café verde corresponde al proceso mediante el cual se organiza y categoriza un lote en función de sus características físicas y su nivel de calidad. Este proceso permite establecer criterios comunes que facilitan la evaluación, la comercialización y la toma de decisiones dentro de la cadena de valor del café.
+
+A diferencia de la evaluación física, que se centra en la medición de variables específicas, la clasificación implica la interpretación de estos datos dentro de un sistema de referencia. Estos sistemas pueden variar según el país, la organización o el mercado, pero todos buscan establecer parámetros que permitan diferenciar calidades de manera consistente.
+
+Uno de los principales criterios de clasificación es el tamaño del grano, el cual se determina mediante el uso de cribas o tamices. Estas herramientas separan los granos según su diámetro, generando categorías que permiten describir la composición del lote. La uniformidad en el tamaño es un factor importante, ya que influye en la consistencia de procesos posteriores como el tueste. Sin embargo, el tamaño por sí solo no define la calidad del café.
+
+Otro criterio relevante es la cantidad de defectos presentes en el lote. La clasificación por defectos se basa en la identificación y cuantificación de granos que presentan alteraciones físicas o daños. Estos defectos pueden tener diferentes niveles de severidad y su presencia afecta la calidad del café. Para estandarizar este análisis, se utilizan sistemas que asignan valores específicos a cada tipo de defecto, permitiendo calcular un puntaje total.
+
+En este contexto, el concepto de muestra es fundamental. La clasificación se realiza sobre una cantidad definida de café que representa el lote completo. La precisión del resultado depende de la calidad del muestreo, ya que una muestra no representativa puede generar conclusiones incorrectas. Por esta razón, el proceso de muestreo debe ser controlado y sistemático.
+
+Existen estándares internacionales que establecen criterios para la clasificación del café verde. Estos estándares definen aspectos como el tamaño de la muestra, la forma de contabilizar defectos y los límites aceptables para distintas categorías. Aunque pueden existir variaciones entre sistemas, el objetivo común es generar un lenguaje técnico compartido.
+
+La clasificación también puede considerar la densidad del café, aunque este parámetro no siempre forma parte de los sistemas formales. Sin embargo, en la práctica profesional, la densidad es utilizada como un indicador complementario para interpretar la calidad del grano. Su inclusión en el análisis depende del contexto operativo.
+
+El color y la apariencia del café verde son otros elementos que pueden influir en la clasificación. Un lote con apariencia uniforme suele asociarse con un mejor manejo en etapas anteriores, mientras que variaciones visibles pueden indicar problemas en el procesamiento o el almacenamiento. No obstante, estos factores deben evaluarse junto con otros criterios para evitar interpretaciones simplificadas.
+
+Es importante entender que la clasificación no es un sistema absoluto. Un mismo lote puede ser clasificado de manera diferente según el estándar utilizado. Por ejemplo, ciertos países productores tienen sistemas propios que responden a sus condiciones específicas de producción. Esto implica que la interpretación de la clasificación debe considerar el contexto en el cual fue realizada.
+
+Desde una perspectiva técnica, la clasificación permite traducir las características físicas del café en categorías operativas. Estas categorías facilitan la comunicación entre productores, exportadores, compradores y tostadores. Sin un sistema de clasificación, la evaluación del café dependería únicamente de criterios subjetivos, lo que dificultaría la consistencia en el mercado.
+
+La clasificación también cumple un rol en la determinación del valor del café. Lotes con menor cantidad de defectos y mayor uniformidad suelen ser considerados de mayor calidad, lo que influye en su precio. Sin embargo, es importante reconocer que la clasificación física no captura todos los aspectos del café, especialmente aquellos relacionados con su perfil sensorial.
+
+En términos operativos, la clasificación permite establecer estándares mínimos que un lote debe cumplir para ser aceptado en un determinado mercado. Estos estándares actúan como filtros que aseguran un nivel básico de calidad. No obstante, dentro de estos límites, puede existir una amplia variabilidad en las características del café.
+
+La relación entre clasificación y calidad debe entenderse de manera crítica. Aunque la clasificación proporciona información valiosa, no es un indicador completo del potencial del café. Un lote con buena clasificación física puede no necesariamente presentar un perfil sensorial destacado, y viceversa.
+
+La correcta aplicación de sistemas de clasificación requiere entrenamiento y consistencia. La identificación de defectos y la interpretación de los criterios deben realizarse de manera precisa para evitar errores. Este proceso forma parte del control de calidad y tiene un impacto directo en la toma de decisiones.
+
+El café verde, al ser un producto variable, necesita ser organizado mediante sistemas que permitan su comparación y evaluación. La clasificación cumple esta función al establecer criterios estructurados que facilitan su análisis. Comprender estos sistemas es esencial para operar de manera técnica y consistente dentro del sector del café.

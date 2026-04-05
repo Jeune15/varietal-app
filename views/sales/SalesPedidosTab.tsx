@@ -45,36 +45,30 @@ const SalesPedidosTab: React.FC = () => {
     await db.salesOrders.update(order.id, updatedOrder);
     await syncToCloud('salesOrders', updatedOrder);
 
-    // Auto-add as income to current month's cash register
-    const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
-    
-    const monthStartStr = startOfMonth.toISOString();
+    const sessions = await db.salesCashSessions.toArray();
+    const openSession = sessions
+      .filter(session => session.isOpen)
+      .sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())[0];
 
-    // Find or create register for this month
-    const registers = await db.cashRegisters.toArray();
-    let register = registers.find(r => r.monthStart === monthStartStr);
-
-    if (register) {
+    if (openSession) {
       const newEntry = {
         id: crypto.randomUUID(),
-        registerId: register.id,
+        registerId: openSession.id,
         type: 'ingreso' as const,
         amount: order.total,
         description: `Pedido: ${order.orderName}`,
         orderId: order.id,
         createdAt: now,
       };
-      const updatedEntries = [...register.entries, newEntry];
+      const updatedEntries = [...openSession.entries, newEntry];
       const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
-      const updatedRegister = {
-        ...register,
+      const updatedSession = {
+        ...openSession,
         entries: updatedEntries,
         totalIncome,
       };
-      await db.cashRegisters.update(register.id, updatedRegister);
-      await syncToCloud('cashRegisters', updatedRegister);
+      await db.salesCashSessions.update(openSession.id, updatedSession);
+      await syncToCloud('salesCashSessions', updatedSession);
     }
 
     setSelectedOrderId(null);

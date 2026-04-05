@@ -1,0 +1,27 @@
+El secado del café es la etapa mediante la cual se reduce el contenido de agua del grano hasta un nivel que permita su conservación en el tiempo sin comprometer su calidad. Este proceso ocurre después del procesamiento y constituye una fase crítica, ya que determina la estabilidad física y química del café verde.
+
+Durante el secado, el agua contenida en el grano se elimina de manera progresiva hasta alcanzar un equilibrio con el ambiente. Este proceso no es únicamente una reducción de humedad, sino una transición en la cual el grano pasa de un estado biológicamente activo a uno más estable. La forma en que se realiza esta transición influye directamente en la integridad del grano.
+
+El contenido de humedad se expresa como el porcentaje de agua presente en el café en relación con su peso total. En términos operativos, el café verde se considera estable cuando su humedad se encuentra generalmente entre 10% y 12%. Valores por encima de este rango aumentan el riesgo de actividad microbiana, mientras que valores significativamente más bajos pueden afectar la estructura del grano y su comportamiento posterior.
+
+Además del contenido de humedad, es importante considerar la actividad de agua, que describe la disponibilidad de agua libre para reacciones químicas y biológicas. Aunque dos cafés pueden tener el mismo porcentaje de humedad, su actividad de agua puede ser diferente, lo que implica distintos niveles de estabilidad. Este concepto es clave para entender por qué no basta con medir únicamente la humedad.
+
+La velocidad de secado es un factor determinante. Un secado demasiado rápido puede generar tensiones internas en el grano, afectando su estructura celular y provocando defectos físicos. Por otro lado, un secado demasiado lento puede prolongar la exposición a condiciones que favorecen el crecimiento de microorganismos. El control del secado implica encontrar un equilibrio entre estos extremos.
+
+Las condiciones ambientales durante el secado, como temperatura, humedad relativa y flujo de aire, influyen directamente en el proceso. La circulación de aire facilita la eliminación de humedad, mientras que la temperatura afecta la velocidad de evaporación. Un manejo inadecuado de estas variables puede generar secados desiguales, lo que resulta en granos con diferentes niveles de humedad dentro de un mismo lote.
+
+La uniformidad del secado es un aspecto crítico. Si algunos granos retienen más humedad que otros, el lote presenta una mayor inestabilidad. Estos granos pueden convertirse en puntos críticos durante el almacenamiento, ya que son más susceptibles a deterioro. Por esta razón, el secado debe gestionarse de manera que se reduzcan las variaciones internas del lote.
+
+Una vez alcanzado el nivel de humedad adecuado, el café entra en la fase de almacenamiento. En este punto, el objetivo principal es mantener las condiciones alcanzadas durante el secado y evitar cambios que puedan afectar la calidad. El café verde, al ser un material higroscópico, continúa interactuando con su entorno, lo que implica que puede absorber o liberar humedad dependiendo de las condiciones ambientales.
+
+El almacenamiento debe realizarse en condiciones controladas de temperatura y humedad relativa. Ambientes con alta humedad relativa pueden provocar que el café absorba agua, aumentando su contenido de humedad y reduciendo su estabilidad. Por el contrario, ambientes excesivamente secos pueden deshidratar el grano, afectando su estructura.
+
+El uso de materiales de empaque adecuados es fundamental para proteger el café durante el almacenamiento. Estos materiales deben permitir cierto control sobre el intercambio de humedad y proteger el grano de contaminantes externos. La elección del empaque depende del tiempo de almacenamiento previsto y de las condiciones ambientales.
+
+El tiempo es un factor que influye en la estabilidad del café verde. A lo largo del almacenamiento, pueden ocurrir cambios en su composición que afectan su calidad. Estos cambios pueden ser el resultado de reacciones químicas lentas o de la interacción con el entorno. Aunque el café puede mantenerse estable durante periodos prolongados, su calidad no es indefinida.
+
+Desde una perspectiva técnica, la estabilidad del café verde depende de la interacción entre humedad, actividad de agua, temperatura y tiempo. Estas variables deben ser gestionadas de manera conjunta para minimizar el riesgo de deterioro. No es suficiente controlar una sola variable, ya que el sistema responde a la combinación de todas ellas.
+
+El análisis del secado y del almacenamiento permite interpretar el estado del café verde. Características como su textura, apariencia y comportamiento pueden estar relacionadas con la forma en que fue secado y almacenado. Este análisis es fundamental para la toma de decisiones en etapas posteriores.
+
+El secado, el almacenamiento y la estabilidad no deben entenderse como procesos independientes, sino como una continuidad dentro del manejo del café. La calidad alcanzada en el procesamiento puede perderse si estas etapas no se gestionan adecuadamente. Por esta razón, el control técnico en esta fase es esencial para preservar el valor del café verde.

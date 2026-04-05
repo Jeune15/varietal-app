@@ -113,9 +113,21 @@ const SalesHomeTab = () => {
   };
 
   const updateItemQuantity = (itemId: string, delta: number) => {
-    setOrderItems(prev =>
-      prev.map(i => i.id === itemId ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i)
-    );
+    setOrderItems(prev => {
+      const target = prev.find(i => i.id === itemId);
+      if (!target) return prev;
+      const nextQty = target.quantity + delta;
+      if (nextQty <= 0) return prev.filter(i => i.id !== itemId);
+      return prev.map(i => i.id === itemId ? { ...i, quantity: nextQty } : i);
+    });
+  };
+
+  const setItemQuantity = (itemId: string, quantity: number) => {
+    const normalized = Number.isFinite(quantity) ? Math.trunc(quantity) : 0;
+    setOrderItems(prev => {
+      if (normalized <= 0) return prev.filter(i => i.id !== itemId);
+      return prev.map(i => i.id === itemId ? { ...i, quantity: normalized } : i);
+    });
   };
 
   const removeItem = (itemId: string) => {
@@ -352,6 +364,7 @@ const SalesHomeTab = () => {
           contextMenu={contextMenu}
           setContextMenu={setContextMenu}
           updateItemQuantity={updateItemQuantity}
+          setItemQuantity={setItemQuantity}
           removeItem={removeItem}
           editingItemPrice={editingItemPrice}
           setEditingItemPrice={setEditingItemPrice}
@@ -388,6 +401,7 @@ const SalesHomeTab = () => {
               contextMenu={contextMenu}
               setContextMenu={setContextMenu}
               updateItemQuantity={updateItemQuantity}
+              setItemQuantity={setItemQuantity}
               removeItem={removeItem}
               editingItemPrice={editingItemPrice}
               setEditingItemPrice={setEditingItemPrice}
@@ -559,6 +573,7 @@ interface SidebarContentProps {
   contextMenu: { itemId: string; x: number; y: number } | null;
   setContextMenu: (v: { itemId: string; x: number; y: number } | null) => void;
   updateItemQuantity: (itemId: string, delta: number) => void;
+  setItemQuantity: (itemId: string, quantity: number) => void;
   removeItem: (itemId: string) => void;
   editingItemPrice: { itemId: string; price: string } | null;
   setEditingItemPrice: (v: { itemId: string; price: string } | null) => void;
@@ -571,7 +586,7 @@ interface SidebarContentProps {
 
 const SidebarContent: React.FC<SidebarContentProps> = ({
   orderItems, clientName, setClientName, orderName, setOrderName, total,
-  contextMenu, setContextMenu, updateItemQuantity, removeItem,
+  contextMenu, setContextMenu, updateItemQuantity, setItemQuantity, removeItem,
   setEditingItemPrice, setEditingItemObs, createOrder,
 }) => (
   <>
@@ -627,7 +642,20 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                 >
                   −
                 </button>
-                <span className="text-xs font-black w-5 text-center">{item.quantity}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={item.quantity}
+                  min={0}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') return;
+                    const v = parseInt(raw, 10);
+                    if (Number.isNaN(v)) return;
+                    setItemQuantity(item.id, v);
+                  }}
+                  className="w-10 h-6 text-center text-xs font-black bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
                 <button
                   onClick={() => updateItemQuantity(item.id, 1)}
                   className="w-6 h-6 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-xs font-bold flex items-center justify-center"

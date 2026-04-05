@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud } from '../../db';
-import { CashRegister, CashEntry } from '../../types';
+import { CashEntry, SalesCashSession, SalesOrder } from '../../types';
 import { Wallet, Plus, TrendingUp, TrendingDown, DollarSign, Lock, Unlock, X, ArrowUpCircle, ArrowDownCircle, Trash2, LockKeyhole, Calendar, FileDown, Eye } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -11,95 +11,67 @@ const formatCurrency = (amount: number) => {
   return amount.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' });
 };
 
-// --- Updated getMonthRange to reliably get the CURRENT real month ---
-function getMonthRange(date: Date = new Date()) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  
-  // startOfMonth: First day of current month at 00:00:00
-  const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
-  
-  // endOfMonth: Last day of current month at 23:59:59.999
-  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
-  
-  // Use YYYY-MM format as a stable identifier for the monthStart ID instead of full ISO string
-  // This prevents timezone shifts from creating duplicate registers for the same month
-  const monthIdentifier = `${year}-${String(month + 1).padStart(2, '0')}`;
-  
-  return { 
-    monthStart: monthIdentifier, 
-    monthEnd: endOfMonth.toISOString(), 
-    startOfMonth, 
-    endOfMonth 
-  };
-}
-
 const SalesCajaTab: React.FC = () => {
-  const registers = useLiveQuery(() => db.cashRegisters.toArray()) || [];
+  const sessions = useLiveQuery(() => db.salesCashSessions.toArray()) || [];
+  const legacyRegisters = useLiveQuery(() => db.cashRegisters.toArray()) || [];
   const salesOrders = useLiveQuery(() => db.salesOrders.toArray()) || [];
 
-  // 1. Get current month range ONCE when component mounts
-  const { monthStart, monthEnd, startOfMonth, endOfMonth } = useMemo(() => getMonthRange(), []);
+  const openSession = useMemo(() => {
+    return sessions
+      .filter(session => session.isOpen)
+      .sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())[0] || null;
+  }, [sessions]);
 
-  // 2. Safely find the current register using a fuzzy match on the date
-  // (to handle older registers that used ISO strings instead of YYYY-MM format)
-  const currentRegister = useMemo(() => {
-    if (!registers) return null;
-    return registers.find(r => {
-      // Direct match (new format)
-      if (r.monthStart === monthStart) return true;
-      // Fuzzy match for old ISO string format (checks if year and month match)
-      if (r.monthStart.includes(monthStart)) return true;
-      return false;
-    }) || null;
-  }, [registers, monthStart]);
+  const latestSession = useMemo(() => {
+    return sessions
+      .slice()
+      .sort((a, b) => new Date((b.closedAt || b.openedAt)).getTime() - new Date((a.closedAt || a.openedAt)).getTime())[0] || null;
+  }, [sessions]);
 
-  // 3. Auto-open register if it doesn't exist for current month
-  // This logic is simplified and more aggressive to ensure the box ALWAYS opens
   useEffect(() => {
-    let mounted = true;
-    
-    const ensureBoxIsOpen = async () => {
+    const migrateLegacy = async () => {
       try {
-        // Double check directly against DB to avoid race conditions with useLiveQuery
-        const dbRegisters = await db.cashRegisters.toArray();
-        const exists = dbRegisters.some(r => r.monthStart === monthStart || r.monthStart.includes(monthStart));
-        
-        if (mounted && !exists) { 
-          console.log("Forzando apertura de caja para el mes:", monthStart);
+        const existing = await db.salesCashSessions.count();
+        if (existing > 0) return;
+        const registers = await db.cashRegisters.toArray();
+        if (!registers || registers.length === 0) return;
+
+        const created: SalesCashSession[] = registers.map(reg => {
+          const openedAt = reg.monthStart.includes('T')
+            ? reg.monthStart
+            : `${reg.monthStart}-01T00:00:00.000Z`;
           const id = crypto.randomUUID();
-          const newReg: CashRegister = {
+          return {
             id,
-            monthStart,
-            monthEnd,
-            openingAmount: 0,
-            isOpen: true,
-            entries: [],
-            totalIncome: 0,
-            totalExpense: 0,
+            openedAt,
+            closedAt: reg.closedAt || reg.monthEnd || undefined,
+            openingAmount: Number(reg.openingAmount || 0),
+            isOpen: Boolean(reg.isOpen),
+            entries: (reg.entries || []).map((e: any) => ({
+              ...e,
+              registerId: id
+            })),
+            totalIncome: Number(reg.totalIncome || 0),
+            totalExpense: Number(reg.totalExpense || 0),
+            label: 'Migrado',
+            legacyRegisterId: reg.id
           };
-          
-          await db.cashRegisters.add(newReg);
-          await syncToCloud('cashRegisters', newReg);
-        }
+        });
+
+        await db.salesCashSessions.bulkAdd(created);
+        await syncToCloud('salesCashSessions', created);
       } catch (e) {
-        console.error("Error al intentar abrir la caja automáticamente:", e);
+        console.error('Error migrando caja legacy:', e);
       }
     };
-    
-    // Run immediately
-    ensureBoxIsOpen();
-    
-    return () => {
-      mounted = false;
-    };
-  }, [monthStart, monthEnd]); // Removed dependency on currentRegister to prevent re-triggering loops
+
+    migrateLegacy();
+  }, [legacyRegisters.length]);
 
   const [showOpenForm, setShowOpenForm] = useState(false);
   const [openingAmountStr, setOpeningAmountStr] = useState('');
 
-  // 4. Force Loading state fallback if somehow still null (should be rare now)
-  if (!registers) {
+  if (!sessions) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
@@ -110,21 +82,7 @@ const SalesCajaTab: React.FC = () => {
     );
   }
 
-  // If registers loaded but currentRegister is still null, show a manual "Abrir Caja" fallback
-  if (!currentRegister && registers.length >= 0) {
-     return (
-        <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <Wallet className="w-12 h-12 text-stone-300" />
-          <p className="text-stone-500 uppercase tracking-widest text-sm font-bold">Iniciando Caja del Mes...</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-black text-white text-xs uppercase font-bold tracking-widest rounded"
-          >
-            Refrescar si no carga
-          </button>
-        </div>
-     );
-  }
+  const currentSession = openSession || latestSession;
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expAmount, setExpAmount] = useState('');
   const [expDesc, setExpDesc] = useState('');
@@ -138,47 +96,47 @@ const SalesCajaTab: React.FC = () => {
   const openRegister = async () => {
     const amount = parseFloat(openingAmountStr);
     if (isNaN(amount) || amount < 0) return;
+    if (openSession) return;
     const id = crypto.randomUUID();
-    const newReg: CashRegister = {
+    const newSession: SalesCashSession = {
       id,
-      monthStart,
-      monthEnd,
+      openedAt: new Date().toISOString(),
       openingAmount: amount,
       isOpen: true,
       entries: [],
       totalIncome: 0,
       totalExpense: 0,
     };
-    await db.cashRegisters.add(newReg);
-    await syncToCloud('cashRegisters', newReg);
+    await db.salesCashSessions.add(newSession);
+    await syncToCloud('salesCashSessions', newSession);
     setShowOpenForm(false);
     setOpeningAmountStr('');
   };
 
   const addExpense = async () => {
-    if (!currentRegister || !expAmount || !expDesc.trim()) return;
+    if (!currentSession || !currentSession.isOpen || !expAmount || !expDesc.trim()) return;
     const amount = parseFloat(expAmount);
     if (isNaN(amount) || amount <= 0) return;
 
     const newEntry: CashEntry = {
       id: crypto.randomUUID(),
-      registerId: currentRegister.id,
+      registerId: currentSession.id,
       type: 'egreso',
       amount,
       description: expDesc.trim(),
       createdAt: new Date().toISOString(),
     };
 
-    const updatedEntries = [...currentRegister.entries, newEntry];
+    const updatedEntries = [...currentSession.entries, newEntry];
     const totalExpense = updatedEntries.filter(e => e.type === 'egreso').reduce((s, e) => s + e.amount, 0);
 
-    const updatedReg = {
-      ...currentRegister,
+    const updatedSession = {
+      ...currentSession,
       entries: updatedEntries,
       totalExpense,
     };
-    await db.cashRegisters.update(currentRegister.id, updatedReg);
-    await syncToCloud('cashRegisters', updatedReg);
+    await db.salesCashSessions.update(currentSession.id, updatedSession);
+    await syncToCloud('salesCashSessions', updatedSession);
 
     setShowExpenseForm(false);
     setExpAmount('');
@@ -186,53 +144,53 @@ const SalesCajaTab: React.FC = () => {
   };
 
   const addIncome = async () => {
-    if (!currentRegister || !incAmount || !incDesc.trim()) return;
+    if (!currentSession || !currentSession.isOpen || !incAmount || !incDesc.trim()) return;
     const amount = parseFloat(incAmount);
     if (isNaN(amount) || amount <= 0) return;
 
     const newEntry: CashEntry = {
       id: crypto.randomUUID(),
-      registerId: currentRegister.id,
+      registerId: currentSession.id,
       type: 'ingreso',
       amount,
       description: incDesc.trim(),
       createdAt: new Date().toISOString(),
     };
 
-    const updatedEntries = [...currentRegister.entries, newEntry];
+    const updatedEntries = [...currentSession.entries, newEntry];
     const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
 
-    const updatedReg = {
-      ...currentRegister,
+    const updatedSession = {
+      ...currentSession,
       entries: updatedEntries,
       totalIncome,
     };
-    await db.cashRegisters.update(currentRegister.id, updatedReg);
-    await syncToCloud('cashRegisters', updatedReg);
+    await db.salesCashSessions.update(currentSession.id, updatedSession);
+    await syncToCloud('salesCashSessions', updatedSession);
 
     setShowIncomeForm(false);
     setIncAmount('');
     setIncDesc('');
   };
 
-  const balance = currentRegister
-    ? currentRegister.openingAmount + currentRegister.totalIncome - currentRegister.totalExpense
+  const balance = currentSession
+    ? currentSession.openingAmount + currentSession.totalIncome - currentSession.totalExpense
     : 0;
 
   // Compute month stats
   const { topProducts, bottomProducts } = useMemo(() => {
-    if (!currentRegister) return { topProducts: [], bottomProducts: [] };
-    
-    // Filter sales orders for this month
-    const monthOrders = salesOrders.filter(o => 
-      o.status !== 'pendiente' && // consider dispatched/invoiced
-      o.createdAt >= currentRegister.monthStart && 
-      o.createdAt <= currentRegister.monthEnd
+    if (!currentSession) return { topProducts: [], bottomProducts: [] };
+
+    const orderIds = new Set(
+      (currentSession.entries || [])
+        .filter(e => e.type === 'ingreso' && Boolean(e.orderId))
+        .map(e => e.orderId as string)
     );
 
+    const ordersInSession = salesOrders.filter(o => orderIds.has(o.id));
     const productCounts: Record<string, number> = {};
-    
-    monthOrders.forEach(order => {
+
+    ordersInSession.forEach((order: SalesOrder) => {
       order.items.forEach(item => {
         productCounts[item.productName] = (productCounts[item.productName] || 0) + item.quantity;
       });
@@ -244,174 +202,194 @@ const SalesCajaTab: React.FC = () => {
 
     return {
       topProducts: sortedProducts.slice(0, 5),
-      bottomProducts: sortedProducts.slice(-5).reverse() // Show least sold
+      bottomProducts: sortedProducts.slice(-5).reverse()
     };
-  }, [salesOrders, currentRegister]);
+  }, [salesOrders, currentSession]);
 
-  const formatDate = (d: Date) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDateFull = (iso: string) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-  const formateDateISO = (iso: string) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+  const formatDateShort = (iso: string) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
 
   const sortedEntries = useMemo(
-    () => currentRegister?.entries.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [],
-    [currentRegister]
+    () => currentSession?.entries.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [],
+    [currentSession]
   );
 
   const deleteEntry = async (entryId: string) => {
-    if (!currentRegister) return;
-    const updatedEntries = currentRegister.entries.filter(e => e.id !== entryId);
+    if (!currentSession || !currentSession.isOpen) return;
+    const updatedEntries = currentSession.entries.filter(e => e.id !== entryId);
     const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
     const totalExpense = updatedEntries.filter(e => e.type === 'egreso').reduce((s, e) => s + e.amount, 0);
-    const updatedReg = {
-      ...currentRegister,
+    const updatedSession = {
+      ...currentSession,
       entries: updatedEntries,
       totalIncome,
-      totalExpense,
+      totalExpense
     };
-    await db.cashRegisters.update(currentRegister.id, updatedReg);
-    await syncToCloud('cashRegisters', updatedReg);
+    await db.salesCashSessions.update(currentSession.id, updatedSession);
+    await syncToCloud('salesCashSessions', updatedSession);
     setDeleteEntryId(null);
   };
 
   const closeRegister = async () => {
-    if (!currentRegister) return;
-    const updatedReg = { ...currentRegister, isOpen: false };
-    await db.cashRegisters.update(currentRegister.id, updatedReg);
-    await syncToCloud('cashRegisters', updatedReg);
+    if (!currentSession || !currentSession.isOpen) return;
+    const updatedSession = { ...currentSession, isOpen: false, closedAt: new Date().toISOString() };
+    await db.salesCashSessions.update(currentSession.id, updatedSession);
+    await syncToCloud('salesCashSessions', updatedSession);
     setShowCloseConfirm(false);
   };
+
+  const periodLabel = currentSession
+    ? `${formatDateFull(currentSession.openedAt)} ${formatTime(currentSession.openedAt)} — ${currentSession.closedAt ? `${formatDateFull(currentSession.closedAt)} ${formatTime(currentSession.closedAt)}` : 'Actual'}`
+    : 'Sin caja abierta';
 
   return (
     <>
     <div className="p-4 md:p-8 space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
         <div>
           <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Caja</h2>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            Mes: {formatDate(startOfMonth)} — {formatDate(endOfMonth)}
+            Periodo: {periodLabel}
           </p>
         </div>
-        {currentRegister && currentRegister.isOpen && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                const doc = new jsPDF();
-                const title = `Resumen de Caja - ${formatDate(startOfMonth)}`;
-                
-                doc.setFontSize(18);
-                doc.text(title, 14, 22);
-                doc.setFontSize(10);
-                doc.setTextColor(100);
-                doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 30);
-            
-                // Summary
-                doc.setFontSize(12);
-                doc.setTextColor(0);
-                doc.text(`Apertura: S/ ${currentRegister.openingAmount.toFixed(2)}`, 14, 45);
-                doc.text(`Ingresos: S/ ${currentRegister.totalIncome.toFixed(2)}`, 14, 52);
-                doc.text(`Egresos: S/ ${currentRegister.totalExpense.toFixed(2)}`, 14, 59);
-                doc.text(`Balance Final: S/ ${balance.toFixed(2)}`, 14, 66);
-            
-                // Top Products
-                if (topProducts.length > 0) {
-                  doc.setFontSize(14);
-                  doc.text('Productos Más Vendidos', 14, 80);
-                  const topData = topProducts.map((p, i) => [`${i+1}`, p.name, `${p.qty} unid.`]);
-                  autoTable(doc, {
-                    startY: 85,
-                    head: [['#', 'Producto', 'Cantidad']],
-                    body: topData,
-                    theme: 'grid',
-                    headStyles: { fillColor: [0, 0, 0] },
-                  });
-                }
-            
-                const finalY = (doc as any).lastAutoTable?.finalY || 80;
-            
-                // Entries
-                if (sortedEntries.length > 0) {
-                  doc.setFontSize(14);
-                  doc.text('Movimientos de Caja', 14, finalY + 15);
-                  const entryData = sortedEntries.map(e => [
-                    formateDateISO(e.createdAt),
-                    e.type.toUpperCase(),
-                    e.description,
-                    `S/ ${e.amount.toFixed(2)}`
-                  ]);
-                  autoTable(doc, {
-                    startY: finalY + 20,
-                    head: [['Fecha', 'Tipo', 'Descripción', 'Monto']],
-                    body: entryData,
-                    theme: 'grid',
-                    headStyles: { fillColor: [0, 0, 0] },
-                  });
-                }
-            
-                doc.save(`Resumen_Caja_${monthStart.split('T')[0]}.pdf`);
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
-            >
-              <FileDown className="w-4 h-4" />
-              Resumen PDF
-            </button>
-            <button
-              onClick={() => setShowIncomeForm(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
-            >
-              <ArrowUpCircle className="w-4 h-4" />
-              Ingreso
-            </button>
-            <button
-              onClick={() => setShowExpenseForm(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-            >
-              <ArrowDownCircle className="w-4 h-4" />
-              Egreso
-            </button>
-            <button
-              onClick={() => setShowCloseConfirm(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
-              title="Cerrar Caja"
-            >
-              <LockKeyhole className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-        {currentRegister && !currentRegister.isOpen && (
-          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 bg-stone-100 dark:bg-stone-800 px-3 py-2 rounded-lg">
-            Caja cerrada
-          </span>
-        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          {openSession ? (
+            <>
+              <button
+                onClick={() => {
+                  if (!currentSession) return;
+                  const doc = new jsPDF();
+                  const title = 'Resumen de Caja';
+                  doc.setFontSize(18);
+                  doc.text(title, 14, 22);
+                  doc.setFontSize(10);
+                  doc.setTextColor(100);
+                  doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 30);
+
+                  doc.setFontSize(12);
+                  doc.setTextColor(0);
+                  doc.text(`Apertura: ${formatDateFull(currentSession.openedAt)} ${formatTime(currentSession.openedAt)}`, 14, 42);
+                  doc.text(`Ingresos: S/ ${currentSession.totalIncome.toFixed(2)}`, 14, 52);
+                  doc.text(`Egresos: S/ ${currentSession.totalExpense.toFixed(2)}`, 14, 59);
+                  doc.text(`Balance Final: S/ ${balance.toFixed(2)}`, 14, 66);
+
+                  if (topProducts.length > 0) {
+                    doc.setFontSize(14);
+                    doc.text('Productos Más Vendidos', 14, 80);
+                    const topData = topProducts.map((p, i) => [`${i + 1}`, p.name, `${p.qty} unid.`]);
+                    autoTable(doc, {
+                      startY: 85,
+                      head: [['#', 'Producto', 'Cantidad']],
+                      body: topData,
+                      theme: 'grid',
+                      headStyles: { fillColor: [0, 0, 0] }
+                    });
+                  }
+
+                  const finalY = (doc as any).lastAutoTable?.finalY || 80;
+                  if (sortedEntries.length > 0) {
+                    doc.setFontSize(14);
+                    doc.text('Movimientos de Caja', 14, finalY + 15);
+                    const entryData = sortedEntries.map(e => [
+                      `${formatDateShort(e.createdAt)} ${formatTime(e.createdAt)}`,
+                      e.type.toUpperCase(),
+                      e.description,
+                      `S/ ${e.amount.toFixed(2)}`
+                    ]);
+                    autoTable(doc, {
+                      startY: finalY + 20,
+                      head: [['Fecha', 'Tipo', 'Descripción', 'Monto']],
+                      body: entryData,
+                      theme: 'grid',
+                      headStyles: { fillColor: [0, 0, 0] }
+                    });
+                  }
+
+                  const fileId = (currentSession.closedAt || currentSession.openedAt).split('T')[0];
+                  doc.save(`Resumen_Caja_${fileId}.pdf`);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+              >
+                <FileDown className="w-4 h-4" />
+                Resumen PDF
+              </button>
+              <button
+                onClick={() => setShowIncomeForm(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+              >
+                <ArrowUpCircle className="w-4 h-4" />
+                Ingreso
+              </button>
+              <button
+                onClick={() => setShowExpenseForm(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+              >
+                <ArrowDownCircle className="w-4 h-4" />
+                Egreso
+              </button>
+              <button
+                onClick={() => setShowCloseConfirm(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                title="Cerrar Caja"
+              >
+                <LockKeyhole className="w-4 h-4" />
+              </button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-lg">
+                Caja abierta
+              </span>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setShowOpenForm(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                <Unlock className="w-4 h-4" />
+                Abrir Caja
+              </button>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('varietal_sales_navigate', { detail: 'historial' }))}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                Ver historial
+              </button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 bg-stone-100 dark:bg-stone-800 px-3 py-2 rounded-lg">
+                Sin caja abierta
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Not opened - Shouldn't happen often now, but fallback */}
-      {!currentRegister ? (
+      {!currentSession ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-8 h-8 text-stone-400 dark:text-stone-500" />
           </div>
-          <p className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-1">Cargando caja del mes...</p>
+          <p className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-1">No hay una caja creada todavía</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Abre una caja para empezar a registrar movimientos</p>
         </div>
       ) : (
         <>
-          {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <SummaryCard
               label="Apertura"
-              value={currentRegister.openingAmount}
+              value={currentSession.openingAmount}
               icon={<Wallet className="w-5 h-5" />}
               color="stone"
             />
             <SummaryCard
               label="Ingresos"
-              value={currentRegister.totalIncome}
+              value={currentSession.totalIncome}
               icon={<TrendingUp className="w-5 h-5" />}
               color="emerald"
             />
             <SummaryCard
               label="Egresos"
-              value={currentRegister.totalExpense}
+              value={currentSession.totalExpense}
               icon={<TrendingDown className="w-5 h-5" />}
               color="red"
             />
@@ -427,7 +405,7 @@ const SalesCajaTab: React.FC = () => {
           {/* Month Stats */}
           <div className="bg-stone-50 dark:bg-stone-800/30 p-4 rounded-xl border border-stone-200 dark:border-stone-800">
             <h3 className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" /> Estadísticas del Mes
+              <TrendingUp className="w-4 h-4" /> Estadísticas de la Caja
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -498,7 +476,7 @@ const SalesCajaTab: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">{entry.description}</p>
-                      <p className="text-[10px] text-stone-400">{formateDateISO(entry.createdAt)} · {formatTime(entry.createdAt)}</p>
+                      <p className="text-[10px] text-stone-400">{formatDateShort(entry.createdAt)} · {formatTime(entry.createdAt)}</p>
                     </div>
                     <span className={`text-sm font-black flex-shrink-0 ${
                       entry.type === 'ingreso'
@@ -507,7 +485,7 @@ const SalesCajaTab: React.FC = () => {
                     }`}>
                       {entry.type === 'ingreso' ? '+' : '-'} S/ {entry.amount.toFixed(2)}
                     </span>
-                    {currentRegister?.isOpen && (
+                    {currentSession?.isOpen && (
                       <button
                         onClick={() => setDeleteEntryId(entry.id)}
                         className="p-1 text-stone-300 dark:text-stone-600 opacity-0 group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 transition-all flex-shrink-0"
@@ -533,7 +511,7 @@ const SalesCajaTab: React.FC = () => {
                 <Unlock className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="text-lg font-black uppercase tracking-tight">Abrir Caja</h3>
-              <p className="text-xs text-stone-500 mt-1">Mes: {formatDate(startOfMonth)} — {formatDate(endOfMonth)}</p>
+              <p className="text-xs text-stone-500 mt-1">Inicia un nuevo periodo de caja</p>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 block mb-1.5">Monto Inicial (S/)</label>

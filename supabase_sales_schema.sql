@@ -43,6 +43,20 @@ CREATE TABLE IF NOT EXISTS "cashRegisters" (
   entries JSONB
 );
 
+-- 4.1 Create Sales Cash Sessions Table (manual open/close + history)
+CREATE TABLE IF NOT EXISTS "salesCashSessions" (
+  id TEXT PRIMARY KEY,
+  "openedAt" TEXT NOT NULL,
+  "closedAt" TEXT,
+  "openingAmount" NUMERIC NOT NULL DEFAULT 0,
+  "isOpen" BOOLEAN NOT NULL DEFAULT TRUE,
+  entries JSONB,
+  "totalIncome" NUMERIC NOT NULL DEFAULT 0,
+  "totalExpense" NUMERIC NOT NULL DEFAULT 0,
+  label TEXT,
+  "legacyRegisterId" TEXT
+);
+
 -- 4.5 Create Schedule Entries Table
 CREATE TABLE IF NOT EXISTS "scheduleEntries" (
   id TEXT PRIMARY KEY,
@@ -105,6 +119,7 @@ ALTER TABLE "salesCategories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesProducts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "salesOrders" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "cashRegisters" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "salesCashSessions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "scheduleEntries" ENABLE ROW LEVEL SECURITY;
 
 -- Allow public access to all tables (Anon Access)
@@ -132,6 +147,12 @@ BEGIN
         SELECT 1 FROM pg_policies WHERE tablename = 'cashRegisters' AND policyname = 'Public Access for cashRegisters'
     ) THEN
         CREATE POLICY "Public Access for cashRegisters" ON "cashRegisters" FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'salesCashSessions' AND policyname = 'Public Access for salesCashSessions'
+    ) THEN
+        CREATE POLICY "Public Access for salesCashSessions" ON "salesCashSessions" FOR ALL USING (true) WITH CHECK (true);
     END IF;
 
     IF NOT EXISTS (
@@ -175,5 +196,13 @@ BEGIN
         WHERE pubname = 'supabase_realtime' AND tablename = 'cashRegisters'
     ) THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE "cashRegisters";
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'salesCashSessions'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE "salesCashSessions";
     END IF;
 END $$;

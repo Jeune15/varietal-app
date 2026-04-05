@@ -1,54 +1,52 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Play, Pause, RotateCcw, Volume2, CheckCircle2, AlertCircle, Brain, Globe } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, CheckCircle2, AlertCircle, Brain } from 'lucide-react';
 import { audiobooksData } from '../data/audiobooks';
 
 interface Props {
   categoryId: string;
   chapterId: string;
+  onSelectChapter: (chapterId: string) => void;
   onBack: () => void;
 }
 
-export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, onBack }) => {
+export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, onSelectChapter, onBack }) => {
   const [activeTab, setActiveTab] = useState<'reader' | 'quiz' | 'task'>('reader');
   const [isPlaying, setIsPlaying] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
-  const [lang, setLang] = useState<'es' | 'en'>('es');
+  const [seekValue, setSeekValue] = useState(0);
 
   const category = audiobooksData.find(c => c.id === categoryId);
   const chapter = category?.chapters.find(c => c.id === chapterId);
 
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const textRef = useRef<string>('');
+  const offsetRef = useRef<number>(0);
+  const isSeekingRef = useRef<boolean>(false);
 
   // Pick the best voice: prefer a male Spanish/English voice
-  const pickVoice = (language: 'es' | 'en'): SpeechSynthesisVoice | null => {
+  const pickVoice = (): SpeechSynthesisVoice | null => {
     const voices = window.speechSynthesis.getVoices();
-    const langCode = language === 'es' ? 'es' : 'en';
-    // Prefer: male-sounding names, then any matching language
-    const preferred = voices.filter(v => v.lang.startsWith(langCode));
+    const preferred = voices.filter(v => v.lang.toLowerCase().startsWith('es'));
     const maleKeywords = ['male', 'jorge', 'alvaro', 'pablo', 'diego', 'miguel', 'david', 'james', 'daniel', 'mark', 'tom', 'alex', 'google español masculino'];
     const maleVoice = preferred.find(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
     return maleVoice || preferred[0] || null;
   };
 
-  // Rebuild utterance whenever chapter or language changes
-  useEffect(() => {
-    window.speechSynthesis.cancel();
-    setIsPlaying(false);
-
-    if (!chapter) return;
-
-    const text = lang === 'en' && chapter.contentEn ? chapter.contentEn : chapter.content;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'es' ? 'es-ES' : 'en-US';
+  const buildUtterance = (startIndex: number) => {
+    const fullText = textRef.current || '';
+    const total = fullText.length || 1;
+    const safeStart = Math.max(0, Math.min(startIndex, total));
+    const remaining = fullText.slice(safeStart);
+    const utter = new SpeechSynthesisUtterance(remaining);
+    utter.lang = 'es-ES';
     utter.rate = 0.78;
     utter.pitch = 0.85;
     utter.volume = 1.0;
 
-    // Wait for voices to load (Chrome async voices)
     const applyVoice = () => {
-      const voice = pickVoice(lang);
+      const voice = pickVoice();
       if (voice) utter.voice = voice;
     };
 
@@ -58,38 +56,107 @@ export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, on
       window.speechSynthesis.onvoiceschanged = applyVoice;
     }
 
-    utter.onend = () => setIsPlaying(false);
+    utter.onboundary = (e: any) => {
+      if (typeof e?.charIndex !== 'number') return;
+      const absoluteIndex = safeStart + e.charIndex;
+      const progress = Math.max(0, Math.min(1, absoluteIndex / total));
+      offsetRef.current = absoluteIndex;
+      if (!isSeekingRef.current) setSeekValue(progress);
+    };
+
+    utter.onend = () => {
+      setIsPlaying(false);
+      setSeekValue(1);
+      offsetRef.current = total;
+    };
+
     synthRef.current = utter;
+  };
+
+  const commitSeek = (progress: number) => {
+    const fullText = textRef.current || '';
+    const total = fullText.length || 1;
+    const nextIndex = Math.max(0, Math.min(total, Math.floor(progress * total)));
+    offsetRef.current = nextIndex;
+
+    const wasPlaying = isPlaying;
+    window.speechSynthesis.cancel();
+    buildUtterance(nextIndex);
+    setSeekValue(nextIndex / total);
+    isSeekingRef.current = false;
+
+    if (wasPlaying && synthRef.current) {
+      window.speechSynthesis.speak(synthRef.current);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  const playFromCurrentOffset = () => {
+    const fullText = textRef.current || '';
+    if (offsetRef.current >= fullText.length) {
+      offsetRef.current = 0;
+      setSeekValue(0);
+    }
+
+    window.speechSynthesis.cancel();
+    buildUtterance(offsetRef.current);
+
+    if (synthRef.current) {
+      window.speechSynthesis.speak(synthRef.current);
+      setIsPlaying(true);
+    }
+  };
+
+  // Rebuild utterance whenever chapter changes
+  useEffect(() => {
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+
+    if (!chapter) return;
+
+    textRef.current = chapter.content;
+    offsetRef.current = 0;
+    setSeekValue(0);
+    isSeekingRef.current = false;
+    buildUtterance(0);
+
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setQuizScore(0);
 
     return () => {
       window.speechSynthesis.cancel();
     };
-  }, [chapter, lang]);
-
-  // Reset quiz when language changes
-  useEffect(() => {
-    setQuizAnswers({});
-    setQuizSubmitted(false);
-    setQuizScore(0);
-  }, [lang]);
+  }, [chapterId]);
 
   const togglePlay = () => {
     if (isPlaying) {
       window.speechSynthesis.pause();
       setIsPlaying(false);
     } else {
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      } else {
-        if (synthRef.current) window.speechSynthesis.speak(synthRef.current);
+      if (isSeekingRef.current) {
+        commitSeek(seekValue);
+        playFromCurrentOffset();
+        return;
       }
-      setIsPlaying(true);
+
+      if (window.speechSynthesis.paused && window.speechSynthesis.speaking) {
+        window.speechSynthesis.resume();
+        setIsPlaying(true);
+      } else {
+        playFromCurrentOffset();
+      }
     }
   };
 
   const resetAudio = () => {
     window.speechSynthesis.cancel();
     setIsPlaying(false);
+    offsetRef.current = 0;
+    setSeekValue(0);
+    buildUtterance(0);
   };
 
   if (!chapter || !category) {
@@ -101,11 +168,25 @@ export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, on
     );
   }
 
-  // Language-aware content
-  const displayTitle = lang === 'en' && chapter.titleEn ? chapter.titleEn : chapter.title;
-  const displayContent = lang === 'en' && chapter.contentEn ? chapter.contentEn : chapter.content;
-  const displayQuiz = lang === 'en' && chapter.quizEn ? chapter.quizEn : chapter.quiz;
-  const displayTask = lang === 'en' && chapter.taskEn ? chapter.taskEn : chapter.task;
+  const displayTitle = chapter.title;
+  const displayContent = chapter.content;
+  const displayQuiz = chapter.quiz;
+  const displayTask = chapter.task;
+  const chapterNumber = Math.max(1, category.chapters.findIndex(c => c.id === chapter.id) + 1);
+  const chapterDurationSeconds = (() => {
+    const [mins, secs] = chapter.duration.split(':').map(Number);
+    if (!Number.isFinite(mins) || !Number.isFinite(secs)) return 0;
+    return mins * 60 + secs;
+  })();
+  const elapsedSeconds = Math.max(0, Math.round(chapterDurationSeconds * seekValue));
+  const remainingSeconds = Math.max(0, Math.round(chapterDurationSeconds * (1 - seekValue)));
+  const remainingMinutes = Math.max(0, Math.ceil(remainingSeconds / 60));
+  const formatTime = (totalSeconds: number) => {
+    const safe = Math.max(0, totalSeconds);
+    const mins = Math.floor(safe / 60);
+    const secs = safe % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   const handleQuizSubmit = () => {
     let score = 0;
@@ -116,112 +197,80 @@ export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, on
     setQuizSubmitted(true);
   };
 
-  const tabs = lang === 'es'
-    ? [{ id: 'reader', label: 'Leer y Escuchar' }, { id: 'quiz', label: 'Quiz' }, { id: 'task', label: 'Tarea' }]
-    : [{ id: 'reader', label: 'Read & Listen' }, { id: 'quiz', label: 'Quiz' }, { id: 'task', label: 'Task' }];
+  const tabs = [{ id: 'reader', label: 'Leer y Escuchar' }, { id: 'quiz', label: 'Quiz' }, { id: 'task', label: 'Tarea' }];
 
   return (
-    <div className="h-full flex flex-col animate-fade-in pb-20">
+    <div className="min-h-screen flex flex-col animate-fade-in pb-40">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200 pt-4">
-        <div className="max-w-4xl mx-auto px-4 pb-4">
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-all duration-200">
+        <div className="max-w-7xl mx-auto px-4 pt-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+              className="p-2 -ml-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+              title="Volver al índice"
             >
-              <ChevronLeft size={16} />
-              <span className="text-xs font-bold uppercase tracking-widest">
-                {lang === 'es' ? 'Volver al Índice' : 'Back to Index'}
-              </span>
+              <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
             </button>
-
-            {/* Language Toggle */}
-            <div className="flex items-center gap-2 bg-stone-100 dark:bg-stone-900 rounded-full p-1">
-              <Globe className="w-3.5 h-3.5 text-stone-400 ml-1" />
-              <button
-                onClick={() => setLang('es')}
-                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                  lang === 'es'
-                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
-                    : 'text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                ES
-              </button>
-              <button
-                onClick={() => setLang('en')}
-                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                  lang === 'en'
-                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
-                    : 'text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                EN
-              </button>
-            </div>
           </div>
 
           <h2 className="text-xl md:text-2xl font-black text-black dark:text-white tracking-tighter uppercase mb-5 leading-tight">
             {displayTitle}
           </h2>
 
-          <div className="flex bg-stone-100 dark:bg-stone-900 p-1 rounded-lg w-full max-w-md">
+          <div className="flex gap-6 overflow-x-auto scrollbar-hide">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 py-2.5 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-md transition-all ${
+                className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-white dark:bg-stone-800 text-black dark:text-white shadow-sm'
-                    : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-100'
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
+
+          <div className="mt-4 border-t border-stone-200 dark:border-stone-800 py-4">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">
+              <span>{formatTime(elapsedSeconds)}</span>
+              <span>{formatTime(chapterDurationSeconds)}</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1000}
+              step={1}
+              value={Math.round(seekValue * 1000)}
+              onChange={(e) => {
+                const v = Number(e.target.value) / 1000;
+                isSeekingRef.current = true;
+                setSeekValue(v);
+              }}
+              onMouseUp={() => commitSeek(seekValue)}
+              onPointerUp={() => commitSeek(seekValue)}
+              onTouchEnd={() => commitSeek(seekValue)}
+              onBlur={() => {
+                if (isSeekingRef.current) commitSeek(seekValue);
+              }}
+              onKeyUp={(e) => {
+                if (e.key === 'Enter') commitSeek(seekValue);
+              }}
+              className="w-full accent-black dark:accent-white"
+            />
+          </div>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
 
         {/* READER TAB */}
         {activeTab === 'reader' && (
           <div className="space-y-8 animate-fade-in">
-            {/* Audio Player Card */}
-            <div className="bg-stone-900 text-white rounded-2xl p-6 shadow-xl flex flex-col sm:flex-row items-center gap-6">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={togglePlay}
-                  className="w-14 h-14 bg-brand rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand/30"
-                >
-                  {isPlaying ? <Pause className="w-6 h-6 text-white" /> : <Play className="w-6 h-6 text-white ml-1" />}
-                </button>
-                <button
-                  onClick={resetAudio}
-                  className="p-3 bg-stone-800 rounded-full hover:bg-stone-700 transition-colors"
-                  title={lang === 'es' ? 'Reiniciar audio' : 'Restart audio'}
-                >
-                  <RotateCcw className="w-5 h-5 text-stone-300" />
-                </button>
-              </div>
-              <div className="flex-1 w-full text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                  <Volume2 className="w-4 h-4 text-brand" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-brand">
-                    {lang === 'es' ? 'Narración' : 'Narration'} · {lang.toUpperCase()}
-                  </span>
-                </div>
-                <p className="text-sm text-stone-400">
-                  {lang === 'es'
-                    ? `Escucha la narración de este capítulo. Duración aprox: ${chapter.duration}`
-                    : `Listen to the narration of this chapter. Approx. duration: ${chapter.duration}`}
-                </p>
-              </div>
-            </div>
-
             {/* Text Content */}
             <div className="prose prose-stone dark:prose-invert max-w-none">
               {displayContent.split('\n\n').map((paragraph, idx) => (
@@ -238,12 +287,10 @@ export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, on
           <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <h3 className="text-2xl font-black uppercase tracking-tight mb-2">
-                {lang === 'es' ? 'Comprueba tu aprendizaje' : 'Check your learning'}
+                Comprueba tu aprendizaje
               </h3>
               <p className="text-stone-500 text-sm">
-                {lang === 'es'
-                  ? 'Responde estas preguntas basadas en el capítulo.'
-                  : 'Answer these questions based on the chapter.'}
+                Responde estas preguntas basadas en el capítulo.
               </p>
             </div>
 
@@ -296,23 +343,23 @@ export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, on
                 disabled={Object.keys(quizAnswers).length < displayQuiz.length}
                 className="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {lang === 'es' ? 'Revisar Respuestas' : 'Review Answers'}
+                Revisar respuestas
               </button>
             ) : (
               <div className={`p-6 rounded-2xl text-center border ${quizScore === displayQuiz.length ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-900/20 dark:border-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800'}`}>
                 <h4 className="text-xl font-black mb-2">
-                  {lang === 'es' ? 'Puntuación' : 'Score'}: {quizScore} / {displayQuiz.length}
+                  Puntuación: {quizScore} / {displayQuiz.length}
                 </h4>
                 <p>
                   {quizScore === displayQuiz.length
-                    ? (lang === 'es' ? '¡Excelente! Has dominado este tema.' : 'Excellent! You have mastered this topic.')
-                    : (lang === 'es' ? 'Buen intento. Te recomendamos repasar el capítulo.' : 'Good try. We recommend reviewing the chapter.')}
+                    ? '¡Excelente! Has dominado este tema.'
+                    : 'Buen intento. Te recomendamos repasar el capítulo.'}
                 </p>
                 <button
                   onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); }}
                   className="mt-6 px-6 py-2 bg-white dark:bg-stone-800 border border-current rounded-lg font-bold text-sm hover:opacity-80 transition-opacity"
                 >
-                  {lang === 'es' ? 'Intentar de nuevo' : 'Try again'}
+                  Intentar de nuevo
                 </button>
               </div>
             )}
@@ -327,20 +374,47 @@ export const AudiobookReaderView: React.FC<Props> = ({ categoryId, chapterId, on
                 <Brain className="w-10 h-10" />
               </div>
               <h3 className="text-2xl font-black uppercase tracking-tight mb-6">
-                {lang === 'es' ? 'Misión Práctica' : 'Practical Mission'}
+                Misión práctica
               </h3>
               <p className="text-lg text-stone-700 dark:text-stone-300 leading-relaxed bg-white dark:bg-stone-900 p-6 rounded-2xl shadow-sm">
                 {displayTask}
               </p>
               <div className="mt-8 text-sm text-stone-500 font-medium">
-                {lang === 'es'
-                  ? 'Completa esta tarea en tu entorno de trabajo para consolidar lo aprendido en este capítulo.'
-                  : 'Complete this task in your work environment to consolidate what you learned in this chapter.'}
+                Completa esta tarea en tu entorno de trabajo para consolidar lo aprendido en este capítulo.
               </div>
             </div>
           </div>
         )}
 
+      </div>
+
+      <div className="fixed left-0 right-0 bottom-0 z-[220]">
+        <div className="border-t border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-950/95 backdrop-blur-md shadow-xl px-5 py-4">
+          <div className="text-center max-w-7xl mx-auto">
+            <p className="text-lg md:text-xl font-black text-stone-900 dark:text-stone-100">
+              Capítulo {chapterNumber}
+            </p>
+            <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+              {remainingMinutes} min restantes | {Math.round(seekValue * 100)}%
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={togglePlay}
+                className="w-11 h-11 bg-black dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center hover:opacity-90 active:scale-95 transition-all"
+                title={isPlaying ? 'Pausar' : 'Reproducir'}
+              >
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+              <button
+                onClick={resetAudio}
+                className="w-11 h-11 rounded-full bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors"
+                title="Volver a escuchar"
+              >
+                <RotateCcw className="w-4.5 h-4.5 text-stone-500 dark:text-stone-400" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

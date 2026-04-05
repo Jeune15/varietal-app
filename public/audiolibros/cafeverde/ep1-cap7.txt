@@ -1,0 +1,29 @@
+La evaluación física del café verde corresponde al conjunto de procedimientos mediante los cuales se analizan sus características medibles y observables con el objetivo de determinar su estado, uniformidad y estabilidad. A diferencia de la evaluación sensorial, este análisis se basa en variables objetivas que permiten interpretar el café como un material físico.
+
+Uno de los parámetros más importantes en la evaluación física es el contenido de humedad. Este valor indica la cantidad de agua presente en el grano y se expresa como un porcentaje de su peso total. En términos operativos, el rango generalmente aceptado para café verde estable se encuentra entre 10% y 12%. Valores por encima de este rango incrementan el riesgo de actividad microbiana y deterioro, mientras que valores por debajo pueden afectar la integridad estructural del grano y su comportamiento durante el tueste.
+
+La medición de la humedad se realiza mediante instrumentos específicos, comúnmente medidores electrónicos calibrados para café. Es importante considerar que estos equipos requieren ajustes según la densidad y el origen del café para obtener resultados precisos. La medición debe realizarse en condiciones controladas y, de ser posible, con muestras representativas del lote, ya que la variabilidad interna puede afectar la lectura.
+
+Además del contenido de humedad, la actividad de agua es un parámetro clave para evaluar la estabilidad del café. Este valor representa la cantidad de agua disponible para reacciones químicas y crecimiento microbiano, y se expresa en una escala de 0 a 1. En café verde, valores por debajo de 0.60 se consideran generalmente estables, mientras que valores superiores aumentan el riesgo de deterioro. Este parámetro permite entender por qué dos cafés con la misma humedad pueden comportarse de manera diferente.
+
+La densidad es otro indicador fundamental en la evaluación física. Se refiere a la relación entre la masa y el volumen del grano y proporciona información sobre su estructura interna. Cafés con mayor densidad suelen presentar una matriz celular más compacta, lo que influye en su comportamiento térmico. La densidad puede medirse como densidad aparente, utilizando un volumen conocido, o como densidad real mediante métodos más precisos.
+
+En términos prácticos, la densidad permite anticipar cómo responderá el café al tueste. Granos más densos tienden a requerir una mayor transferencia de energía para alcanzar el mismo nivel de desarrollo, mientras que granos menos densos pueden reaccionar más rápidamente. Sin embargo, la densidad no debe interpretarse de manera aislada, sino en conjunto con otras variables.
+
+El tamaño del grano es otro parámetro relevante y se determina mediante el uso de cribas o tamices. Estas herramientas permiten clasificar los granos según su diámetro, generando categorías que facilitan la estandarización del lote. La uniformidad en el tamaño es importante, ya que influye en la consistencia del tueste. Un lote con granos de tamaños muy distintos puede presentar desarrollos desiguales.
+
+La forma del grano también puede ser evaluada visualmente. Aunque la mayoría de los granos presentan una forma característica, variaciones pueden indicar diferencias en la variedad o en el desarrollo del fruto. Estas diferencias pueden influir en la manera en que el grano interactúa con el calor.
+
+El color del café verde es un indicador visual que puede proporcionar información sobre su estado. Tonalidades verdes uniformes suelen asociarse con café fresco, mientras que colores más apagados o amarillentos pueden indicar envejecimiento o exposición a condiciones inadecuadas. Sin embargo, el color debe interpretarse con cautela, ya que puede variar según el procesamiento.
+
+La dureza del grano es otra característica que puede evaluarse, aunque de manera menos directa. Está relacionada con la resistencia del grano a la presión y con su estructura interna. Esta propiedad influye en procesos como la molienda y el tueste, aunque su medición precisa requiere herramientas especializadas.
+
+Desde un enfoque técnico, la evaluación física no consiste únicamente en medir variables individuales, sino en interpretar cómo estas se relacionan entre sí. Por ejemplo, un café con humedad adecuada pero alta actividad de agua puede presentar problemas de estabilidad. De igual forma, un café con buena densidad pero baja uniformidad de tamaño puede generar inconsistencias en el tueste.
+
+La representatividad de la muestra es un aspecto crítico en la evaluación. Los resultados obtenidos solo son válidos si la muestra refleja las características del lote completo. Por esta razón, el muestreo debe realizarse de manera cuidadosa, considerando diferentes puntos del lote.
+
+La evaluación física permite identificar desviaciones que pueden afectar la calidad del café. Estas desviaciones no siempre son visibles a simple vista, pero pueden detectarse mediante la medición y el análisis de variables. Este proceso es fundamental para el control de calidad y para la toma de decisiones en etapas posteriores.
+
+En términos operativos, la evaluación física constituye una herramienta para reducir la incertidumbre. Permite establecer criterios objetivos y comparables, facilitando la comunicación entre los distintos actores de la cadena. Asimismo, proporciona una base técnica para interpretar el comportamiento del café en procesos como el almacenamiento y el tueste.
+
+El café verde debe ser entendido como un material cuya calidad puede ser medida y analizada. La evaluación física permite traducir sus características en datos concretos, lo que facilita su manejo y control. Este enfoque es esencial para trabajar con precisión y consistencia en el ámbito profesional del café.

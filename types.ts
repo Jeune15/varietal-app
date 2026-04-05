@@ -459,3 +459,53 @@ export interface CashRegister {
   totalExpense: number;
   closedAt?: string;
 }
+
+export interface SalesCashSession {
+  id: string;
+  openedAt: string;
+  closedAt?: string;
+  openingAmount: number;
+  isOpen: boolean;
+  entries: CashEntry[];
+  totalIncome: number;
+  totalExpense: number;
+  label?: string;
+  legacyRegisterId?: string;
+}
+
+// ===== Guía de Remisión Types =====
+
+export interface GuiaProducto {
+  id: string;
+  nombre: string;
+  codigo: string;
+  unidad: string;
+  cantidad: number;
+}
+
+export interface GuiaRemision {
+  id: string;
+  createdAt: string;
+  // Datos generales
+  fechaEmision: string;
+  fechaInicio: string;
+  fechaFin: string;
+  emisor: string;
+  rucEmisor: string;
+  // Transporte
+  transportista: string;
+  ceDniTransportista: string;
+  placa: string;
+  puntoPartida: string;
+  // Destinatario
+  destinatario: string;
+  rucDestinatario: string;
+  motivo: string;
+  // Envío
+  direccionDestino: string;
+  descripcion: string;
+  // Productos
+  productos: GuiaProducto[];
+  // Metadata
+  numeroGuia: string;
+}

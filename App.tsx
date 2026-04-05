@@ -518,6 +518,7 @@ const AppContent: React.FC = () => {
                    <AudiobookReaderView 
                      categoryId={selectedAudiobookCategory}
                      chapterId={selectedAudiobookChapter}
+                     onSelectChapter={setSelectedAudiobookChapter}
                      onBack={() => setSelectedAudiobookChapter(null)}
                    />
                  )}
@@ -536,41 +537,43 @@ const AppContent: React.FC = () => {
         )}
 
         {/* Student Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
-          <div className="flex items-center justify-center gap-4 px-2 py-2">
-            {[
-               { id: 'modules', label: 'Módulos', icon: Package },
-               { id: 'audiobooks', label: 'AudioLibros', icon: BookOpen },
-               { id: 'recipes', label: 'Herramientas', icon: ClipboardList }
-             ].map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setSelectedAudiobookCategory(null);
-                    setSelectedAudiobookChapter(null);
-                  }}
-                  className={`flex flex-col items-center gap-1 p-2 min-w-[3.5rem] rounded-xl transition-all duration-300 ${
-                    isActive 
-                      ? 'text-brand dark:text-brand-light' 
-                      : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
-                  }`}
-                >
-                  <Icon 
-                    className={`w-[18px] h-[18px] transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
-                    strokeWidth={isActive ? 2.5 : 2} 
-                  />
-                  <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        {!(activeTab === 'audiobooks' && selectedAudiobookChapter) && (
+          <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-[150] safe-area-pb">
+            <div className="flex items-center justify-center gap-4 px-2 py-2">
+              {[
+                 { id: 'modules', label: 'Módulos', icon: Package },
+                 { id: 'audiobooks', label: 'AudioLibros', icon: BookOpen },
+                 { id: 'recipes', label: 'Herramientas', icon: ClipboardList }
+               ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setSelectedAudiobookCategory(null);
+                      setSelectedAudiobookChapter(null);
+                    }}
+                    className={`flex flex-col items-center gap-1 p-2 min-w-[3.5rem] rounded-xl transition-all duration-300 ${
+                      isActive 
+                        ? 'text-brand dark:text-brand-light' 
+                        : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                    }`}
+                  >
+                    <Icon 
+                      className={`w-[18px] h-[18px] transition-transform duration-300 ${isActive ? '-translate-y-0.5 scale-110' : ''}`} 
+                      strokeWidth={isActive ? 2.5 : 2} 
+                    />
+                    <span className={`text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 hidden'}`}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        )}
       </div>
     );
   }

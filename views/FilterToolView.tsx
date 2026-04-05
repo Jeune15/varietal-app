@@ -1480,13 +1480,20 @@ export const FilterToolView: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     if (!selectedSession) return;
     const blankRecipe: FilterRecipe = {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       name: `Receta ${selectedSession.recipes.length + 1}`,
       method: 'Filtro',
       doseGrams: 15,
-      totalWaterMl: 250,
-      totalTimeSeconds: 150,
       waterTempCelsius: 92,
       grinderModel: '',
+      grinderClicks: null,
+      totalWaterMl: 250,
+      ratio: '1:16.7',
+      totalTimeSeconds: 150,
+      pressureBars: null,
+      filterType: '',
+      waterBrand: '',
       tasting: { flavor: '', aroma: '', body: '', acidity: '' },
       phases: [], 
       pours: [] 

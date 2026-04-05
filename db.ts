@@ -1,7 +1,7 @@
 
 import { Dexie, type EntityTable } from 'dexie';
 import { createClient } from '@supabase/supabase-js';
-import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe, TeamMember, ScheduleEntry, SalesProduct, SalesCategory, SalesOrder, CashRegister } from './types';
+import { GreenCoffee, Roast, Order, RoastedStock, RetailBagStock, ProductionActivity, Expense, ProductionItem, UserProfile, CuppingSession, EspressoSession, FilterSession, FilterRecipe, TeamMember, ScheduleEntry, SalesProduct, SalesCategory, SalesOrder, CashRegister, SalesCashSession, GuiaRemision } from './types';
 
 type VarietalDB = Dexie & {
   greenCoffees: EntityTable<GreenCoffee, 'id'>;
@@ -23,6 +23,8 @@ type VarietalDB = Dexie & {
   salesCategories: EntityTable<SalesCategory, 'id'>;
   salesOrders: EntityTable<SalesOrder, 'id'>;
   cashRegisters: EntityTable<CashRegister, 'id'>;
+  salesCashSessions: EntityTable<SalesCashSession, 'id'>;
+  guiasRemision: EntityTable<GuiaRemision, 'id'>;
 };
 
 const db = new Dexie('VarietalDB') as VarietalDB;
@@ -47,6 +49,53 @@ db.version(12).stores({
   salesCategories: 'id, name',
   salesOrders: 'id, status, createdAt',
   cashRegisters: 'id, monthStart, isOpen'
+});
+
+db.version(13).stores({
+  greenCoffees: 'id, clientName, variety',
+  roasts: 'id, clientName, greenCoffeeId',
+  orders: 'id, clientName, status',
+  roastedStocks: 'id, roastId, clientName',
+  retailBags: 'id, coffeeName, type',
+  history: 'id, type, date',
+  expenses: 'id, date, status',
+  productionInventory: 'id, name, type, format',
+  profiles: 'id, email, role',
+  cuppingSessions: 'id, roastStockId, tasterName, date',
+  espressoSessions: 'id, date, coffeeName',
+  filterSessions: 'id, date, brewerName, coffeeName',
+  filterRecipes: 'id, method, coffeeName',
+  teamMembers: 'id, name',
+  scheduleEntries: 'id, user_id, type, date',
+  salesProducts: 'id, name, categoryId, isFavorite',
+  salesCategories: 'id, name',
+  salesOrders: 'id, status, createdAt',
+  cashRegisters: 'id, monthStart, isOpen',
+  salesCashSessions: 'id, openedAt, closedAt, isOpen'
+});
+
+db.version(14).stores({
+  greenCoffees: 'id, clientName, variety',
+  roasts: 'id, clientName, greenCoffeeId',
+  orders: 'id, clientName, status',
+  roastedStocks: 'id, roastId, clientName',
+  retailBags: 'id, coffeeName, type',
+  history: 'id, type, date',
+  expenses: 'id, date, status',
+  productionInventory: 'id, name, type, format',
+  profiles: 'id, email, role',
+  cuppingSessions: 'id, roastStockId, tasterName, date',
+  espressoSessions: 'id, date, coffeeName',
+  filterSessions: 'id, date, brewerName, coffeeName',
+  filterRecipes: 'id, method, coffeeName',
+  teamMembers: 'id, name',
+  scheduleEntries: 'id, user_id, type, date',
+  salesProducts: 'id, name, categoryId, isFavorite',
+  salesCategories: 'id, name',
+  salesOrders: 'id, status, createdAt',
+  cashRegisters: 'id, monthStart, isOpen',
+  salesCashSessions: 'id, openedAt, closedAt, isOpen',
+  guiasRemision: 'id, destinatario, createdAt'
 });
 
 export { db };
@@ -141,7 +190,9 @@ const tableColumnWhitelist: Record<string, string[]> = {
   salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
   salesCategories: ['id', 'name', 'createdAt'],
   salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source', 'deliveredAt', 'despachadoAt', 'invoicedAt', 'usedRoastedCoffee', 'usedRetailBags', 'usedUtilityBags', 'shippingCost', 'shippingPaidBy'],
-  cashRegisters: ['id', 'monthStart', 'monthEnd', 'isOpen', 'openingAmount', 'totalIncome', 'totalExpense', 'closedAt', 'entries']
+  cashRegisters: ['id', 'monthStart', 'monthEnd', 'isOpen', 'openingAmount', 'totalIncome', 'totalExpense', 'closedAt', 'entries'],
+  salesCashSessions: ['id', 'openedAt', 'closedAt', 'openingAmount', 'isOpen', 'entries', 'totalIncome', 'totalExpense', 'label', 'legacyRegisterId'],
+  guiasRemision: ['id', 'createdAt', 'fechaEmision', 'fechaInicio', 'fechaFin', 'emisor', 'rucEmisor', 'transportista', 'ceDniTransportista', 'placa', 'puntoPartida', 'destinatario', 'rucDestinatario', 'motivo', 'direccionDestino', 'descripcion', 'productos', 'numeroGuia']
 };
 
 function sanitizeRecord(table: string, record: any) {
@@ -209,7 +260,7 @@ export async function pullFromCloud() {
       if (!lastProcessed || new Date(lastReset.date) > new Date(lastProcessed)) {
         console.warn('GLOBAL RESET SIGNAL DETECTED. Wiping local database...');
         
-        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters], async () => {
+        await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters, db.salesCashSessions, db.guiasRemision], async () => {
           await db.greenCoffees.clear();
           await db.roasts.clear();
           await db.orders.clear();
@@ -229,6 +280,8 @@ export async function pullFromCloud() {
           await db.salesCategories.clear();
           await db.salesOrders.clear();
           await db.cashRegisters.clear();
+          await db.salesCashSessions.clear();
+          await db.guiasRemision.clear();
         });
         
         localStorage.setItem('varietal_last_reset_processed', lastReset.date);
@@ -241,7 +294,7 @@ export async function pullFromCloud() {
 
   // 2. Fetch all tables using exactly the casing Supabase expects
   // In Supabase, if a table was created with quotes like "salesCategories", we MUST query it as "salesCategories"
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters', 'salesCashSessions', 'guiasRemision'];
   let success = true;
 
   for (const table of tables) {
@@ -282,7 +335,7 @@ export async function pullFromCloud() {
 
 export async function pushToCloud(): Promise<{ success: boolean; message?: string }> {
   if (!supabase) return { success: false, message: 'No hay conexión con Supabase' };
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters', 'salesCashSessions', 'guiasRemision'];
   let success = true;
   let errorMessage = '';
 
@@ -333,6 +386,8 @@ export async function exportDatabaseToJson() {
     salesCategories: await db.salesCategories.toArray(),
     salesOrders: await db.salesOrders.toArray(),
     cashRegisters: await db.cashRegisters.toArray(),
+    salesCashSessions: await db.salesCashSessions.toArray(),
+    guiasRemision: await db.guiasRemision.toArray(),
     exportDate: new Date().toISOString()
   };
   return JSON.stringify(data, null, 2);
@@ -341,7 +396,7 @@ export async function exportDatabaseToJson() {
 export async function importDatabaseFromJson(jsonString: string) {
   try {
     const data = JSON.parse(jsonString);
-    await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters], async () => {
+    await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters, db.salesCashSessions, db.guiasRemision], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -361,6 +416,8 @@ export async function importDatabaseFromJson(jsonString: string) {
       await db.salesCategories.clear();
       await db.salesOrders.clear();
       await db.cashRegisters.clear();
+      await db.salesCashSessions.clear();
+      await db.guiasRemision.clear();
       
       if (data.greenCoffees) await db.greenCoffees.bulkAdd(data.greenCoffees);
       if (data.roasts) await db.roasts.bulkAdd(data.roasts);
@@ -381,6 +438,8 @@ export async function importDatabaseFromJson(jsonString: string) {
       if (data.salesCategories) await db.salesCategories.bulkAdd(data.salesCategories);
       if (data.salesOrders) await db.salesOrders.bulkAdd(data.salesOrders);
       if (data.cashRegisters) await db.cashRegisters.bulkAdd(data.cashRegisters);
+      if (data.salesCashSessions) await db.salesCashSessions.bulkAdd(data.salesCashSessions);
+      if (data.guiasRemision) await db.guiasRemision.bulkAdd(data.guiasRemision);
     });
     return true;
   } catch (error) {
@@ -392,7 +451,7 @@ export async function importDatabaseFromJson(jsonString: string) {
 export function subscribeToChanges() {
   if (!supabase) return () => {};
 
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters', 'salesCashSessions', 'guiasRemision'];
 
   const channel = supabase.channel('db-changes')
     .on(
@@ -413,8 +472,10 @@ export function subscribeToChanges() {
                 'salesproducts': 'salesProducts',
                 'salesorders': 'salesOrders',
                 'cashregisters': 'cashRegisters',
+                'salescashsessions': 'salesCashSessions',
                 'scheduleentries': 'scheduleEntries',
-                'team_members': 'teamMembers'
+                'team_members': 'teamMembers',
+                'guiasremision': 'guiasRemision'
             };
             targetTable = tableMap[table.toLowerCase()] || undefined;
         }
@@ -443,9 +504,9 @@ export function subscribeToChanges() {
 }
 
 export async function resetDatabase(excludeUserId?: string) {
-  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters'];
+  const tables = ['greenCoffees', 'roasts', 'orders', 'roastedStocks', 'retailBags', 'history', 'expenses', 'productionInventory', 'profiles', 'cuppingSessions', 'espressoSessions', 'filterSessions', 'filterRecipes', 'teamMembers', 'scheduleEntries', 'salesProducts', 'salesCategories', 'salesOrders', 'cashRegisters', 'salesCashSessions', 'guiasRemision'];
   
-  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters], async () => {
+  await db.transaction('rw', [db.greenCoffees, db.roasts, db.orders, db.roastedStocks, db.retailBags, db.history, db.expenses, db.productionInventory, db.profiles, db.cuppingSessions, db.espressoSessions, db.filterSessions, db.filterRecipes, db.teamMembers, db.scheduleEntries, db.salesProducts, db.salesCategories, db.salesOrders, db.cashRegisters, db.salesCashSessions, db.guiasRemision], async () => {
       await db.greenCoffees.clear();
       await db.roasts.clear();
       await db.orders.clear();
@@ -465,6 +526,8 @@ export async function resetDatabase(excludeUserId?: string) {
       await db.salesCategories.clear();
       await db.salesOrders.clear();
       await db.cashRegisters.clear();
+      await db.salesCashSessions.clear();
+      await db.guiasRemision.clear();
   });
 
   // Clear Cloud DB if connected
