@@ -188,7 +188,7 @@ const tableColumnWhitelist: Record<string, string[]> = {
   teamMembers: ['id', 'name'],
   scheduleEntries: ['id', 'user_id', 'type', 'date', 'time', 'endDate', 'details'],
   salesProducts: ['id', 'name', 'categoryId', 'price', 'isFavorite', 'createdAt'],
-  salesCategories: ['id', 'name', 'createdAt'],
+  salesCategories: ['id', 'name', 'color', 'createdAt'],
   salesOrders: ['id', 'clientName', 'total', 'status', 'createdAt', 'completedAt', 'items', 'orderName', 'source', 'deliveredAt', 'despachadoAt', 'invoicedAt', 'usedRoastedCoffee', 'usedRetailBags', 'usedUtilityBags', 'shippingCost', 'shippingPaidBy'],
   cashRegisters: ['id', 'monthStart', 'monthEnd', 'isOpen', 'openingAmount', 'totalIncome', 'totalExpense', 'closedAt', 'entries'],
   salesCashSessions: ['id', 'openedAt', 'closedAt', 'openingAmount', 'isOpen', 'entries', 'totalIncome', 'totalExpense', 'label', 'legacyRegisterId'],
@@ -221,6 +221,17 @@ const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (envUrl && envKey) {
   initSupabase(envUrl, envKey);
+}
+
+export async function deleteFromCloud(table: string, id: string) {
+  if (!supabase) return;
+  try {
+    const supabaseTable = table === 'teamMembers' ? 'team_members' : table;
+    const { error } = await supabase.from(supabaseTable).delete().eq('id', id);
+    if (error) throw error;
+  } catch (err) {
+    console.error(`Error deleting from ${table}:`, err);
+  }
 }
 
 export async function syncToCloud(table: string, data: any) {
@@ -319,11 +330,26 @@ export async function pullFromCloud() {
         continue;
       }
 
-      if (data && data.length > 0) {
-        // Use bulkPut to merge cloud data instead of clearing local data
-        // This prevents data loss if cloud is empty or connection fails
-        // @ts-ignore
-        await db[table].bulkPut(data);
+      if (data) {
+        if (data.length > 0) {
+          // Use bulkPut to merge cloud data
+          // @ts-ignore
+          await db[table].bulkPut(data);
+        }
+        // Reconcile: remove local records that no longer exist in the cloud
+        // This ensures deletes on one device propagate to others
+        try {
+          const cloudIds = new Set(data.map((r: any) => r.id));
+          // @ts-ignore
+          const localRecords = await db[table].toArray();
+          const toDelete = localRecords.filter((r: any) => !cloudIds.has(r.id)).map((r: any) => r.id);
+          if (toDelete.length > 0) {
+            // @ts-ignore
+            await db[table].bulkDelete(toDelete);
+          }
+        } catch (reconcileErr) {
+          console.warn(`Reconciliation skipped for ${table}:`, reconcileErr);
+        }
       }
     } catch (e) {
       console.error(`Error pulling ${table}:`, e);

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, syncToCloud } from '../../db';
+import { db, syncToCloud, deleteFromCloud } from '../../db';
 import { SalesOrder } from '../../types';
 import { ClipboardList, Clock, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Package, Trash2, X, ChevronLeft } from 'lucide-react';
 
@@ -76,7 +76,7 @@ const SalesPedidosTab: React.FC = () => {
 
   const deleteOrder = async (orderId: string) => {
     await db.salesOrders.delete(orderId);
-    // Again, handle cloud deletion elsewhere or implement soft delete
+    await deleteFromCloud('salesOrders', orderId);
     setDeleteConfirm(null);
     if (selectedOrderId === orderId) setSelectedOrderId(null);
   };

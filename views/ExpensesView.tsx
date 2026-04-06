@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, syncToCloud } from '../db';
+import { db, syncToCloud, deleteFromCloud } from '../db';
 import { Expense } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Trash2, Search, Filter, DollarSign, FileText, Calendar, CheckCircle, X, User } from 'lucide-react';
@@ -71,7 +71,7 @@ const ExpensesView = () => {
     if (!canEdit) return;
     if (window.confirm(`¿Eliminar definitivamente el gasto: ${expense.reason}?`)) {
       await db.expenses.delete(expense.id);
-      // Ideally delete from cloud too if we had a delete sync helper exposed
+      await deleteFromCloud('expenses', expense.id);
     }
   };
 

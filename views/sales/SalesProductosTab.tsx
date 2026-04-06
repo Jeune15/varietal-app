@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, syncToCloud } from '../../db';
+import { db, syncToCloud, deleteFromCloud } from '../../db';
 import { SalesCategory, SalesProduct } from '../../types';
 import { Plus, Edit2, Trash2, Star, X, Palette, Check, Package, Search } from 'lucide-react';
 
@@ -76,7 +76,7 @@ const SalesProductosTab: React.FC = () => {
       await syncToCloud('salesProducts', updatedProd);
     }
     await db.salesCategories.delete(id);
-    // You might want to handle cloud deletion here, or leave it to user logic
+    await deleteFromCloud('salesCategories', id);
     setDeleteConfirm(null);
   };
 
@@ -128,6 +128,7 @@ const SalesProductosTab: React.FC = () => {
 
   const deleteProduct = async (id: string) => {
     await db.salesProducts.delete(id);
+    await deleteFromCloud('salesProducts', id);
     setDeleteConfirm(null);
   };
 
