@@ -32,7 +32,7 @@ import InventoryView from './views/InventoryView';
 import DashboardView from './views/DashboardView';
 import CalendarPage from './views/CalendarPage';
 import SalesPage from './views/SalesPage';
-import SalesHistorialTab from './views/sales/SalesHistorialTab';
+import EquipoCajaView from './views/EquipoCajaView';
 import ExpensesView from './views/ExpensesView';
 import LoginView from './views/LoginView';
 import CuppingView from './views/CuppingView';
@@ -703,7 +703,7 @@ const AppContent: React.FC = () => {
                     </div>
                   </div>
                   <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
-                    {billingTab === 'historial' ? <SalesHistorialTab /> : <ExpensesView />}
+                    {billingTab === 'historial' ? <EquipoCajaView /> : <ExpensesView />}
                   </div>
                 </div>
               ) : activeTab === 'stock' ? (

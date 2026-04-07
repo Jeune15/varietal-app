@@ -1039,7 +1039,9 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
                       <span className="text-[9px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] block mb-1">Entrega</span>
-                      <span className="font-mono text-stone-600 dark:text-stone-400">{o.dueDate}</span>
+                      <span className="font-mono text-stone-600 dark:text-stone-400">
+                        {o.dueDate ? new Date(o.dueDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '—'}
+                      </span>
                     </div>
                     <div>
                       <span className="text-[9px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.2em] block mb-1">Progreso</span>
@@ -1068,9 +1070,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                         type="button"
                         onClick={async () => {
                           const now = new Date().toISOString();
-                          const updatedSalesOrder = { ...o.salesOrderOriginal, invoicedAt: now };
-                          await db.salesOrders.update(o.salesOrderOriginal.id, updatedSalesOrder);
-                          await syncToCloud('salesOrders', updatedSalesOrder);
+                          await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
+                          const freshlyUpdatedSalesOrder = await db.salesOrders.get(o.salesOrderOriginal.id);
+                          if (freshlyUpdatedSalesOrder) {
+                            await syncToCloud('salesOrders', freshlyUpdatedSalesOrder);
+                          }
                           showToast('Pedido facturado y despachado', 'success');
                         }}
                         className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
@@ -1177,7 +1181,9 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                             );
                           })()}
                         </td>
-                        <td className="px-4 py-6 text-xs text-stone-500 dark:text-stone-400 font-mono text-center">{o.dueDate}</td>
+                        <td className="px-4 py-6 text-xs text-stone-500 dark:text-stone-400 font-mono text-center">
+                          {o.dueDate ? new Date(o.dueDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '—'}
+                        </td>
                         <td className="px-4 py-6 text-center">
                           {getStatusBadge(o.status)}
                         </td>
@@ -1209,9 +1215,11 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   const now = new Date().toISOString();
-                                  const updatedSalesOrder = { ...o.salesOrderOriginal, invoicedAt: now };
-                                  await db.salesOrders.update(o.salesOrderOriginal.id, updatedSalesOrder);
-                                  await syncToCloud('salesOrders', updatedSalesOrder);
+                                  await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
+                                  const freshlyUpdatedSalesOrder = await db.salesOrders.get(o.salesOrderOriginal.id);
+                                  if (freshlyUpdatedSalesOrder) {
+                                    await syncToCloud('salesOrders', freshlyUpdatedSalesOrder);
+                                  }
                                   showToast('Pedido facturado y despachado', 'success');
                                 }}
                                 className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"

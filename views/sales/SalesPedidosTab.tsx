@@ -37,13 +37,15 @@ const SalesPedidosTab: React.FC = () => {
 
   const markAsDelivered = async (order: SalesOrder) => {
     const now = new Date().toISOString();
-    const updatedOrder = {
-      ...order,
-      status: 'despachado' as const, // Changed from entregado to despachado
+    await db.salesOrders.update(order.id, {
+      status: 'despachado',
       despachadoAt: now,
-    };
-    await db.salesOrders.update(order.id, updatedOrder);
-    await syncToCloud('salesOrders', updatedOrder);
+    });
+    
+    const updatedOrder = await db.salesOrders.get(order.id);
+    if (updatedOrder) {
+      await syncToCloud('salesOrders', updatedOrder);
+    }
 
     const sessions = await db.salesCashSessions.toArray();
     const openSession = sessions
@@ -62,13 +64,14 @@ const SalesPedidosTab: React.FC = () => {
       };
       const updatedEntries = [...openSession.entries, newEntry];
       const totalIncome = updatedEntries.filter(e => e.type === 'ingreso').reduce((s, e) => s + e.amount, 0);
-      const updatedSession = {
-        ...openSession,
+      await db.salesCashSessions.update(openSession.id, {
         entries: updatedEntries,
         totalIncome,
-      };
-      await db.salesCashSessions.update(openSession.id, updatedSession);
-      await syncToCloud('salesCashSessions', updatedSession);
+      });
+      const freshlyUpdatedSession = await db.salesCashSessions.get(openSession.id);
+      if (freshlyUpdatedSession) {
+        await syncToCloud('salesCashSessions', freshlyUpdatedSession);
+      }
     }
 
     setSelectedOrderId(null);
