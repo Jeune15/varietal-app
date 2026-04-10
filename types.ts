@@ -213,7 +213,7 @@ export interface FilterRecipePhase {
   startTimeSeconds: number;
   endTimeSeconds: number;
   volumeMl: number;
-  pourType: 'espiral' | 'central' | 'pulsar' | 'lluvia' | 'continuous' | 'pulsed' | 'circular' | 'direct'; // Added new options, kept old for safety
+  pourType: 'espiral' | 'central' | 'pulsar' | 'lluvia' | 'continuous' | 'pulsed' | 'circular' | 'direct';
   agitation?: boolean;
   spinCount?: number;
   action?: 'vertido' | 'presion'; // Aeropress specific
@@ -436,6 +436,7 @@ export interface SalesOrder {
   usedUtilityBags?: { utilityId: string; format: string; qty: number }[];
   shippingCost?: number;
   shippingPaidBy?: string; // Varietal, Alejhandro, Anthony, Isai
+  clientId?: string; // Link to Client database
 }
 
 export interface CashEntry {
@@ -508,4 +509,20 @@ export interface GuiaRemision {
   productos: GuiaProducto[];
   // Metadata
   numeroGuia: string;
+}
+
+// ===== Client Database Types =====
+
+export type ClientType = 'natural' | 'empresa';
+
+export interface Client {
+  id: string;
+  name: string;
+  district: string;
+  address: string;
+  reference: string;
+  phone: string;
+  clientType: ClientType;
+  observations: string;
+  createdAt: string;
 }

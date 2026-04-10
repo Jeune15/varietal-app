@@ -22,7 +22,8 @@ import {
   DollarSign,
   LogOut,
   Settings2,
-  BookOpen
+  BookOpen,
+  Database
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getSupabase, pullFromCloud, initSupabase, subscribeToChanges } from './db';
@@ -50,6 +51,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { BrandLogoFull } from './components/BrandLogo';
 import ErrorBoundary from './components/ErrorBoundary';
+import ClientDatabaseView from './views/ClientDatabaseView';
 
 // Main App Content
 const AppContent: React.FC = () => {
@@ -453,7 +455,8 @@ const AppContent: React.FC = () => {
     { id: 'stock', label: 'Stock', icon: Package, roles: ['admin'] },
     { id: 'orders', label: 'Pedidos', icon: ClipboardList, roles: ['admin'] },
     { id: 'roasting', label: 'Tostado', icon: Flame, roles: ['admin'] },
-    { id: 'sales-history', label: 'Facturación', icon: Receipt, roles: ['admin'] }
+    { id: 'sales-history', label: 'Facturación', icon: Receipt, roles: ['admin'] },
+    { id: 'clients-db', label: 'Clientes', icon: Database, roles: ['admin'] }
   ].filter(item => !userRole || (item.roles.includes(userRole)));
 
   // If loading (initial or transition)
@@ -706,6 +709,8 @@ const AppContent: React.FC = () => {
                     {billingTab === 'historial' ? <EquipoCajaView /> : <ExpensesView />}
                   </div>
                 </div>
+              ) : activeTab === 'clients-db' ? (
+                <ClientDatabaseView />
               ) : activeTab === 'stock' ? (
                 <div className="space-y-8">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">

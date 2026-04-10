@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, syncToCloud, getSupabase } from '../db';
-import { Order, OrderType, OrderLine, ProductionActivity, RoastedStock, RetailBagStock, ProductionItem, ProductionActivityType } from '../types';
-import { Plus, Clock, User, X, Truck, DollarSign, AlertTriangle, Trash2, Activity, ShoppingBag, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Order, OrderType, OrderLine, ProductionActivity, RoastedStock, RetailBagStock, ProductionItem, ProductionActivityType, Client } from '../types';
+import { Plus, Clock, User, X, Truck, DollarSign, AlertTriangle, Trash2, Activity, ShoppingBag, Search, ChevronLeft, ChevronRight, MoreVertical, UserPlus, Receipt } from 'lucide-react';
 import { StyledSelect } from '../components/StyledSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -53,6 +53,14 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
   const history = useLiveQuery(
     () => db.history.toArray() as Promise<ProductionActivity[]>
   ) || [];
+
+  const allClients = useLiveQuery(
+    () => db.clients.toArray() as Promise<Client[]>
+  ) || [];
+
+  const [salesMenuOpen, setSalesMenuOpen] = useState<string | null>(null);
+  const [clientSelectorOrder, setClientSelectorOrder] = useState<Order | null>(null);
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
 
   const historicalOrders = useMemo(
     () =>
@@ -1058,29 +1066,58 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                   </div>
 
                   <div className="flex justify-end items-center gap-4 pt-2 border-t border-stone-50 dark:border-stone-800">
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteOrder(o)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-                    >
-                      <Trash2 className="w-3 h-3" /> Eliminar
-                    </button>
-                    {o.isSalesOrder && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const now = new Date().toISOString();
-                          await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
-                          const freshlyUpdatedSalesOrder = await db.salesOrders.get(o.salesOrderOriginal.id);
-                          if (freshlyUpdatedSalesOrder) {
-                            await syncToCloud('salesOrders', freshlyUpdatedSalesOrder);
-                          }
-                          showToast('Pedido facturado y despachado', 'success');
-                        }}
-                        className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
-                      >
-                        Despachar y Facturar
-                      </button>
+                    {o.isSalesOrder ? (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setSalesMenuOpen(salesMenuOpen === o.id ? null : o.id)}
+                          className="p-2 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                        {salesMenuOpen === o.id && (
+                          <>
+                            <div className="fixed inset-0 z-[50]" onClick={() => setSalesMenuOpen(null)} />
+                            <div className="absolute right-0 bottom-full mb-1 z-[60] bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-xl py-1 min-w-[180px]">
+                              <button
+                                onClick={() => { setClientSelectorOrder(o); setSalesMenuOpen(null); }}
+                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-2.5 transition-colors"
+                              >
+                                <UserPlus className="w-3.5 h-3.5" /> Asignar Cliente
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const now = new Date().toISOString();
+                                  await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
+                                  const fresh = await db.salesOrders.get(o.salesOrderOriginal.id);
+                                  if (fresh) await syncToCloud('salesOrders', fresh);
+                                  showToast('Pedido facturado', 'success');
+                                  setSalesMenuOpen(null);
+                                }}
+                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-2.5 transition-colors"
+                              >
+                                <Receipt className="w-3.5 h-3.5" /> Facturar
+                              </button>
+                              <button
+                                onClick={() => { handleDeleteOrder(o); setSalesMenuOpen(null); }}
+                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2.5 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrder(o)}
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                        >
+                          <Trash2 className="w-3 h-3" /> Eliminar
+                        </button>
+                      </>
                     )}
                     <button
                       type="button"
@@ -1210,22 +1247,41 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                               <Trash2 className="w-4 h-4" />
                             </button>
                             {o.isSalesOrder && (
-                              <button
-                                type="button"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const now = new Date().toISOString();
-                                  await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
-                                  const freshlyUpdatedSalesOrder = await db.salesOrders.get(o.salesOrderOriginal.id);
-                                  if (freshlyUpdatedSalesOrder) {
-                                    await syncToCloud('salesOrders', freshlyUpdatedSalesOrder);
-                                  }
-                                  showToast('Pedido facturado y despachado', 'success');
-                                }}
-                                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-stone-300 bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
-                              >
-                                Despachar y Facturar
-                              </button>
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setSalesMenuOpen(salesMenuOpen === o.id ? null : o.id); }}
+                                  className="p-1.5 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                                {salesMenuOpen === o.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-[50]" onClick={() => setSalesMenuOpen(null)} />
+                                    <div className="absolute right-0 top-full mt-1 z-[60] bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-xl py-1 min-w-[180px]">
+                                      <button
+                                        onClick={() => { setClientSelectorOrder(o); setSalesMenuOpen(null); }}
+                                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-2.5 transition-colors"
+                                      >
+                                        <UserPlus className="w-3.5 h-3.5" /> Asignar Cliente
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          const now = new Date().toISOString();
+                                          await db.salesOrders.update(o.salesOrderOriginal.id, { invoicedAt: now });
+                                          const fresh = await db.salesOrders.get(o.salesOrderOriginal.id);
+                                          if (fresh) await syncToCloud('salesOrders', fresh);
+                                          showToast('Pedido facturado', 'success');
+                                          setSalesMenuOpen(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-2.5 transition-colors"
+                                      >
+                                        <Receipt className="w-3.5 h-3.5" /> Facturar
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         </td>
@@ -2578,6 +2634,75 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                   </button>
                 </div>
               )}
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* Client Selector Modal */}
+      {clientSelectorOrder && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setClientSelectorOrder(null); setClientSearchTerm(''); }} />
+          <div className="relative bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
+            <div className="sticky top-0 bg-white dark:bg-stone-900 px-5 py-4 border-b border-stone-200 dark:border-stone-800 z-10">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-black text-black dark:text-white tracking-tight uppercase">Asignar Cliente</h3>
+                <button onClick={() => { setClientSelectorOrder(null); setClientSearchTerm(''); }} className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  value={clientSearchTerm}
+                  onChange={e => setClientSearchTerm(e.target.value)}
+                  className="pl-9 pr-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-bold focus:border-black dark:focus:border-white focus:ring-0 w-full transition-colors text-black dark:text-white rounded-xl"
+                />
+              </div>
+            </div>
+            <div className="overflow-y-auto max-h-[50vh] p-2">
+              {allClients
+                .filter(c => {
+                  const term = clientSearchTerm.toLowerCase().trim();
+                  if (!term) return true;
+                  return c.name.toLowerCase().includes(term) || c.district.toLowerCase().includes(term);
+                })
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(client => (
+                  <button
+                    key={client.id}
+                    onClick={async () => {
+                      if (clientSelectorOrder?.salesOrderOriginal) {
+                        const soId = clientSelectorOrder.salesOrderOriginal.id;
+                        await db.salesOrders.update(soId, { clientId: client.id });
+                        const fresh = await db.salesOrders.get(soId);
+                        if (fresh) await syncToCloud('salesOrders', fresh);
+                        showToast(`Cliente "${client.name}" asignado`, 'success');
+                      }
+                      setClientSelectorOrder(null);
+                      setClientSearchTerm('');
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 transition-colors"
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      client.clientType === 'empresa' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-stone-100 dark:bg-stone-800'
+                    }`}>
+                      <User className="w-4 h-4 text-stone-500 dark:text-stone-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-black dark:text-white truncate">{client.name}</p>
+                      <p className="text-[10px] text-stone-400 truncate">{client.district || 'Sin distrito'}</p>
+                    </div>
+                  </button>
+                ))
+              }
+              {allClients.length === 0 && (
+                <div className="p-8 text-center text-stone-400 text-xs font-medium">
+                  No hay clientes en la base de datos
+                </div>
+              )}
+            </div>
           </div>
         </div>,
         document.body
