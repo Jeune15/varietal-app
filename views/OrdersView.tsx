@@ -7,6 +7,11 @@ import { Plus, Clock, User, X, Truck, DollarSign, AlertTriangle, Trash2, Activit
 import { StyledSelect } from '../components/StyledSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import DeleteConfirmModal from '../components/orders/DeleteConfirmModal';
+import ClientSelectorModal from '../components/orders/ClientSelectorModal';
+import OrderStatusBadge from '../components/orders/OrderStatusBadge';
+import { getRequiredActivities, isActivityCompleted, areAllRequiredActivitiesCompleted, getDisplayQty, formatOrderDate } from '../hooks/useOrderCalculations';
+import { useOrders } from '../hooks/useOrders';
 
 type RetailSelectionLine = {
   id: string;
@@ -17,15 +22,13 @@ type RetailSelectionLine = {
   grindType: 'grano' | 'molido';
 };
 
-interface Props {
-  orders: Order[];
-}
-
-const OrdersView: React.FC<Props> = ({ orders }) => {
+const OrdersView: React.FC = () => {
   const { canEdit, isAdmin } = useAuth();
   const { showToast } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [activeView, setActiveView] = useState<'active' | 'history'>('active');
+
+  const orders = useOrders();
   
   // Shipping Modal State
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
@@ -535,7 +538,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
 
   const handleSendOrder = (order: Order) => {
     if (!canEdit) return;
-    if (!areAllRequiredActivitiesCompleted(order)) {
+    if (!checkAllActivitiesCompleted(order)) {
       showToast('Completa todas las actividades antes de enviar el pedido.', 'error');
       return;
     }
@@ -576,33 +579,15 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       showToast('Pedido eliminado', 'success');
   };
 
-  const getStatusBadge = (status: string) => {
-    return <span className="border border-black dark:border-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white">{status}</span>;
-  };
+  // OrderStatusBadge component is now imported from components/orders/OrderStatusBadge
 
-  const isActivityCompleted = (order: Order, activityType: ProductionActivityType) => {
-    if (order.completedActivities && order.completedActivities.includes(activityType)) {
-      return true;
-    }
-
-    return history.some(activity => {
-      const details: any = activity.details || {};
-      const activityOrderId = details.orderId || details.selectedOrderId;
-      return activity.type === activityType && activityOrderId === order.id;
-    });
-  };
-
-  const getRequiredActivities = (order: Order): ProductionActivityType[] => {
-    if (order.isSalesOrder) return ['Armado de Pedido'];
-    return order.type === 'Venta Café Tostado'
-      ? ['Armado de Bolsas Retail']
-      : ['Selección de Café', 'Armado de Pedido'];
-  };
-
-  const areAllRequiredActivitiesCompleted = (order: Order) => {
-    const required = getRequiredActivities(order);
-    return required.every(a => isActivityCompleted(order, a));
-  };
+  // isActivityCompleted, getRequiredActivities, areAllRequiredActivitiesCompleted
+  // are now imported from hooks/useOrderCalculations.ts
+  // Wrap them to inject the local history dependency:
+  const checkActivityCompleted = (order: Order, activityType: ProductionActivityType) =>
+    isActivityCompleted(order, activityType, history);
+  const checkAllActivitiesCompleted = (order: Order) =>
+    areAllRequiredActivitiesCompleted(order, history);
 
   const handleActivitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1001,7 +986,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                       <div className="text-[9px] text-stone-400 dark:text-stone-500 font-mono mt-1">ID: {o.id.slice(-4)}</div>
                     </div>
                     <div className="shrink-0">
-                      {getStatusBadge(o.status)}
+                      <OrderStatusBadge status={o.status} />
                     </div>
                   </div>
 
@@ -1222,7 +1207,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                           {o.dueDate ? new Date(o.dueDate).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '—'}
                         </td>
                         <td className="px-4 py-6 text-center">
-                          {getStatusBadge(o.status)}
+                          <OrderStatusBadge status={o.status} />
                         </td>
                         <td className="px-4 py-6">
                           <div className="flex items-center justify-end gap-3">
@@ -2016,49 +2001,12 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteModalOpen && selectedOrderForDelete && createPortal(
-        <div 
-          className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={() => setDeleteModalOpen(false)}
-        >
-          <div 
-            className="bg-white dark:bg-stone-900 w-full max-w-md border border-red-500 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center p-4 border-b border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 shrink-0 sticky top-0 z-10">
-              <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-red-600 dark:text-red-500">
-                <AlertTriangle className="w-5 h-5" /> Eliminar Pedido
-              </h3>
-              <button onClick={() => setDeleteModalOpen(false)} className="text-red-400 hover:text-red-600 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-6 overflow-y-auto">
-              <p className="font-medium text-stone-600 dark:text-stone-300 text-sm">
-                ¿Estás seguro de que deseas eliminar el pedido de <span className="font-bold text-black dark:text-white">{selectedOrderForDelete.clientName}</span>?
-              </p>
-              <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-50 dark:bg-red-900/10 p-3 border border-red-100 dark:border-red-900/30">
-                Esta acción no se puede deshacer
-              </p>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  onClick={() => setDeleteModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={confirmDelete}
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] border border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700 transition-all"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {deleteModalOpen && (
+        <DeleteConfirmModal
+          order={selectedOrderForDelete}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteModalOpen(false)}
+        />
       )}
 
       {/* Activity Panel */}
@@ -2186,13 +2134,13 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                           type="button"
                           onClick={() => {
                             if (selectedOrderForActivities.type !== 'Servicio de Tueste') return;
-                            if (isActivityCompleted(selectedOrderForActivities, 'Selección de Café')) return;
+                            if (checkActivityCompleted(selectedOrderForActivities, 'Selección de Café')) return;
                             setActiveMode('Selección de Café');
                           }}
                           className={`flex items-center justify-between px-4 py-3 border text-left transition-all ${
                             selectedOrderForActivities.type !== 'Servicio de Tueste'
                               ? 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50 text-stone-300 dark:text-stone-600 cursor-not-allowed'
-                              : isActivityCompleted(selectedOrderForActivities, 'Selección de Café')
+                              : checkActivityCompleted(selectedOrderForActivities, 'Selección de Café')
                               ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
                               : 'border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white hover:bg-stone-50 dark:hover:bg-stone-800 text-black dark:text-white'
                           }`}
@@ -2211,13 +2159,13 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                           type="button"
                           onClick={() => {
                             if (selectedOrderForActivities.type !== 'Servicio de Tueste') return;
-                            if (isActivityCompleted(selectedOrderForActivities, 'Armado de Pedido')) return;
+                            if (checkActivityCompleted(selectedOrderForActivities, 'Armado de Pedido')) return;
                             setActiveMode('Armado de Pedido');
                           }}
                           className={`flex items-center justify-between px-4 py-3 border text-left transition-all ${
                             selectedOrderForActivities.type !== 'Servicio de Tueste'
                               ? 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50 text-stone-300 dark:text-stone-600 cursor-not-allowed'
-                              : isActivityCompleted(selectedOrderForActivities, 'Armado de Pedido')
+                              : checkActivityCompleted(selectedOrderForActivities, 'Armado de Pedido')
                               ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
                               : 'border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white hover:bg-stone-50 dark:hover:bg-stone-800 text-black dark:text-white'
                           }`}
@@ -2236,13 +2184,13 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
                           type="button"
                           onClick={() => {
                             if (selectedOrderForActivities.type !== 'Venta Café Tostado') return;
-                            if (isActivityCompleted(selectedOrderForActivities, 'Armado de Bolsas Retail')) return;
+                            if (checkActivityCompleted(selectedOrderForActivities, 'Armado de Bolsas Retail')) return;
                             setActiveMode('Armado de Bolsas Retail');
                           }}
                           className={`flex items-center justify-between px-4 py-3 border text-left transition-all ${
                             selectedOrderForActivities.type !== 'Venta Café Tostado'
                               ? 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50 text-stone-300 dark:text-stone-600 cursor-not-allowed'
-                              : isActivityCompleted(selectedOrderForActivities, 'Armado de Bolsas Retail')
+                              : checkActivityCompleted(selectedOrderForActivities, 'Armado de Bolsas Retail')
                               ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
                               : 'border-stone-200 dark:border-stone-700 hover:border-black dark:hover:border-white hover:bg-stone-50 dark:hover:bg-stone-800 text-black dark:text-white'
                           }`}
@@ -2621,7 +2569,7 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
             </div>
 
             {canEdit &&
-              areAllRequiredActivitiesCompleted(selectedOrderForActivities) &&
+              checkAllActivitiesCompleted(selectedOrderForActivities) &&
               selectedOrderForActivities.status !== 'Enviado' &&
               selectedOrderForActivities.status !== 'Facturado' && (
                 <div className="absolute bottom-4 right-4">
@@ -2639,73 +2587,28 @@ const OrdersView: React.FC<Props> = ({ orders }) => {
         document.body
       )}
       {/* Client Selector Modal */}
-      {clientSelectorOrder && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setClientSelectorOrder(null); setClientSearchTerm(''); }} />
-          <div className="relative bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
-            <div className="sticky top-0 bg-white dark:bg-stone-900 px-5 py-4 border-b border-stone-200 dark:border-stone-800 z-10">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-black text-black dark:text-white tracking-tight uppercase">Asignar Cliente</h3>
-                <button onClick={() => { setClientSelectorOrder(null); setClientSearchTerm(''); }} className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar cliente..."
-                  value={clientSearchTerm}
-                  onChange={e => setClientSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-bold focus:border-black dark:focus:border-white focus:ring-0 w-full transition-colors text-black dark:text-white rounded-xl"
-                />
-              </div>
-            </div>
-            <div className="overflow-y-auto max-h-[50vh] p-2">
-              {allClients
-                .filter(c => {
-                  const term = clientSearchTerm.toLowerCase().trim();
-                  if (!term) return true;
-                  return c.name.toLowerCase().includes(term) || c.district.toLowerCase().includes(term);
-                })
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map(client => (
-                  <button
-                    key={client.id}
-                    onClick={async () => {
-                      if (clientSelectorOrder?.salesOrderOriginal) {
-                        const soId = clientSelectorOrder.salesOrderOriginal.id;
-                        await db.salesOrders.update(soId, { clientId: client.id });
-                        const fresh = await db.salesOrders.get(soId);
-                        if (fresh) await syncToCloud('salesOrders', fresh);
-                        showToast(`Cliente "${client.name}" asignado`, 'success');
-                      }
-                      setClientSelectorOrder(null);
-                      setClientSearchTerm('');
-                    }}
-                    className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 transition-colors"
-                  >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      client.clientType === 'empresa' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-stone-100 dark:bg-stone-800'
-                    }`}>
-                      <User className="w-4 h-4 text-stone-500 dark:text-stone-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-black dark:text-white truncate">{client.name}</p>
-                      <p className="text-[10px] text-stone-400 truncate">{client.district || 'Sin distrito'}</p>
-                    </div>
-                  </button>
-                ))
-              }
-              {allClients.length === 0 && (
-                <div className="p-8 text-center text-stone-400 text-xs font-medium">
-                  No hay clientes en la base de datos
-                </div>
-              )}
-            </div>
-          </div>
-        </div>,
-        document.body
+      {clientSelectorOrder && (
+        <ClientSelectorModal
+          order={clientSelectorOrder}
+          clients={allClients}
+          searchTerm={clientSearchTerm}
+          onSearchChange={setClientSearchTerm}
+          onSelectClient={async (client: Client) => {
+            if (clientSelectorOrder.salesOrderOriginal) {
+              const soId = clientSelectorOrder.salesOrderOriginal.id;
+              await db.salesOrders.update(soId, { clientId: client.id });
+              const fresh = await db.salesOrders.get(soId);
+              if (fresh) await syncToCloud('salesOrders', fresh);
+              showToast(`Cliente "${client.name}" asignado`, 'success');
+            }
+            setClientSelectorOrder(null);
+            setClientSearchTerm('');
+          }}
+          onClose={() => {
+            setClientSelectorOrder(null);
+            setClientSearchTerm('');
+          }}
+        />
       )}
     </>
   );

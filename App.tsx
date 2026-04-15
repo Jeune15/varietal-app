@@ -27,68 +27,37 @@ import {
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getSupabase, pullFromCloud, initSupabase, subscribeToChanges } from './db';
-import RoastingView from './views/RoastingView';
-import OrdersView from './views/OrdersView';
-import InventoryView from './views/InventoryView';
-import DashboardView from './views/DashboardView';
-import CalendarPage from './views/CalendarPage';
-import SalesPage from './views/SalesPage';
-import EquipoCajaView from './views/EquipoCajaView';
-import ExpensesView from './views/ExpensesView';
-import LoginView from './views/LoginView';
-import CuppingView from './views/CuppingView';
-import ModulesView from './views/ModulesView';
-import { RecipesView } from './views/RecipesView';
-import SettingsModal from './components/SettingsModal';
-import FullScreenMenu from './components/FullScreenMenu';
-import LandingPage from './views/LandingPage';
-import NavigationMenu from './components/NavigationMenu';
-import { AudiobooksView } from './views/AudiobooksView';
-import { AudiobookChaptersView } from './views/AudiobookChaptersView';
-import { AudiobookReaderView } from './views/AudiobookReaderView';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+
+const RoastingView = React.lazy(() => import('./views/RoastingView'));
+const OrdersView = React.lazy(() => import('./views/OrdersView'));
+const InventoryView = React.lazy(() => import('./views/InventoryView'));
+const DashboardView = React.lazy(() => import('./views/DashboardView'));
+const CalendarPage = React.lazy(() => import('./views/CalendarPage'));
+const SalesPage = React.lazy(() => import('./views/SalesPage'));
+const EquipoCajaView = React.lazy(() => import('./views/EquipoCajaView'));
+const ExpensesView = React.lazy(() => import('./views/ExpensesView'));
+const CuppingView = React.lazy(() => import('./views/CuppingView'));
+const ModulesView = React.lazy(() => import('./views/ModulesView'));
+const RecipesView = React.lazy(() => import('./views/RecipesView').then(m => ({ default: m.RecipesView })));
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
+const FullScreenMenu = React.lazy(() => import('./components/FullScreenMenu'));
+const LandingPage = React.lazy(() => import('./views/LandingPage'));
+const NavigationMenu = React.lazy(() => import('./components/NavigationMenu'));
+const AudiobooksView = React.lazy(() => import('./views/AudiobooksView').then(m => ({ default: m.AudiobooksView })));
+const AudiobookChaptersView = React.lazy(() => import('./views/AudiobookChaptersView').then(m => ({ default: m.AudiobookChaptersView })));
+const AudiobookReaderView = React.lazy(() => import('./views/AudiobookReaderView').then(m => ({ default: m.AudiobookReaderView })));
 import Loader from './components/Loader';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { BrandLogoFull } from './components/BrandLogo';
 import ErrorBoundary from './components/ErrorBoundary';
 import ClientDatabaseView from './views/ClientDatabaseView';
+import { validatePassword, validateSession, generateSessionToken, clearSession } from './security';
 
 // Main App Content
 const AppContent: React.FC = () => {
   const { user, loading, profile, refreshSession } = useAuth();
-  const greenCoffees = useLiveQuery(() => db.greenCoffees.toArray()) || [];
-  const roasts = useLiveQuery(() => db.roasts.toArray()) || [];
-  const salesOrders = useLiveQuery(() => db.salesOrders.toArray()) || [];
-  // Use a simpler approach since hooks inside useMemo cause issues
-  const rawOrders = useLiveQuery(() => db.orders.toArray()) || [];
-  const orders = useMemo(() => {
-    const salesAsOrders = salesOrders
-      .filter(so => so.status === 'despachado')
-      .map(so => ({
-        id: so.id,
-        clientName: so.clientName,
-        variety: 'Pedido de Ventas',
-        type: 'Venta Café Tostado' as const,
-        quantityKg: 0,
-        status: so.invoicedAt ? 'Facturado' : 'Pendiente',
-        progress: so.invoicedAt ? 100 : 0,
-        entryDate: so.despachadoAt || so.createdAt,
-        dueDate: so.createdAt,
-        orderLines: so.items.map(item => ({
-          id: item.id,
-          variety: item.productName,
-          quantityKg: item.quantity,
-          bagSizeGrams: 0,
-          bagsCount: item.quantity
-        })),
-        isSalesOrder: true,
-        salesOrderOriginal: so
-      }));
-    return [...rawOrders, ...salesAsOrders] as any[];
-  }, [salesOrders, rawOrders]);
-  const roastedStocks = useLiveQuery(() => db.roastedStocks.toArray()) || [];
-  const retailBags = useLiveQuery(() => db.retailBags.toArray()) || [];
-  const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
 
   const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('varietal_active_tab') || 'dashboard');
   const [selectedAudiobookCategory, setSelectedAudiobookCategory] = useState<string | null>(null);
@@ -117,84 +86,32 @@ const AppContent: React.FC = () => {
   const [showStudentScrollTop, setShowStudentScrollTop] = useState(false);
   const [isCalendarIndependent, setIsCalendarIndependent] = useState(false); // Track if calendar is accessed from landing
   const [isSalesPage, setIsSalesPage] = useState(false); // Track if sales page is accessed from landing
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // ---- HISTORY API SYNC ----
-  // Sync state to URL
-  const updateURL = (state: {
-    view: 'landing' | 'app';
-    role?: 'admin' | 'student' | null;
-    tab?: string;
-    sales?: boolean;
-    calendar?: boolean;
-  }) => {
-    const params = new URLSearchParams();
-    params.set('view', state.view);
-    if (state.role) params.set('role', state.role);
-    if (state.tab && state.view === 'app' && state.role === 'admin') params.set('tab', state.tab);
-    if (state.sales) params.set('sales', 'true');
-    if (state.calendar) params.set('calendar', 'true');
-    
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.pushState(state, '', newUrl);
-  };
-
-  // Replace State (for initial load to not break history back)
-  const replaceURL = (state: any) => {
-    const params = new URLSearchParams();
-    params.set('view', state.view);
-    if (state.role) params.set('role', state.role);
-    if (state.tab && state.view === 'app' && state.role === 'admin') params.set('tab', state.tab);
-    if (state.sales) params.set('sales', 'true');
-    if (state.calendar) params.set('calendar', 'true');
-    
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState(state, '', newUrl);
-  };
-
-  // Listen to PopState (Back/Forward buttons)
+  // Route-to-state synchronization
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      const state = event.state;
-      if (state) {
-        setViewState(state.view || 'landing');
-        setUserRole(state.role || null);
-        if (state.tab) setActiveTab(state.tab);
-        setIsSalesPage(!!state.sales);
-        setIsCalendarIndependent(!!state.calendar);
-      } else {
-        // Fallback if no state object
-        const params = new URLSearchParams(window.location.search);
-        setViewState((params.get('view') as 'landing' | 'app') || 'landing');
-        setUserRole((params.get('role') as 'admin' | 'student' | null));
-        if (params.get('tab')) setActiveTab(params.get('tab')!);
-        setIsSalesPage(params.get('sales') === 'true');
-        setIsCalendarIndependent(params.get('calendar') === 'true');
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Initial Load from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view') as 'landing' | 'app';
-    const role = params.get('role') as 'admin' | 'student' | null;
-    const tab = params.get('tab');
-    const sales = params.get('sales') === 'true';
-    const calendar = params.get('calendar') === 'true';
-
-    if (view) setViewState(view);
-    if (role) setUserRole(role);
-    if (tab) setActiveTab(tab);
-    if (sales) setIsSalesPage(true);
-    if (calendar) setIsCalendarIndependent(true);
-
-    // Set initial state in history
-    replaceURL({ view: view || 'landing', role, tab, sales, calendar });
-  }, []);
-  // ---- END HISTORY API SYNC ----
+    const path = location.pathname;
+    if (path === '/') {
+      setViewState('landing');
+      setIsCalendarIndependent(false);
+      setIsSalesPage(false);
+    } else if (path === '/ventas') {
+      setIsSalesPage(true);
+      setViewState('app');
+    } else if (path === '/calendario') {
+      setIsCalendarIndependent(true);
+      setViewState('app');
+    } else if (path.startsWith('/admin/')) {
+      const tab = path.replace('/admin/', '');
+      setActiveTab(tab || 'dashboard');
+      setViewState('app');
+    } else if (path.startsWith('/student/')) {
+      const tab = path.replace('/student/', '');
+      setActiveTab(tab || 'cupping');
+      setViewState('app');
+    }
+  }, [location.pathname]);
 
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -223,7 +140,6 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     sessionStorage.setItem('varietal_active_tab', activeTab);
-    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
   }, [activeTab]);
 
   useEffect(() => {
@@ -233,18 +149,12 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (isCalendarIndependent) sessionStorage.setItem('varietal_calendar_independent', 'true');
     else sessionStorage.removeItem('varietal_calendar_independent');
-    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
   }, [isCalendarIndependent]);
 
   useEffect(() => {
     if (isSalesPage) sessionStorage.setItem('varietal_sales_page', 'true');
     else sessionStorage.removeItem('varietal_sales_page');
-    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
   }, [isSalesPage]);
-
-  useEffect(() => {
-    updateURL({ view: viewState, role: userRole, tab: activeTab, sales: isSalesPage, calendar: isCalendarIndependent });
-  }, [viewState, userRole]);
 
   useEffect(() => {
     const el = adminContentRef.current;
@@ -291,14 +201,13 @@ const AppContent: React.FC = () => {
     // Initial check for cloud status
     let unsubscribe: () => void;
     
-    // Check session storage for existing auth
-    const storedAccess = sessionStorage.getItem('varietal_access');
-    const storedRole = sessionStorage.getItem('varietal_role');
+    // Validate session using secure token verification
+    const sessionResult = validateSession();
     const calendarAccess = sessionStorage.getItem('varietal_calendar');
     const storedTab = sessionStorage.getItem('varietal_active_tab');
     
-    if (storedAccess === 'true' && storedRole) {
-      setUserRole(storedRole as 'admin' | 'student');
+    if (sessionResult.valid && sessionResult.role) {
+      setUserRole(sessionResult.role);
       setViewState('app');
       if (calendarAccess === 'true') {
         setActiveTab('calendar');
@@ -307,7 +216,7 @@ const AppContent: React.FC = () => {
       } else if (sessionStorage.getItem('varietal_sales_page') === 'true') {
         setIsSalesPage(true);
       } else {
-        if (storedRole === 'student') {
+        if (sessionResult.role === 'student') {
           const desired = storedTab && ['cupping', 'modules', 'recipes', 'audiobooks'].includes(storedTab) ? storedTab : 'cupping';
           setActiveTab(desired);
         } else {
@@ -377,7 +286,7 @@ const AppContent: React.FC = () => {
         try {
           await supabase.auth.signOut();
         } catch (error) {
-          console.error("Error al cerrar sesión:", error);
+          // Silently handle sign-out errors
         }
       }
 
@@ -388,44 +297,22 @@ const AppContent: React.FC = () => {
       setIsCalendarIndependent(false);
       setIsSalesPage(false);
 
-      // 2. Clear Session Storage
-      sessionStorage.removeItem('varietal_access');
-      sessionStorage.removeItem('varietal_role');
-      sessionStorage.removeItem('varietal_active_tab');
-      sessionStorage.removeItem('varietal_stock_tab');
-      sessionStorage.removeItem('varietal_calendar');
-      sessionStorage.removeItem('varietal_calendar_independent');
-      sessionStorage.removeItem('varietal_sales_page');
-      sessionStorage.removeItem('varietal_sales_tab');
+      // 2. Securely clear all session data (token + storage)
+      clearSession();
 
       // 3. Clear URL History API state
-      const params = new URLSearchParams();
-      params.set('view', 'landing');
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.pushState({ view: 'landing' }, '', newUrl);
-
-      // 4. Force a hard reload to completely reset the application state (optional but safe)
-      // window.location.reload(); 
+      navigate('/');
   };
 
   const handleAuthenticate = async (role: 'admin' | 'student', password: string): Promise<boolean> => {
-    // Simulate network delay for effect
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Validate password using SHA-256 hash comparison (passwords are never in plaintext)
+    const isValid = await validatePassword(role, password);
 
-    if (role === 'admin' && password === '10666234') {
-      setUserRole('admin');
-      setActiveTab('dashboard');
-      sessionStorage.setItem('varietal_access', 'true');
-      sessionStorage.setItem('varietal_role', 'admin');
-      setIsLoading(true); // Trigger loader for transition
-      return true;
-    } 
-    
-    if (role === 'student' && password === 'alumnos.varietal') {
-      setUserRole('student');
-      setActiveTab('modules');
-      sessionStorage.setItem('varietal_access', 'true');
-      sessionStorage.setItem('varietal_role', 'student');
+    if (isValid) {
+      // Generate a cryptographic session token to prevent sessionStorage tampering
+      generateSessionToken(role);
+      setUserRole(role);
+      setActiveTab(role === 'admin' ? 'dashboard' : 'modules');
       setIsLoading(true); // Trigger loader for transition
       return true;
     }
@@ -438,13 +325,14 @@ const AppContent: React.FC = () => {
       setViewState('app');
       setIsLoading(false);
       setIsNavMenuOpen(false); // Close menu if open
+      navigate(userRole === 'admin' ? '/admin/dashboard' : '/student/modules');
     } else {
       setIsLoading(false);
     }
   };
 
   const handleSelectSection = (id: string) => {
-    setActiveTab(id);
+    navigate(`/admin/${id}`);
     setIsSidebarOpen(false);
     setIsDesktopSidebarOpen(false);
   };
@@ -500,33 +388,36 @@ const AppContent: React.FC = () => {
                  Salir
                </button>
              </div>
-             
-             {activeTab === 'modules' && <ModulesView />}
-             
-             {activeTab === 'recipes' && <RecipesView />}
-
-             {activeTab === 'audiobooks' && (
-               <ErrorBoundary>
-                 {!selectedAudiobookCategory && (
-                   <AudiobooksView onSelectCategory={setSelectedAudiobookCategory} />
-                 )}
-                 {selectedAudiobookCategory && !selectedAudiobookChapter && (
-                   <AudiobookChaptersView 
-                     categoryId={selectedAudiobookCategory} 
-                     onBack={() => setSelectedAudiobookCategory(null)}
-                     onSelectChapter={setSelectedAudiobookChapter}
-                   />
-                 )}
-                 {selectedAudiobookCategory && selectedAudiobookChapter && (
-                   <AudiobookReaderView 
-                     categoryId={selectedAudiobookCategory}
-                     chapterId={selectedAudiobookChapter}
-                     onSelectChapter={setSelectedAudiobookChapter}
-                     onBack={() => setSelectedAudiobookChapter(null)}
-                   />
-                 )}
-               </ErrorBoundary>
-             )}
+              <React.Suspense fallback={<Loader />}>
+                <Routes>
+                  <Route path="/student/modules" element={<ModulesView />} />
+                  <Route path="/student/recipes" element={<RecipesView />} />
+                  <Route path="/student/audiobooks" element={
+                    <ErrorBoundary>
+                      {!selectedAudiobookCategory && (
+                        <AudiobooksView onSelectCategory={setSelectedAudiobookCategory} />
+                      )}
+                      {selectedAudiobookCategory && !selectedAudiobookChapter && (
+                        <AudiobookChaptersView 
+                          categoryId={selectedAudiobookCategory} 
+                          onBack={() => setSelectedAudiobookCategory(null)}
+                          onSelectChapter={setSelectedAudiobookChapter}
+                        />
+                      )}
+                      {selectedAudiobookCategory && selectedAudiobookChapter && (
+                        <AudiobookReaderView 
+                          categoryId={selectedAudiobookCategory}
+                          chapterId={selectedAudiobookChapter}
+                          onSelectChapter={setSelectedAudiobookChapter}
+                          onBack={() => setSelectedAudiobookChapter(null)}
+                        />
+                      )}
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/student/cupping" element={<CuppingView />} />
+                  <Route path="/student/*" element={<Navigate to="/student/cupping" replace />} />
+                </Routes>
+              </React.Suspense>
            </div>
         </div>
         {showStudentScrollTop && (
@@ -554,9 +445,9 @@ const AppContent: React.FC = () => {
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
                       setSelectedAudiobookCategory(null);
                       setSelectedAudiobookChapter(null);
+                      navigate(`/student/${item.id}`);
                     }}
                     className={`flex flex-col items-center gap-1 p-2 min-w-[3.5rem] rounded-xl transition-all duration-300 ${
                       isActive 
@@ -665,105 +556,75 @@ const AppContent: React.FC = () => {
               </button>
             </div>
 
-            <div key={activeTab} className="animate-slide-up">
-              {activeTab === 'dashboard' ? (
-                <DashboardView 
-                  roasts={roasts} 
-                  orders={orders} 
-                  productionInventory={productionInventory}
-                  roastedStocks={roastedStocks}
-                  onNavigate={(tabId) => setActiveTab(tabId)} 
-                  userRole={userRole}
-                />
-              ) : activeTab === 'roasting' ? (
-                <RoastingView 
-                  roasts={roasts} 
-                  greenCoffees={greenCoffees} 
-                  orders={orders} 
-                />
-              ) : activeTab === 'orders' ? (
-                <OrdersView orders={orders} />
-              ) : activeTab === 'sales-history' ? (
-                <div className="space-y-8">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
-                    <div>
-                      <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Facturación</h2>
+            <div className="animate-slide-up">
+              <React.Suspense fallback={<Loader />}>
+                <Routes>
+                  <Route path="/admin/dashboard" element={<DashboardView onNavigate={(tabId) => navigate(`/admin/${tabId}`)} userRole={userRole} />} />
+                  <Route path="/admin/roasting" element={<RoastingView />} />
+                  <Route path="/admin/orders" element={<OrdersView />} />
+                  <Route path="/admin/sales-history" element={
+                    <div className="space-y-8">
+                      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
+                        <div>
+                          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Facturación</h2>
+                        </div>
+                        <div className="flex gap-4 md:gap-8">
+                          {['historial', 'gastos'].map((tab) => (
+                            <button
+                              key={tab}
+                              onClick={() => setBillingTab(tab as any)}
+                              className={`pb-2 text-xs font-bold uppercase tracking-widest transition-all relative ${
+                                billingTab === tab 
+                                  ? 'text-black dark:text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-black dark:after:bg-white' 
+                                  : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                              }`}
+                            >
+                              {tab === 'historial' ? 'Ventas' : 'Gastos'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
+                        {billingTab === 'historial' ? <EquipoCajaView /> : <ExpensesView />}
+                      </div>
                     </div>
-                    <div className="flex gap-4 md:gap-8">
-                      {['historial', 'gastos'].map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setBillingTab(tab as any)}
-                          className={`pb-2 text-xs font-bold uppercase tracking-widest transition-all relative ${
-                            billingTab === tab 
-                              ? 'text-black dark:text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-black dark:after:bg-white' 
-                              : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
-                          }`}
-                        >
-                          {tab === 'historial' ? 'Ventas' : 'Gastos'}
-                        </button>
-                      ))}
+                  } />
+                  <Route path="/admin/clients-db" element={<ClientDatabaseView />} />
+                  <Route path="/admin/stock" element={
+                    <div className="space-y-8">
+                      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
+                        <div>
+                          <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Inventario</h2>
+                        </div>
+                        <div className="flex gap-4 md:gap-8">
+                          {['roasted', 'utility'].map((tab) => (
+                            <button
+                              key={tab}
+                              onClick={() => setStockTab(tab as any)}
+                              className={`pb-2 text-xs font-bold uppercase tracking-widest transition-all relative ${
+                                stockTab === tab 
+                                  ? 'text-black dark:text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-black dark:after:bg-white' 
+                                  : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
+                              }`}
+                            >
+                              {tab === 'roasted' ? 'Café Tostado' : 'Utilería'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div key={stockTab} className="animate-fade-in">
+                        {stockTab === 'roasted' ? (
+                          <InventoryView mode="coffee" />
+                        ) : (
+                          <InventoryView mode="utility" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
-                    {billingTab === 'historial' ? <EquipoCajaView /> : <ExpensesView />}
-                  </div>
-                </div>
-              ) : activeTab === 'clients-db' ? (
-                <ClientDatabaseView />
-              ) : activeTab === 'stock' ? (
-                <div className="space-y-8">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-6">
-                    <div>
-                      <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white tracking-tighter uppercase">Inventario</h2>
-                    </div>
-                    <div className="flex gap-4 md:gap-8">
-                      {['roasted', 'utility'].map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setStockTab(tab as any)}
-                          className={`pb-2 text-xs font-bold uppercase tracking-widest transition-all relative ${
-                            stockTab === tab 
-                              ? 'text-black dark:text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-black dark:after:bg-white' 
-                              : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300'
-                          }`}
-                        >
-                          {tab === 'roasted' ? 'Café Tostado' : 'Utilería'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div key={stockTab} className="animate-fade-in">
-                    {stockTab === 'roasted' ? (
-                      <InventoryView
-                        stocks={roastedStocks}
-                        roasts={roasts}
-                        retailBags={retailBags}
-                        setRetailBags={() => {}}
-                        mode="coffee"
-                      />
-                    ) : (
-                      <InventoryView
-                        stocks={roastedStocks}
-                        roasts={roasts}
-                        retailBags={retailBags}
-                        setRetailBags={() => {}}
-                        mode="utility"
-                      />
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <DashboardView 
-                  roasts={roasts} 
-                  orders={orders} 
-                  productionInventory={productionInventory}
-                  roastedStocks={roastedStocks}
-                  onNavigate={(tabId) => setActiveTab(tabId)} 
-                  userRole={userRole}
-                />
-              )}
+                  } />
+                  <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+                </Routes>
+              </React.Suspense>
             </div>
           </div>
         </section>

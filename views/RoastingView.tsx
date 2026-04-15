@@ -8,11 +8,7 @@ import { db, syncToCloud } from '../db';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-interface Props {
-  roasts: Roast[];
-  greenCoffees: GreenCoffee[];
-  orders: Order[];
-}
+import { useLiveQuery } from 'dexie-react-hooks';
 
 const getLocalDate = () => {
   const d = new Date();
@@ -29,7 +25,9 @@ const getWeekString = (dateString: string) => {
   return `${start.toISOString().split('T')[0]} / ${end.toISOString().split('T')[0]}`;
 };
 
-const RoastingView: React.FC<Props> = ({ roasts, greenCoffees, orders }) => {
+const RoastingView: React.FC = () => {
+  const roasts = useLiveQuery(() => db.roasts.toArray()) || [];
+  const greenCoffees = useLiveQuery(() => db.greenCoffees.toArray()) || [];
   const { canEdit } = useAuth();
   const { showToast } = useToast();
   const [showNewRoastModal, setShowNewRoastModal] = useState(false);

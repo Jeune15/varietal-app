@@ -9,14 +9,13 @@ import { useToast } from '../contexts/ToastContext';
 import { StyledSelect } from '../components/StyledSelect';
 
 interface Props {
-  stocks: RoastedStock[];
-  roasts: Roast[];
-  retailBags: RetailBagStock[];
-  setRetailBags: React.Dispatch<React.SetStateAction<RetailBagStock[]>>;
   mode?: 'coffee' | 'utility';
 }
 
-const InventoryView: React.FC<Props> = ({ stocks, roasts, retailBags, mode = 'coffee' }) => {
+const InventoryView: React.FC<Props> = ({ mode = 'coffee' }) => {
+  const stocks = useLiveQuery(() => db.roastedStocks.toArray()) || [];
+  const roasts = useLiveQuery(() => db.roasts.toArray()) || [];
+  const retailBags = useLiveQuery(() => db.retailBags.toArray()) || [];
   const { canEdit } = useAuth();
   const { showToast } = useToast();
   const productionInventory = useLiveQuery(

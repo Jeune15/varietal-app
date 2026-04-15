@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Roast, Order, ProductionItem, RoastedStock, SalesOrder } from '../types';
 import { exportDatabaseToJson, initSupabase, db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,16 +19,18 @@ import {
   Label
 } from 'recharts';
 
+import { useOrders } from '../hooks/useOrders';
+
 interface Props {
-  roasts: Roast[];
-  orders: Order[];
-  productionInventory: ProductionItem[];
-  roastedStocks?: RoastedStock[];
   onNavigate?: (tabId: string) => void;
   userRole?: 'admin' | 'student' | null;
 }
 
-const DashboardView: React.FC<Props> = ({ roasts, orders, productionInventory, roastedStocks = [], onNavigate, userRole }) => {
+const DashboardView: React.FC<Props> = ({ onNavigate, userRole }) => {
+  const roasts = useLiveQuery(() => db.roasts.toArray()) || [];
+  const productionInventory = useLiveQuery(() => db.productionInventory.toArray()) || [];
+  const roastedStocks = useLiveQuery(() => db.roastedStocks.toArray()) || [];
+  const orders = useOrders();
   const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
   
   useEffect(() => {

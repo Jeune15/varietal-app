@@ -11,7 +11,6 @@ import { SessionDetailModal } from '../components/CuppingSessionDetail';
 import { gsap } from 'gsap';
 
 interface Props {
-  stocks: RoastedStock[];
   mode?: 'internal' | 'free' | 'all';
   isEmbedded?: boolean;
 }
@@ -56,7 +55,8 @@ const descriptorOptions = {
   ]
 };
 
-const CuppingView: React.FC<Props> = ({ stocks, mode = 'all', isEmbedded = false }) => {
+const CuppingView: React.FC<Props> = ({ mode = 'all', isEmbedded = false }) => {
+  const stocks = useLiveQuery(() => db.roastedStocks.toArray()) || [];
   const { canEdit } = useAuth();
   const { showToast } = useToast();
   const cursorRef = useRef<HTMLDivElement | null>(null);

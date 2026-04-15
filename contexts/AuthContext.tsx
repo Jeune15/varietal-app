@@ -98,9 +98,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const isAdmin = (user && profile?.role === 'admin' && profile?.isActive === true) || !user; // Admin if logged in OR local mode (no user)
-  const isEditor = ((profile?.role === 'editor' || profile?.role === 'admin') && profile?.isActive === true) || !user;
-  const canEdit = isEditor; // Alias
+  const isAdmin = !!(user && profile?.role === 'admin' && profile?.isActive === true);
+  const isEditor = !!((profile?.role === 'editor' || profile?.role === 'admin') && profile?.isActive === true);
+  const canEdit = isEditor;
 
   return (
     <AuthContext.Provider value={{ 

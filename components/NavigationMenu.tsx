@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { X, ArrowRight, Lock, DollarSign } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { X, ArrowRight, Lock, DollarSign, ShieldAlert } from 'lucide-react';
+import { checkRateLimit, recordFailedAttempt, resetRateLimit } from '../security';
 
 interface Props {
   isOpen: boolean;
@@ -14,6 +15,22 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSa
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds(prev => {
+        if (prev <= 1) {
+          setError('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
 
   const handleOptionClick = (option: 'admin' | 'student') => {
     setActiveOption(option);
@@ -31,16 +48,33 @@ const NavigationMenu: React.FC<Props> = ({ isOpen, onClose, onAuthenticate, onSa
     e.preventDefault();
     if (!activeOption) return;
 
+    // Check rate limit before attempting authentication
+    const limit = checkRateLimit(activeOption);
+    if (!limit.allowed) {
+      const seconds = Math.ceil((limit.retryAfterMs || 30000) / 1000);
+      setLockoutSeconds(seconds);
+      setError(`Demasiados intentos. Espere ${seconds}s`);
+      return;
+    }
+
     setLoading(true);
     setError('');
     
     const success = await onAuthenticate(activeOption, password);
     
     if (!success) {
-      setError('Contraseña incorrecta');
+      const result = recordFailedAttempt(activeOption);
+      if (result.remainingAttempts === 0) {
+        const seconds = Math.ceil(30);
+        setLockoutSeconds(seconds);
+        setError(`Bloqueado por ${seconds}s — demasiados intentos`);
+      } else {
+        setError(`Contraseña incorrecta (${result.remainingAttempts} intentos restantes)`);
+      }
       setLoading(false);
+    } else {
+      resetRateLimit(activeOption);
     }
-    // If success, parent handles navigation and closing
   };
 
   useEffect(() => {

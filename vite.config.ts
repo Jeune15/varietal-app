@@ -7,16 +7,20 @@ export default defineConfig({
   server: {
     port: 3000
   },
+  // Strip console.log/warn/error and debugger from production builds
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+  },
   build: {
-    chunkSizeWarningLimit: 1600, // Aumentado para evitar warnings innecesarios
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           ui: ['framer-motion', 'lucide-react', 'gsap'],
-          charts: ['recharts'], // d3 es parte de recharts, mejor dejar que rollup lo maneje
+          charts: ['recharts'],
           db: ['dexie', 'dexie-react-hooks', '@supabase/supabase-js'],
-          pdf: ['html2canvas', 'jspdf'] // Separar las librerías pesadas de PDF si las tienes
+          pdf: ['html2canvas', 'jspdf']
         }
       }
     }

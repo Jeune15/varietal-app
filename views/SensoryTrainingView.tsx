@@ -661,7 +661,7 @@ export const SensoryTrainingView: React.FC<Props> = ({ onBack, isEmbedded = fals
       <div className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'catacion' && (
           <div className="animate-fade-in -mx-4 -my-8">
-            <CuppingView stocks={[]} mode="free" isEmbedded={true} />
+            <CuppingView mode="free" isEmbedded={true} />
           </div>
         )}
         {activeTab === 'simulator' && <Simulator />}

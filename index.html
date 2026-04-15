@@ -3,6 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" 
+      content="default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+        img-src 'self' data: blob:;
+        media-src 'self' blob:;
+        worker-src 'self' blob:;">
     <title>Varietal — Coffee Developers</title>
     <link rel="icon" type="image/x-icon" href="/favicon/favicon.ico">
     
@@ -295,25 +304,7 @@
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     
-    <script type="importmap">
-    {
-      "imports": {
-        "dexie-react-hooks": "https://esm.sh/dexie-react-hooks@^4.2.0",
-        "dexie": "https://esm.sh/dexie@^4.2.1",
-        "react": "https://esm.sh/react@^19.2.3",
-        "react/": "https://esm.sh/react@^19.2.3/",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-        "recharts": "https://esm.sh/recharts@^3.6.0",
-        "vite": "https://esm.sh/vite@^7.3.1",
-        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
-        "react-native": "https://esm.sh/react-native@^0.83.1",
-        "@react-native-async-storage/async-storage": "https://esm.sh/@react-native-async-storage/async-storage@^2.2.0",
-        "lucide-react-native": "https://esm.sh/lucide-react-native@^0.562.0"
-      }
-    }
-    </script>
+    <!-- Dependencies are bundled by Vite — no external import map needed -->
 </head>
 <body class="bg-stone-50 dark:bg-black text-stone-900 dark:text-stone-100 overflow-x-hidden selection:bg-brand selection:text-white">
     <div id="root"></div>
