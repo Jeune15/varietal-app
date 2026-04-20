@@ -1093,7 +1093,7 @@ const VarietySimulator: React.FC = () => {
 // ─── Varieties Tab ───────────────────────────────────────────────────────────
 
 const VarietiesTab: React.FC = () => {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(VARIETIES[0]?.id ?? null);
   const selected = VARIETIES.find(v => v.id === selectedId) || null;
 
   return (
@@ -1174,7 +1174,7 @@ const VarietiesTab: React.FC = () => {
 
 const TechStandardsTab: React.FC = () => {
   const [techSection, setTechSection] = useState<'standards' | 'defects' | 'geo'>('standards');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(TECH_STANDARDS[0]?.id ?? null);
   const selected = TECH_STANDARDS.find(s => s.id === selectedId) || null;
 
   return (
@@ -1190,7 +1190,7 @@ const TechStandardsTab: React.FC = () => {
 
       <div className="flex gap-6 overflow-x-auto scrollbar-hide border-b border-stone-200 dark:border-stone-800">
         <button
-          onClick={() => { setTechSection('standards'); setSelectedId(null); }}
+          onClick={() => { setTechSection('standards'); setSelectedId(TECH_STANDARDS[0]?.id ?? null); }}
           className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 ${
             techSection === 'standards'
               ? 'border-brand text-brand'
@@ -1200,7 +1200,7 @@ const TechStandardsTab: React.FC = () => {
           Estándares
         </button>
         <button
-          onClick={() => { setTechSection('defects'); setSelectedId(null); }}
+          onClick={() => { setTechSection('defects'); setSelectedId(null); }} // Defects section has its own selection logic
           className={`pb-3 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 ${
             techSection === 'defects'
               ? 'border-brand text-brand'
@@ -1486,8 +1486,217 @@ interface Props {
   onBack: () => void;
 }
 
+// ─── Genetic Tree Tab ────────────────────────────────────────────────────────
+
+interface GeneticNode {
+  id: string;
+  name: string;
+  type: 'species' | 'cultivar' | 'hybrid' | 'selection';
+  origin: string;
+  year?: string;
+  parents?: string[];
+  note?: string;
+  sensoryTag?: string;
+}
+
+const GENETIC_NODES: GeneticNode[] = [
+  // Ancestros
+  { id: 'arabica', name: 'Coffea Arabica', type: 'species', origin: 'Etiopía / Yemen', year: 'Origen ancestral', note: 'Especie madre de toda la rama arábica. Alotetraploide (4n=44). Todo el café de especialidad desciende de aquí.', sensoryTag: 'Base de toda acidez, dulzor y complejidad aromática' },
+  { id: 'typica-base', name: 'Typica', type: 'cultivar', origin: 'Yemen → Java → mundo', year: 'Siglo XVII', parents: ['arabica'], note: 'Primera variedad difundida globalmente vía rutas comerciales holandesas. Base genética de Martinica, Jamaica Blue Mountain y toda la línea latinoamericana inicial.', sensoryTag: 'Limpio, sedoso, acidez delicada, postgusto refinado' },
+  { id: 'bourbon-base', name: 'Bourbon', type: 'cultivar', origin: 'Yemen → Isla Reunión', year: '1715–1720', parents: ['arabica'], note: 'Mutación natural de Typica. Llevada de Yemen a la Isla Bourbon por misioneros franceses. 20-30% más productiva que Typica. Cepas Roja, Amarilla y Rosada.', sensoryTag: 'Dulzor pronunciado, frutos rojos, acidez málica, cuerpo cremoso' },
+  // Línea Typica
+  { id: 'maragogipe', name: 'Maragogipe', type: 'cultivar', origin: 'Brasil (Bahía)', year: '~1870', parents: ['typica-base'], note: 'Mutación de grano gigante (Screen 18-20). Muy bajo rendimiento. "El café elefante". Padre del Pacamara.', sensoryTag: 'Cuerpo ligero, acidez suave, floral sutil, nuez' },
+  { id: 'java-typica', name: 'Java', type: 'cultivar', origin: 'Indonesia', year: 'Siglo XVII', parents: ['typica-base'], note: 'Descendiente directo de Typica introducido en Indonesia por los holandeses. Base histórica del café indonesio.', sensoryTag: 'Cuerpo medio-alto, especias suaves, cacao, final largo' },
+  // Línea Bourbon
+  { id: 'caturra', name: 'Caturra', type: 'cultivar', origin: 'Brasil (Minas Gerais)', year: '~1937', parents: ['bourbon-base'], note: 'Mutación de porte bajo espontánea de Bourbon. Permite alta densidad de siembra (5,000 plantas/ha). La variedad más influyente en Latinoamérica.', sensoryTag: 'Acidez cítrica brillante, dulzor medio, perfil limpio y definido' },
+  { id: 'pacas', name: 'Pacas', type: 'cultivar', origin: 'El Salvador', year: '~1949', parents: ['bourbon-base'], note: 'Mutación del Bourbon descubierta en la finca Pacas. Genéticamente similar a Caturra. Variedad dominante en El Salvador.', sensoryTag: 'Chocolate, caramelo, acidez málica, equilibrado' },
+  { id: 'villa-sarchi', name: 'Villa Sarchi', type: 'cultivar', origin: 'Costa Rica', year: '~1950s', parents: ['bourbon-base'], note: 'Mutación de porte bajo del Bourbon endémica de Costa Rica. Excelente adaptación a altitudes extremas y climas ventosos.', sensoryTag: 'Acidez cítrica brillante, floral delicado, cuerpo medio' },
+  { id: 'sl28', name: 'SL28', type: 'selection', origin: 'Kenia', year: '~1930s', parents: ['bourbon-base'], note: 'Seleccionada por Scott Agricultural Laboratories a partir de material de Tanzania. Probablemente herencia de Bourbon francés o Bourbon Tanzaniano. Icono absoluto del café keniano.', sensoryTag: 'Acidez tipo blackcurrant única, fruta roja intensa, vino, complejidad máxima' },
+  { id: 'sl34', name: 'SL34', type: 'selection', origin: 'Kenia', year: '~1930s', parents: ['bourbon-base'], note: 'Hermana de SL28 con probable genética de Bourbon Francés. Más productiva en zonas húmedas. Complementa a SL28 en cooperativas kenianas.', sensoryTag: 'Cítrico brillante, cuerpo cremoso, caramelo, postgusto dulce' },
+  // Híbridos Bourbon × Typica
+  { id: 'mundo-novo', name: 'Mundo Novo', type: 'hybrid', origin: 'Brasil (São Paulo)', year: '~1943', parents: ['typica-base', 'bourbon-base'], note: 'Híbrido natural encontrado en São Paulo. Alta productividad y vigor. Porte alto. Base genética del Catuaí.', sensoryTag: 'Chocolate con leche, caramelo, cuerpo medio-alto, consistente' },
+  // Cruzamientos con Caturra
+  { id: 'catuai', name: 'Catuaí', type: 'hybrid', origin: 'Brasil (IAC)', year: '1949–1972', parents: ['mundo-novo', 'caturra'], note: 'Cruce desarrollado por el IAC. Combina productividad de Mundo Novo con porte compacto de Caturra. Variantes Rojo y Amarillo. Muy difundido en Brasil y Centroamérica.', sensoryTag: 'Dulzor a chocolate y nuez, acidez media-baja, limpio y consistente' },
+  // Línea Bourbon Mesoamericana
+  { id: 'pacamara', name: 'Pacamara', type: 'hybrid', origin: 'El Salvador', year: '1958', parents: ['pacas', 'maragogipe'], note: 'Cruce entre Pacas y Maragogipe desarrollado por el ISIC. Grano excepcionalmente grande (Screen 18-20). Muy premiada en concursos internacionales.', sensoryTag: 'Floral complejo, maracuyá, melocotón, acidez málica, postgusto exótico' },
+  // Híbrido de Timor
+  { id: 'timor-hybrid', name: 'Híbrido de Timor', type: 'hybrid', origin: 'Timor-Leste', year: '~1927', parents: ['arabica', 'canephora-ref'], note: 'Cruce natural entre Coffea Arabica y Coffea Canephora. Único híbrido interespecífico estable. Aporta resistencia a roya vía genes C. Canephora. Base de todas las variedades resistentes modernas.', sensoryTag: 'Por sí solo: sabor plano y robusto; su valor es genético, no sensorial' },
+  { id: 'canephora-ref', name: 'C. Canephora (Robusta)', type: 'species', origin: 'Congo / África Central', year: 'Origen ancestral', note: 'Especie hermana del arábica. Diploide (2n=22). Alta cafeína, mayor resistencia a enfermedades. Su cruce con arábica produjo el Híbrido de Timor, fuente de resistencia para las variedades modernas.', sensoryTag: 'Terroso, amargo, cuerpo pesado, sin complejidad aromática' },
+  // Variedades resistentes
+  { id: 'catimor', name: 'Catimor', type: 'hybrid', origin: 'Portugal (CIFC)', year: '1959', parents: ['caturra', 'timor-hybrid'], note: 'Cruce para combatir la epidemia de roya. Alta resistencia y productividad. Base de muchas variedades modernas en Asia y Latinoamérica. Calidad variable según altitud.', sensoryTag: 'Nuez oscura, cereal; mejor en altitudes altas; potencial sub-óptimo a baja altura' },
+  { id: 'sarchimor', name: 'Sarchimor', type: 'hybrid', origin: 'Costa Rica (CIFC/CATIE)', year: '~1980s', parents: ['villa-sarchi', 'timor-hybrid'], note: 'Cruce con Villa Sarchi para mejorar la calidad de taza sobre el Catimor. Base de Marsellesa (Centroamérica) y Parainema (Honduras).', sensoryTag: 'Acidez media, buen dulzor, más limpio que Catimor' },
+  { id: 'castillo', name: 'Castillo', type: 'hybrid', origin: 'Colombia (CENICAFÉ)', year: '2005', parents: ['caturra', 'timor-hybrid'], note: 'Evolución de la variedad Colombia. Resistente a roya con mejor calidad que sus predecesoras. Desarrollada para el contexto colombiano por la FNC/CENICAFÉ.', sensoryTag: 'Panela, caramelo, acidez cítrica media, perfil limpio' },
+  // Línea Kenia moderna
+  { id: 'ruiru11', name: 'Ruiru 11', type: 'hybrid', origin: 'Kenia (CRF)', year: '1985', parents: ['catimor', 'sl28'], note: 'Variedad compuesta resistente a CBD y roya. Porte muy compacto. Históricamente criticada, pero generaciones recientes mejoran calidad.', sensoryTag: 'Frutas suaves, nuez, más moderado que SL28/SL34' },
+  { id: 'batian', name: 'Batian', type: 'hybrid', origin: 'Kenia (CRF)', year: '2010', parents: ['ruiru11', 'sl28'], note: 'Mejora sobre Ruiru 11 buscando combinar resistencia con calidad SL. Porte más alto, mayor potencial aromático.', sensoryTag: 'Acidez vibrante acercándose a SL28, cítrico, frutas rojas' },
+  // Variedades Etíopes
+  { id: 'ethiopian-heirloom', name: 'Ethiopian Heirloom', type: 'cultivar', origin: 'Etiopía', year: 'Ancestral', parents: ['arabica'], note: 'Población genéticamente diversísima de variedades silvestres y semi-silvestres etíopes. No es una variedad única sino centenares de líneas locales. Fuente de toda la diversidad genética del café arábica mundial.', sensoryTag: 'Floral, jazmín, bergamota, bayas, cítrico tropical — biodiversidad sensorial máxima' },
+  { id: 'geisha', name: 'Geisha (Gesha)', type: 'cultivar', origin: 'Etiopía (Bosque Gesha) → Panamá', year: 'Redescubierta 2004', parents: ['ethiopian-heirloom'], note: 'Originaria del bosque de Gesha en Etiopía. Llevada a Panamá via Costa Rica. Redescubierta en 2004 en Hacienda La Esmeralda. Redefine los estándares de calidad en café de especialidad.', sensoryTag: 'Jazmín, bergamota, maracuyá, lychee, acidez fosfórica, cuerpo tipo té' },
+  // Variedades brasileñas avanzadas
+  { id: 'obata', name: 'Obatã', type: 'hybrid', origin: 'Brasil (IAC)', year: '~1999', parents: ['villa-sarchi', 'timor-hybrid'], note: 'Cruce IAC derivado de Sarchimor. Resistente a roya y adaptado al clima del Cerrado brasileño. Calidad superior a Catimor.', sensoryTag: 'Chocolate, dulzor a panela, acidez media, cuerpo medio' },
+  { id: 'bourbon-amarillo', name: 'Bourbon Amarillo / Yellow Bourbon', type: 'cultivar', origin: 'Brasil (São Paulo)', year: '~1930s', parents: ['bourbon-base'], note: 'Mutación natural de Bourbon con cerezas amarillas en lugar de rojas. Menor astringencia en la cereza. Mayor dulzor potencial al madurar. Muy valorado en concursos de Brasil.', sensoryTag: 'Dulzor intenso, tropical, caramelo dorado, acidez suave, muy limpio' },
+  { id: 'sidra', name: 'Sidra', type: 'hybrid', origin: 'Ecuador / Colombia', year: '~2010s', parents: ['bourbon-base', 'ethiopian-heirloom'], note: 'Variedad de origen no totalmente trazado. Probablemente cruce entre Bourbon y material etíope. Alta complejidad aromática. Cada vez más presente en concursos latinoamericanos.', sensoryTag: 'Floral intenso, frutas exóticas, acidez brillante, complejidad tipo Geisha' },
+  { id: 'pink-bourbon', name: 'Pink Bourbon (Bourbon Rosado)', type: 'cultivar', origin: 'Colombia (Huila)', year: 'Cultivado activamente desde ~2010', parents: ['bourbon-base'], note: 'Variedad con cerezas de color rosado/salmón al madurar. Origen genético debatido: posible mutación del Bourbon o cruce con genética etíope. Muy buscado en café de especialidad colombiano.', sensoryTag: 'Floral delicado, frutas tropicales, dulzor equilibrado, postgusto perfumado' },
+];
+
+const TYPE_CONFIG = {
+  species:   { label: 'Especie',    color: 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' },
+  cultivar:  { label: 'Cultivar',   color: 'bg-stone-700 dark:bg-stone-300 text-white dark:text-stone-900' },
+  hybrid:    { label: 'Híbrido',    color: 'bg-brand text-white' },
+  selection: { label: 'Selección',  color: 'bg-stone-500 text-white' },
+} as const;
+
+const GeneticTreeTab: React.FC = () => {
+  const [selectedId, setSelectedId] = useState<string | null>('arabica');
+  const selected = GENETIC_NODES.find(n => n.id === selectedId) || null;
+
+  const groups: { label: string; ids: string[] }[] = [
+    { label: 'Ancestros y Bases',      ids: ['arabica', 'canephora-ref', 'typica-base', 'bourbon-base', 'timor-hybrid'] },
+    { label: 'Línea Typica',           ids: ['maragogipe', 'java-typica'] },
+    { label: 'Línea Bourbon Pura',     ids: ['sl28', 'sl34', 'caturra', 'pacas', 'villa-sarchi', 'bourbon-amarillo', 'pink-bourbon'] },
+    { label: 'Híbridos Bourbon×Typica',ids: ['mundo-novo', 'catuai'] },
+    { label: 'Mesoamérica',            ids: ['pacamara', 'obata'] },
+    { label: 'Variedades Resistentes', ids: ['catimor', 'sarchimor', 'castillo', 'ruiru11', 'batian'] },
+    { label: 'Etiopía',                ids: ['ethiopian-heirloom', 'geisha', 'sidra'] },
+  ];
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
+          Árbol Genético
+        </h2>
+        <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
+          El perfil sensorial de cada café no es accidente — es el resultado de su genética. Traza el linaje de cualquier variedad; entenderás por qué su taza es como es.
+        </p>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2">
+        {Object.entries(TYPE_CONFIG).map(([type, cfg]) => (
+          <span key={type} className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${cfg.color}`}>
+            {cfg.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Groups */}
+      <div className="space-y-6">
+        {groups.map(group => (
+          <div key={group.label} className="space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{group.label}</p>
+            <div className="flex flex-wrap gap-2">
+              {group.ids.map(id => {
+                const node = GENETIC_NODES.find(n => n.id === id);
+                if (!node) return null;
+                const cfg = TYPE_CONFIG[node.type];
+                const isSelected = selectedId === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedId(isSelected ? null : id)}
+                    className={`px-3 py-1.5 rounded-full border text-[10px] md:text-[11px] font-bold uppercase tracking-widest transition-all ${
+                      isSelected
+                        ? cfg.color + ' border-transparent shadow-md'
+                        : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-500 dark:hover:border-stone-400'
+                    }`}
+                  >
+                    {node.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Detail Panel */}
+      <div className="min-h-[200px] rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950/60 p-5 md:p-8">
+        {selected ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${TYPE_CONFIG[selected.type].color}`}>
+                  {TYPE_CONFIG[selected.type].label}
+                </span>
+                {selected.year && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500">
+                    {selected.year}
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Origen</p>
+                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.origin}</p>
+              </div>
+              {selected.parents && selected.parents.length > 0 && selected.parents[0] !== 'arabica' && (
+                <div>
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Desciende de</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selected.parents.map(pid => {
+                      const parent = GENETIC_NODES.find(n => n.id === pid);
+                      return parent ? (
+                        <button
+                          key={pid}
+                          onClick={() => setSelectedId(pid)}
+                          className="text-[10px] font-bold uppercase tracking-wide text-brand hover:underline"
+                        >
+                          {parent.name}
+                        </button>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Descripción genética</p>
+                <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{selected.note}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {selected.sensoryTag && (
+                <div>
+                  <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-brand">Expresión en taza</p>
+                  <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed italic mt-1">{selected.sensoryTag}</p>
+                </div>
+              )}
+              {/* Descendants */}
+              {(() => {
+                const descendants = GENETIC_NODES.filter(n => n.parents?.includes(selected.id));
+                return descendants.length > 0 ? (
+                  <div>
+                    <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-stone-500">Dio origen a</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {descendants.map(d => (
+                        <button
+                          key={d.id}
+                          onClick={() => setSelectedId(d.id)}
+                          className="text-[10px] font-bold uppercase tracking-wide text-stone-500 hover:text-brand hover:underline transition-colors"
+                        >
+                          {d.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] md:text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+            Selecciona una variedad para ver su linaje, descendientes y cómo su genética se expresa en la taza.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main View ───────────────────────────────────────────────────────────────
+
 export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'simulator' | 'varieties' | 'tech'>('simulator');
+  const [activeTab, setActiveTab] = useState<'simulator' | 'varieties' | 'genetics' | 'tech'>('varieties');
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950 pb-20">
@@ -1506,7 +1715,7 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
                 Café Verde
               </h1>
               <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hidden sm:block">
-                Variedades, estándares y origen
+                Variedades, genética y estándares
               </p>
             </div>
           </div>
@@ -1515,9 +1724,10 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto scrollbar-hide">
           {[
-            { id: 'simulator', label: 'Simulador' },
             { id: 'varieties', label: 'Variedades' },
-            { id: 'tech', label: 'Datos Técnicos' }
+            { id: 'genetics', label: 'Árbol Genético' },
+            { id: 'tech', label: 'Datos Técnicos' },
+            { id: 'simulator', label: 'Simulador' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1538,6 +1748,7 @@ export const GreenCoffeeToolView: React.FC<Props> = ({ onBack }) => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'simulator' && <VarietySimulator />}
         {activeTab === 'varieties' && <VarietiesTab />}
+        {activeTab === 'genetics' && <GeneticTreeTab />}
         {activeTab === 'tech' && <TechStandardsTab />}
       </div>
     </div>

@@ -453,6 +453,71 @@ const VariablesStagesTab: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Genética y Tueste */}
+      <div className="space-y-6 pt-2">
+        <div className="flex flex-col gap-3">
+          <h2 className="text-base md:text-lg font-black uppercase tracking-[0.25em] text-stone-900 dark:text-stone-100">
+            Genética y Tueste
+          </h2>
+          <p className="text-xs md:text-sm text-stone-600 dark:text-stone-400 max-w-3xl leading-relaxed">
+            La genética de una variedad determina su estructura celular, concentración de azúcares y densidad del grano — y eso debe guiar tus decisiones en la curva. No existe un perfil universal: el tueste óptimo nace de entender qué tiene adentro el grano antes de cargarlo.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            {
+              title: 'Geisha / Material Etíope',
+              tag: 'Estructura celular delicada · Altitud muy alta',
+              profile: 'Carga moderada. RoR suave y constante — evitar picos de calor. Desarrollo corto (14–17% DTR). Descarga temprana en primer crack para preservar los volátiles florales.',
+              why: 'Su estructura celular fina y su altísima concentración de compuestos aromáticos volátiles se destruyen con calor agresivo. Un tueste rápido o con RoR alto quema la fragancia antes de que llegue a la taza.',
+              sensory: 'Objetivo: jazmín, bergamota, cítrico brillante, acidez fosfórica, postgusto perfumado.',
+            },
+            {
+              title: 'Bourbon / SL28 / SL34',
+              tag: 'Alta densidad de azúcares · Origen genético antiguo',
+              profile: 'Carga más alta. Mayor energía en Maillard para desarrollar sus azúcares. Desarrollo medio (18–21% DTR). Permite temperaturas de descarga ligeramente más altas que variedades delicadas.',
+              why: 'La alta concentración de sacarosa y ácidos orgánicos de estas variedades requiere tiempo y calor suficiente para la caramelización completa. Un subdesarrollo en Bourbon resulta en acidez agresiva sin el dulzor que define la variedad.',
+              sensory: 'Objetivo: frutos rojos maduros, caramelo, málico jugoso, cuerpo cremoso y postgusto limpio.',
+            },
+            {
+              title: 'Caturra / Catuaí / Pacas',
+              tag: 'Porte bajo · Densidad moderada · Alta reproducibilidad',
+              profile: 'Perfil versátil. Responde bien a desarrollo medio (17–20% DTR). Toleran rangos más amplios sin penalizar gravemente la taza. Ideal para establecer perfiles base y hacer ajustes incrementales.',
+              why: 'Al ser mutaciones de porte bajo con estructura más homogénea, su respuesta al calor es más predecible y consistente. Son el lienzo ideal para aprender técnica antes de trabajar con variedades más exigentes.',
+              sensory: 'Objetivo: cítrico limpio, dulzor medio, cuerpo equilibrado, notas definidas según origen y proceso.',
+            },
+            {
+              title: 'Catimor / Castillo / Hibridos Resistentes',
+              tag: 'Genes de Robusta · Mayor densidad física · Alto rendimiento',
+              profile: 'Requieren más energía total. Carga alta. La presencia de genes de Canephora genera mayor resistencia del grano al calor. Desarrollo medio-largo (19–23% DTR) para extraer dulzor. Temperatura de descarga más alta.',
+              why: 'La herencia genética del Híbrido de Timor (C. Canephora) dota al grano de mayor rigidez celular. Si se tuestan como una Geisha o Bourbon pura, el resultado es un subdesarrollo con notas herbales o medicinales que delatan el defecto de origen.',
+              sensory: 'Objetivo: caramelo, panela, cuerpo medio. Evitar notas medicinales o de cereal — son señales de subdesarrollo.',
+            },
+          ].map((item, i) => (
+            <div key={i} className="border border-stone-200 dark:border-stone-800 rounded-2xl p-5 md:p-6 space-y-4 bg-white dark:bg-stone-900/40 hover:border-stone-400 dark:hover:border-stone-600 transition-colors">
+              <div className="space-y-1">
+                <h3 className="font-black text-sm uppercase tracking-tight text-stone-900 dark:text-stone-100">{item.title}</h3>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">{item.tag}</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">Perfil recomendado</p>
+                  <p className="text-[11px] md:text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.profile}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">¿Por qué?</p>
+                  <p className="text-[11px] md:text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{item.why}</p>
+                </div>
+                <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand mb-1">Objetivo en taza</p>
+                  <p className="text-[11px] md:text-xs text-stone-500 italic leading-relaxed">{item.sensory}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
