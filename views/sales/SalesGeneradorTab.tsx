@@ -89,10 +89,12 @@ const SalesGeneradorTab: React.FC = () => {
     const calcScale = () => {
       if (typeof window !== 'undefined') {
         if (window.innerWidth < 1024) {
-          // Use transform:scale instead of zoom (zoom doesn't work in Safari/iOS)
+          // Mobile: scale to fit viewport
           setMobileScale(Math.min(1, (window.innerWidth - 24) / 750));
         } else {
-          setMobileScale(1);
+          // Desktop: form(420) + gap(24) + padding(48) = 492px reserved
+          const available = window.innerWidth - 492;
+          setMobileScale(Math.min(1, available / 750));
         }
       }
     };
@@ -417,20 +419,20 @@ const SalesGeneradorTab: React.FC = () => {
                 >
                   <div className="space-y-2">
                     {form.productos.map((prod, idx) => (
-                      <div key={prod.id} className="flex items-start gap-2 p-2.5 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-100 dark:border-stone-700/50">
-                        <span className="flex-shrink-0 w-5 h-5 mt-5 rounded-full bg-stone-200 dark:bg-stone-700 text-[9px] font-black flex items-center justify-center text-stone-500 dark:text-stone-400">
+                      <div key={prod.id} className="flex items-start gap-1.5 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-100 dark:border-stone-700/50">
+                        <span className="flex-shrink-0 w-4 h-4 mt-4 rounded-full bg-stone-200 dark:bg-stone-700 text-[8px] font-black flex items-center justify-center text-stone-500 dark:text-stone-400">
                           {idx + 1}
                         </span>
-                        <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex-1 min-w-0 space-y-1">
                           {/* Row 1: Nombre (full width) */}
                           <input
                             value={prod.nombre}
                             onChange={e => updateProduct(prod.id, 'nombre', e.target.value)}
                             placeholder="Nombre del producto"
-                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            className="w-full px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                           />
                           {/* Row 2: Cantidad | Unidad | Precio */}
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-3 gap-1">
                             <div>
                               <label className="text-[9px] font-bold uppercase tracking-widest text-stone-400 block mb-0.5">Cant.</label>
                               <input
@@ -440,7 +442,7 @@ const SalesGeneradorTab: React.FC = () => {
                                 value={prod.cantidad}
                                 onChange={e => updateProduct(prod.id, 'cantidad', parseFloat(e.target.value) || 0)}
                                 placeholder="0"
-                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                className="w-full px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               />
                             </div>
                             <div>
@@ -448,7 +450,7 @@ const SalesGeneradorTab: React.FC = () => {
                               <select
                                 value={prod.unidad}
                                 onChange={e => updateProduct(prod.id, 'unidad', e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                className="w-full px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               >
                                 <option value="Und.">Und.</option>
                                 <option value="Kg">Kg</option>
@@ -468,7 +470,7 @@ const SalesGeneradorTab: React.FC = () => {
                                 value={prod.precio}
                                 onChange={e => updateProduct(prod.id, 'precio', parseFloat(e.target.value) || 0)}
                                 placeholder="0.00"
-                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                className="w-full px-2 py-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               />
                             </div>
                           </div>
@@ -476,9 +478,9 @@ const SalesGeneradorTab: React.FC = () => {
                         {form.productos.length > 1 && (
                           <button
                             onClick={() => removeProduct(prod.id)}
-                            className="flex-shrink-0 mt-5 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                            className="flex-shrink-0 mt-4 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         )}
                       </div>
@@ -544,9 +546,9 @@ const SalesGeneradorTab: React.FC = () => {
                       <div className="
                         bg-white shadow-2xl lg:shadow-lg lg:border border-stone-200 dark:border-stone-700
                         overflow-hidden
-                        w-[750px] lg:w-full
+                        w-[750px]
                       ">
-                        <div ref={previewRef} className="w-[750px] lg:w-full bg-white">
+                        <div ref={previewRef} className="w-[750px] bg-white">
                           <GuiaPreview data={previewData as any} totalPrecio={totalPrecio} />
                         </div>
                       </div>
@@ -849,6 +851,9 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
           fontSize: '11px',
           lineHeight: '1.8',
           backgroundColor: '#f5f5f5',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Fecha de Emisión:</span> {formatDateShort(data.fechaEmision)}</div>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Fecha de Inicio:</span> {formatDateShort(data.fechaInicio)}</div>
@@ -862,6 +867,9 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
           lineHeight: '1.8',
           borderLeft: '1px solid #000000',
           backgroundColor: '#f5f5f5',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Transportista:</span> {data.transportista}</div>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>RUC / C.I:</span> {data.ceDniTransportista}</div>
@@ -874,6 +882,9 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
           fontSize: '11px',
           lineHeight: '1.8',
           borderLeft: '1px solid #000000',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Placa:</span> {data.placa}</div>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Punto de Partida:</span> {data.puntoPartida}</div>
@@ -893,6 +904,9 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
           padding: '10px 14px',
           fontSize: '11px',
           lineHeight: '1.8',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Destinatario:</span> {data.destinatario}</div>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>RUC / C.I:</span> {data.rucDestinatario}</div>
@@ -904,10 +918,12 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
           fontSize: '11px',
           lineHeight: '1.8',
           borderLeft: '1px solid #000000',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Dirección de Destino:</span> {data.direccionDestino}</div>
           <div><span style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>Descripción:</span> {data.descripcion}</div>
-          <div style={{ fontWeight: 700, color: '#000000', textTransform: 'uppercase' }}>RUTA</div>
         </div>
       </div>
 
@@ -977,12 +993,12 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
       {/* ---- FIRMAS ---- */}
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         marginTop: '40px',
-        gap: '24px',
+        gap: '32px',
       }}>
-        {['Elaborado por:', 'Aprobado por:', 'Recibido por:'].map(label => (
-          <div key={label} style={{ flex: '1', textAlign: 'center' }}>
+        {['Aprobado por:', 'Recibido por:'].map(label => (
+          <div key={label} style={{ width: '220px', textAlign: 'center' }}>
             <p style={{ fontSize: '11px', fontWeight: 700, color: '#000000', marginBottom: '6px' }}>{label}</p>
             <div style={{
               height: '50px',
