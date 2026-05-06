@@ -479,9 +479,9 @@ export interface SalesCashSession {
 export interface GuiaProducto {
   id: string;
   nombre: string;
-  codigo: string;
-  unidad: string;
   cantidad: number;
+  unidad: string;
+  precio: number;
 }
 
 export interface GuiaRemision {

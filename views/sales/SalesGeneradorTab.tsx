@@ -32,9 +32,9 @@ interface FormData {
 const emptyProduct = (): GuiaProducto => ({
   id: crypto.randomUUID(),
   nombre: '',
-  codigo: '',
-  unidad: 'Und.',
   cantidad: 1,
+  unidad: 'Und.',
+  precio: 0,
 });
 
 const emptyForm = (): FormData => ({
@@ -89,7 +89,8 @@ const SalesGeneradorTab: React.FC = () => {
     const calcScale = () => {
       if (typeof window !== 'undefined') {
         if (window.innerWidth < 1024) {
-          setMobileScale(Math.min(1, (window.innerWidth - 32) / 750));
+          // Use transform:scale instead of zoom (zoom doesn't work in Safari/iOS)
+          setMobileScale(Math.min(1, (window.innerWidth - 24) / 750));
         } else {
           setMobileScale(1);
         }
@@ -208,9 +209,16 @@ const SalesGeneradorTab: React.FC = () => {
     if (!previewRef.current) return;
     setDownloading(true);
 
+    // Temporarily reset transform on zoom-wrapper so html2canvas captures at full size
     const zoomWrapper = document.getElementById('zoom-wrapper');
-    const origZoom = zoomWrapper?.style.zoom;
-    if (zoomWrapper) zoomWrapper.style.zoom = '1';
+    const origTransform = zoomWrapper?.style.transform;
+    const origWidth = zoomWrapper?.style.width;
+    const origMarginBottom = zoomWrapper?.style.marginBottom;
+    if (zoomWrapper) {
+      zoomWrapper.style.transform = 'none';
+      zoomWrapper.style.width = 'auto';
+      zoomWrapper.style.marginBottom = '0';
+    }
 
     try {
       const html2canvas = (await import('html2canvas')).default;
@@ -262,8 +270,10 @@ const SalesGeneradorTab: React.FC = () => {
       console.error('Error generating PDF:', err);
       setToast('✕ Error al generar PDF');
     } finally {
-      if (zoomWrapper && origZoom !== undefined) {
-        zoomWrapper.style.zoom = origZoom;
+      if (zoomWrapper) {
+        if (origTransform !== undefined) zoomWrapper.style.transform = origTransform;
+        if (origWidth !== undefined) zoomWrapper.style.width = origWidth;
+        if (origMarginBottom !== undefined) zoomWrapper.style.marginBottom = origMarginBottom;
       }
       setDownloading(false);
     }
@@ -312,8 +322,8 @@ const SalesGeneradorTab: React.FC = () => {
     createdAt: '',
   };
 
-  const totalProductos = (viewingGuia?.productos || form.productos).reduce(
-    (s, p) => s + (p.cantidad || 0),
+  const totalPrecio = (viewingGuia?.productos || form.productos).reduce(
+    (s, p) => s + ((p.precio || 0) * (p.cantidad || 0)),
     0
   );
 
@@ -412,42 +422,55 @@ const SalesGeneradorTab: React.FC = () => {
                           {idx + 1}
                         </span>
                         <div className="flex-1 min-w-0 space-y-1.5">
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <input
-                              value={prod.nombre}
-                              onChange={e => updateProduct(prod.id, 'nombre', e.target.value)}
-                              placeholder="Nombre producto"
-                              className="px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                            <input
-                              value={prod.codigo}
-                              onChange={e => updateProduct(prod.id, 'codigo', e.target.value)}
-                              placeholder="Código"
-                              className="px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <select
-                              value={prod.unidad}
-                              onChange={e => updateProduct(prod.id, 'unidad', e.target.value)}
-                              className="px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            >
-                              <option value="Und.">Und.</option>
-                              <option value="Kg">Kg</option>
-                              <option value="Lt">Lt</option>
-                              <option value="Caja">Caja</option>
-                              <option value="Paquete">Paquete</option>
-                              <option value="Bolsa">Bolsa</option>
-                            </select>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={prod.cantidad}
-                              onChange={e => updateProduct(prod.id, 'cantidad', parseFloat(e.target.value) || 0)}
-                              placeholder="Cant."
-                              className="px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
+                          {/* Row 1: Nombre (full width) */}
+                          <input
+                            value={prod.nombre}
+                            onChange={e => updateProduct(prod.id, 'nombre', e.target.value)}
+                            placeholder="Nombre del producto"
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+                          {/* Row 2: Cantidad | Unidad | Precio */}
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <div>
+                              <label className="text-[9px] font-bold uppercase tracking-widest text-stone-400 block mb-0.5">Cant.</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={prod.cantidad}
+                                onChange={e => updateProduct(prod.id, 'cantidad', parseFloat(e.target.value) || 0)}
+                                placeholder="0"
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold uppercase tracking-widest text-stone-400 block mb-0.5">Unidad</label>
+                              <select
+                                value={prod.unidad}
+                                onChange={e => updateProduct(prod.id, 'unidad', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              >
+                                <option value="Und.">Und.</option>
+                                <option value="Kg">Kg</option>
+                                <option value="Lt">Lt</option>
+                                <option value="Caja">Caja</option>
+                                <option value="Paquete">Paquete</option>
+                                <option value="Bolsa">Bolsa</option>
+                                <option value="Saco">Saco</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold uppercase tracking-widest text-stone-400 block mb-0.5">Precio</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={prod.precio}
+                                onChange={e => updateProduct(prod.id, 'precio', parseFloat(e.target.value) || 0)}
+                                placeholder="0.00"
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
                           </div>
                         </div>
                         {form.productos.length > 1 && (
@@ -506,20 +529,25 @@ const SalesGeneradorTab: React.FC = () => {
                   </div>
 
                   {/* Scrollable Document Area */}
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden w-full flex justify-center lg:justify-start lg:overflow-visible relative z-20">
-                    <div 
+                  <div className="flex-1 overflow-y-auto overflow-x-auto w-full relative z-20" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div
                       id="zoom-wrapper"
-                      className="origin-top w-full flex justify-center lg:block lg:w-auto py-6 pb-28 lg:pb-0 lg:py-0"
-                      style={{ zoom: mobileScale }}
+                      className="origin-top-left lg:block lg:w-auto py-4 pb-28 lg:pb-0 lg:py-0"
+                      style={mobileScale < 1 ? {
+                        transform: `scale(${mobileScale})`,
+                        transformOrigin: 'top left',
+                        width: '750px',
+                        marginBottom: `calc(${(750 * mobileScale)}px - 750px + 32px)`,
+                      } : {}}
                     >
                       {/* The Preview Card */}
                       <div className="
-                        bg-white md:rounded-lg shadow-2xl lg:shadow-lg lg:border border-stone-200 dark:border-stone-700
+                        bg-white shadow-2xl lg:shadow-lg lg:border border-stone-200 dark:border-stone-700
                         overflow-hidden
                         w-[750px] lg:w-full
                       ">
                         <div ref={previewRef} className="w-[750px] lg:w-full bg-white">
-                          <GuiaPreview data={previewData as any} totalProductos={totalProductos} />
+                          <GuiaPreview data={previewData as any} totalPrecio={totalPrecio} />
                         </div>
                       </div>
                     </div>
@@ -754,10 +782,10 @@ const FieldInput: React.FC<FieldInputProps> = ({ label, value, onChange, placeho
 
 interface GuiaPreviewProps {
   data: GuiaRemision & Partial<FormData>;
-  totalProductos: number;
+  totalPrecio: number;
 }
 
-const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalProductos }) => {
+const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalPrecio }) => {
   return (
     <div
       style={{
@@ -906,34 +934,45 @@ const GuiaPreview: React.FC<GuiaPreviewProps> = ({ data, totalProductos }) => {
             backgroundColor: '#000000',
             color: '#ffffff',
           }}>
-            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Producto</th>
-            <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Unidad</th>
+            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em', width: '40%' }}>Producto</th>
             <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Cantidad</th>
+            <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Unidad</th>
+            <th style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Precio Unit.</th>
+            <th style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Total</th>
           </tr>
         </thead>
         <tbody>
-          {(data.productos || []).map((prod, idx) => (
-            <tr key={prod.id || idx} style={{
-              borderBottom: '1px solid #d4d4d4',
-              backgroundColor: idx % 2 === 1 ? '#f5f5f5' : '#ffffff',
-            }}>
-              <td style={{ padding: '10px 14px' }}>
-                {prod.nombre}
-                {prod.codigo ? ` - ${prod.codigo}` : ''}
-              </td>
-              <td style={{ padding: '10px 14px', textAlign: 'center' }}>{prod.unidad}</td>
-              <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600 }}>
-                {typeof prod.cantidad === 'number' ? prod.cantidad.toFixed(2) : prod.cantidad}
-              </td>
-            </tr>
-          ))}
+          {(data.productos || []).map((prod, idx) => {
+            const lineTotal = (prod.precio || 0) * (prod.cantidad || 0);
+            return (
+              <tr key={prod.id || idx} style={{
+                borderBottom: '1px solid #d4d4d4',
+                backgroundColor: idx % 2 === 1 ? '#f5f5f5' : '#ffffff',
+              }}>
+                <td style={{ padding: '10px 14px' }}>{prod.nombre}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600 }}>
+                  {typeof prod.cantidad === 'number' ? prod.cantidad.toFixed(2) : prod.cantidad}
+                </td>
+                <td style={{ padding: '10px 14px', textAlign: 'center' }}>{prod.unidad}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                  {(prod.precio || 0).toFixed(2)}
+                </td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>
+                  {lineTotal.toFixed(2)}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
+        <tfoot>
+          <tr style={{ backgroundColor: '#000000', color: '#ffffff' }}>
+            <td colSpan={4} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}>Total</td>
+            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 900, fontSize: '13px' }}>
+              {totalPrecio.toFixed(2)}
+            </td>
+          </tr>
+        </tfoot>
       </table>
-
-      {/* Total */}
-      <p style={{ fontSize: '13px', fontWeight: 900, marginTop: '12px', color: '#000000' }}>
-        Total de productos: <span style={{ fontWeight: 500 }}>{totalProductos.toFixed(2)}</span>
-      </p>
 
       {/* ---- FIRMAS ---- */}
       <div style={{
